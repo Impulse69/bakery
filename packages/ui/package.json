@@ -1,0 +1,16 @@
+{
+  "name": "@bakery/ui",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "build": "echo 'Building ui...'",
+    "dev": "echo 'Starting ui dev...'",
+    "lint": "echo 'Linting ui...'",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@bakery/types": "*",
+    "@bakery/utils": "*"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@bakery/server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo 'Building server...'",
+    "dev": "echo 'Starting server dev...'",
+    "lint": "echo 'Linting server...'",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@bakery/types": "*",
+    "@bakery/utils": "*"
+  }
+}
