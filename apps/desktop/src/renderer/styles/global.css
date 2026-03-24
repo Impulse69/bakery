@@ -1,0 +1,22 @@
+@import '@bakery/ui/src/styles/variables.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, sans-serif;
+  font-size: var(--bui-text-base);
+  color: var(--bui-text-primary);
+  background-color: #f9fafb;
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+}

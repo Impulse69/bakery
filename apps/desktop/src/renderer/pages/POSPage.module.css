@@ -1,0 +1,27 @@
+.page {
+  display: flex;
+  height: calc(100vh - 57px);
+  margin: -1.5rem;
+}
+
+.productArea {
+  flex: 7;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  overflow: hidden;
+}
+
+.heading {
+  font-size: var(--bui-text-xl);
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.cartArea {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  max-width: 380px;
+}

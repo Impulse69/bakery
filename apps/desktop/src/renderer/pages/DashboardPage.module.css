@@ -1,0 +1,22 @@
+.heading {
+  font-size: var(--bui-text-xl);
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.loading {
+  padding: 2rem;
+  color: var(--bui-text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
