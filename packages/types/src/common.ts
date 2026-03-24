@@ -1,6 +1,6 @@
 export type UserRole = 'admin' | 'cashier' | 'baker' | 'owner';
 
-export type PaymentMethod = 'cash' | 'card' | 'check' | 'bank_transfer';
+export type PaymentMethod = 'cash' | 'momo' | 'card' | 'credit';
 
 export type Timestamps = {
   createdAt: string;

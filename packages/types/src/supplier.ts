@@ -20,7 +20,6 @@ export type PurchaseOrder = {
   id: string;
   poNumber: string;
   supplierId: string;
-  items: PurchaseOrderLineItem[];
   totalAmount: number;
   status: PurchaseOrderStatus;
   orderedDate: string;
@@ -29,6 +28,8 @@ export type PurchaseOrder = {
   createdBy: string;
   notes?: string;
   createdAt: string;
+  supplier?: Supplier;
+  items?: PurchaseOrderLineItem[];
 };
 
 export type PurchaseOrderLineItem = {
@@ -36,7 +37,7 @@ export type PurchaseOrderLineItem = {
   purchaseOrderId: string;
   inventoryItemId: string;
   quantityOrdered: number;
-  quantityReceived?: number;
+  quantityReceived: number;
   unit: string;
   unitCost: number;
   lineTotal: number;

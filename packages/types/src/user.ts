@@ -4,7 +4,12 @@ export type User = Timestamps & {
   id: string;
   name: string;
   email: string;
-  passwordHash: string;
   role: UserRole;
   isActive: boolean;
+};
+
+export type AuthPayload = {
+  id: string;
+  email: string;
+  role: UserRole;
 };

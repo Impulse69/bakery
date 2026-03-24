@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── ENUMS ──────────────────────────────────────────────
+
+enum UserRole {
+  admin
+  cashier
+  baker
+  owner
+}
+
+enum PaymentMethod {
+  cash
+  momo
+  card
+  credit
+}
+
+enum StockAdjustmentType {
+  purchase
+  production
+  waste
+  correction
+}
+
+enum ProductionBatchStatus {
+  in_progress
+  completed
+  failed
+}
+
+enum SalesOrderStatus {
+  draft
+  confirmed
+  picked
+  invoiced
+  paid
+  cancelled
+}
+
+enum PurchaseOrderStatus {
+  draft
+  submitted
+  received
+  cancelled
+}
+
+enum ExpenseCategory {
+  utilities
+  wages
+  packaging
+  ingredients
+  maintenance
+  other
+}
+
+enum InventoryCountStatus {
+  in_progress
+  completed
+  cancelled
+}
+
+enum DocumentTemplateType {
+  invoice
+  receipt
+  packing_slip
+  purchase_order
+  label
+}
+
+// ─── MODELS ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  salesOrders       SalesOrder[]
+  stockAdjustments  StockAdjustment[]
+  productionBatches ProductionBatch[]
+  purchaseOrders    PurchaseOrder[]
+  expenses          Expense[]
+  inventoryCounts   InventoryCount[]
+
+  @@map("users")
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  salesOrders     SalesOrder[]
+  inventoryCounts InventoryCount[]
+
+  @@map("locations")
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String?
+  email         String?  @unique
+  address       String?
+  notes         String?
+  creditBalance Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesOrders SalesOrder[]
+
+  @@map("customers")
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  sku         String   @unique
+  category    String
+  price       Int
+  description String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  variants        ProductVariant[]
+  salesOrderItems SalesOrderItem[]
+
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  name      String
+  sku       String   @unique
+  price     Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product         Product          @relation(fields: [productId], references: [id])
+  salesOrderItems SalesOrderItem[]
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model InventoryItem {
+  id                String   @id @default(cuid())
+  name              String
+  unit              String
+  quantityOnHand    Float    @default(0)
+  lowStockThreshold Float    @default(0)
+  reorderQuantity   Float    @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  stockAdjustments    StockAdjustment[]
+  recipeIngredients   RecipeIngredient[]
+  purchaseOrderItems  PurchaseOrderLineItem[]
+  inventoryCountItems InventoryCountItem[]
+
+  @@map("inventory_items")
+}
+
+model StockAdjustment {
+  id              String              @id @default(cuid())
+  inventoryItemId String
+  quantityChange  Float
+  adjustmentType  StockAdjustmentType
+  referenceId     String?
+  notes           String?
+  createdBy       String
+  createdAt       DateTime            @default(now())
+
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  user          User          @relation(fields: [createdBy], references: [id])
+
+  @@index([inventoryItemId])
+  @@index([referenceId])
+  @@map("stock_movements")
+}
+
+model Recipe {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  yieldQuantity Float
+  yieldUnit     String
+  instructions  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  ingredients       RecipeIngredient[]
+  productionBatches ProductionBatch[]
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id               String @id @default(cuid())
+  recipeId         String
+  inventoryItemId  String
+  quantityRequired Float
+  unit             String
+  notes            String?
+
+  recipe        Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@unique([recipeId, inventoryItemId])
+  @@map("recipe_ingredients")
+}
+
+model ProductionBatch {
+  id               String                @id @default(cuid())
+  recipeId         String
+  batchSequence    Int                   @default(autoincrement()) @unique
+  batchNumber      String                @unique
+  quantityProduced Float
+  quantityUnit     String
+  status           ProductionBatchStatus @default(in_progress)
+  producedBy       String
+  startedAt        DateTime              @default(now())
+  completedAt      DateTime?
+  notes            String?
+
+  recipe Recipe @relation(fields: [recipeId], references: [id])
+  user   User   @relation(fields: [producedBy], references: [id])
+
+  @@map("production_batches")
+}
+
+model SalesOrder {
+  id            String           @id @default(cuid())
+  orderSequence Int              @default(autoincrement()) @unique
+  orderNumber   String           @unique
+  customerId    String?
+  locationId    String
+  processedBy   String
+  status        SalesOrderStatus @default(draft)
+  subtotal      Int              @default(0)
+  taxTotal      Int              @default(0)
+  discountTotal Int              @default(0)
+  total         Int              @default(0)
+  amountPaid    Int              @default(0)
+  balanceDue    Int              @default(0)
+  notes         String?
+  completedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  customer Customer?       @relation(fields: [customerId], references: [id])
+  location Location        @relation(fields: [locationId], references: [id])
+  user     User            @relation(fields: [processedBy], references: [id])
+  items    SalesOrderItem[]
+  payments Payment[]
+
+  @@index([customerId])
+  @@index([locationId])
+  @@index([status])
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id           String @id @default(cuid())
+  salesOrderId String
+  productId    String
+  variantId    String?
+  quantity     Int
+  unitPrice    Int
+  discount     Int    @default(0)
+  tax          Int    @default(0)
+  total        Int
+
+  salesOrder SalesOrder      @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product    Product         @relation(fields: [productId], references: [id])
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("sales_order_items")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  salesOrderId String
+  amount       Int
+  method       PaymentMethod
+  date         DateTime      @default(now())
+  note         String?
+
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([salesOrderId])
+  @@map("payments")
+}
+
+model Supplier {
+  id            String   @id @default(cuid())
+  name          String
+  contactPerson String?
+  email         String?
+  phone         String?
+  address       String?
+  city          String?
+  postalCode    String?
+  country       String?
+  paymentTerms  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model PurchaseOrder {
+  id                   String              @id @default(cuid())
+  poSequence           Int                 @default(autoincrement()) @unique
+  poNumber             String              @unique
+  supplierId           String
+  totalAmount          Int                 @default(0)
+  status               PurchaseOrderStatus @default(draft)
+  orderedDate          DateTime            @default(now())
+  expectedDeliveryDate DateTime?
+  receivedDate         DateTime?
+  createdBy            String
+  notes                String?
+  createdAt            DateTime            @default(now())
+
+  supplier Supplier                @relation(fields: [supplierId], references: [id])
+  user     User                    @relation(fields: [createdBy], references: [id])
+  items    PurchaseOrderLineItem[]
+
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLineItem {
+  id               String @id @default(cuid())
+  purchaseOrderId  String
+  inventoryItemId  String
+  quantityOrdered  Float
+  quantityReceived Float  @default(0)
+  unit             String
+  unitCost         Int
+  lineTotal        Int
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+
+  @@map("purchase_order_line_items")
+}
+
+model Expense {
+  id              String          @id @default(cuid())
+  expenseSequence Int             @default(autoincrement()) @unique
+  expenseNumber   String          @unique
+  category        ExpenseCategory
+  description     String
+  amount          Int
+  paymentMethod   PaymentMethod
+  expenseDate     DateTime
+  recordedBy      String
+  receiptUrl      String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+
+  user User @relation(fields: [recordedBy], references: [id])
+
+  @@map("expenses")
+}
+
+model InventoryCount {
+  id          String               @id @default(cuid())
+  locationId  String
+  status      InventoryCountStatus @default(in_progress)
+  createdBy   String
+  createdAt   DateTime             @default(now())
+  completedAt DateTime?
+
+  location Location             @relation(fields: [locationId], references: [id])
+  user     User                 @relation(fields: [createdBy], references: [id])
+  items    InventoryCountItem[]
+
+  @@index([locationId])
+  @@map("inventory_counts")
+}
+
+model InventoryCountItem {
+  id               String @id @default(cuid())
+  inventoryCountId String
+  inventoryItemId  String
+  expectedQuantity Float
+  actualQuantity   Float?
+  discrepancy      Float?
+
+  inventoryCount InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Cascade)
+  inventoryItem  InventoryItem  @relation(fields: [inventoryItemId], references: [id])
+
+  @@unique([inventoryCountId, inventoryItemId])
+  @@map("inventory_count_items")
+}
+
+model DocumentTemplate {
+  id        String               @id @default(cuid())
+  type      DocumentTemplateType
+  name      String
+  content   String
+  isDefault Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  @@unique([type, name])
+  @@map("document_templates")
+}
+
+model DailySalesSummary {
+  id                String   @id @default(cuid())
+  summaryDate       DateTime @unique @db.Date
+  totalOrders       Int      @default(0)
+  totalRevenue      Int      @default(0)
+  totalTaxCollected Int      @default(0)
+  totalRefunds      Int      @default(0)
+  netSales          Int      @default(0)
+  cashTotal         Int      @default(0)
+  cardTotal         Int      @default(0)
+  momoTotal         Int      @default(0)
+  creditTotal       Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  @@map("daily_sales_summaries")
+}
+
+model DailyProfitLoss {
+  id              String   @id @default(cuid())
+  reportDate      DateTime @unique @db.Date
+  totalRevenue    Int      @default(0)
+  totalExpenses   Int      @default(0)
+  costOfGoodsSold Int?
+  grossProfit     Int      @default(0)
+  netProfitLoss   Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("daily_profit_losses")
+}

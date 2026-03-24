@@ -1,9 +1,3 @@
-export type PaymentBreakdown = {
-  cash: number;
-  card: number;
-  check: number;
-};
-
 export type DailySalesSummary = {
   id: string;
   summaryDate: string;
@@ -12,7 +6,10 @@ export type DailySalesSummary = {
   totalTaxCollected: number;
   totalRefunds: number;
   netSales: number;
-  paymentBreakdown: PaymentBreakdown;
+  cashTotal: number;
+  momoTotal: number;
+  cardTotal: number;
+  creditTotal: number;
   createdAt: string;
 };
 
@@ -25,4 +22,13 @@ export type DailyProfitLoss = {
   grossProfit: number;
   netProfitLoss: number;
   createdAt: string;
+};
+
+export type DailySummary = {
+  totalRevenue: number;
+  totalOrders: number;
+  topProducts: Array<{
+    productId: string;
+    _sum: { quantity: number | null; total: number | null };
+  }>;
 };

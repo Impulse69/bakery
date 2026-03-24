@@ -1,4 +1,5 @@
 import type { Timestamps } from './common';
+import type { InventoryItem } from './inventory';
 
 export type Recipe = Timestamps & {
   id: string;
@@ -8,6 +9,7 @@ export type Recipe = Timestamps & {
   yieldUnit: string;
   instructions?: string;
   isActive: boolean;
+  ingredients?: RecipeIngredient[];
 };
 
 export type RecipeIngredient = {
@@ -17,4 +19,5 @@ export type RecipeIngredient = {
   quantityRequired: number;
   unit: string;
   notes?: string;
+  inventoryItem?: InventoryItem;
 };

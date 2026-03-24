@@ -1,6 +1,6 @@
 import type { Timestamps } from './common';
 
-export type StockMovementType = 'purchase' | 'production_deduction' | 'adjustment' | 'sale';
+export type StockAdjustmentType = 'purchase' | 'production' | 'waste' | 'correction';
 
 export type InventoryItem = Timestamps & {
   id: string;
@@ -11,11 +11,11 @@ export type InventoryItem = Timestamps & {
   reorderQuantity: number;
 };
 
-export type StockMovement = {
+export type StockAdjustment = {
   id: string;
   inventoryItemId: string;
   quantityChange: number;
-  movementType: StockMovementType;
+  adjustmentType: StockAdjustmentType;
   referenceId?: string;
   notes?: string;
   createdBy: string;

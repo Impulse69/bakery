@@ -2,7 +2,7 @@
   "name": "@bakery/utils",
   "version": "0.1.0",
   "private": true,
-  "main": "index.ts",
+  "main": "src/index.ts",
   "scripts": {
     "build": "echo 'Building utils...'",
     "dev": "echo 'Starting utils dev...'",

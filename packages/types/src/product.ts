@@ -8,4 +8,14 @@ export type Product = Timestamps & {
   price: number;
   description?: string;
   isAvailable: boolean;
+  variants?: ProductVariant[];
+};
+
+export type ProductVariant = Timestamps & {
+  id: string;
+  productId: string;
+  name: string;
+  sku: string;
+  price: number;
+  isActive: boolean;
 };
