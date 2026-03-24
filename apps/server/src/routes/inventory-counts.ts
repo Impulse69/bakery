@@ -44,6 +44,24 @@ router.get(
   }),
 );
 
+// GET /api/inventory-counts/:id
+router.get(
+  '/:id',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const count = await prisma.inventoryCount.findUnique({
+      where: { id: getParam(req, 'id') },
+      include: {
+        items: { include: { inventoryItem: true } },
+        location: true,
+        user: { select: { id: true, name: true } },
+      },
+    });
+    if (!count) throw new AppError(404, 'Inventory count not found');
+    res.json(count);
+  }),
+);
+
 // POST /api/inventory-counts
 router.post(
   '/',

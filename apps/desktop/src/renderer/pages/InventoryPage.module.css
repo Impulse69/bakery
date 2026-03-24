@@ -1,0 +1,75 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.heading {
+  font-size: var(--bui-text-xl);
+  font-weight: 600;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.detailLabel {
+  font-size: var(--bui-text-sm);
+  color: var(--bui-text-secondary);
+}
+
+.detailValue {
+  font-size: var(--bui-text-base);
+  font-weight: 500;
+}
+
+.adjustForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: var(--bui-bg-secondary);
+  border-radius: var(--bui-radius-md);
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bui-text-sm);
+}
+
+.historyTable th,
+.historyTable td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--bui-border-color);
+}
+
+.historyTable th {
+  font-weight: 600;
+  color: var(--bui-text-secondary);
+}

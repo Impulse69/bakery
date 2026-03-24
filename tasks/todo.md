@@ -9,9 +9,11 @@
 - [x] Desktop app shell (Electron main process, React Router, auth context, API/socket client libs)
 - [x] POS page (product grid, cart panel, payment flow)
 - [x] Login, Dashboard, SalesOrders pages
+- [x] Desktop modules — Products, Inventory, Customers, Production, Suppliers, Purchase Orders, Expenses, Reports, Inventory Counts
+- [x] Server: GET /inventory-counts/:id endpoint
 
 ## Remaining
-- [ ] Desktop placeholder pages — implement real UI for: Products, Inventory, Production, Suppliers, Purchase Orders, Expenses, Customers, Reports, Settings
+- [ ] Settings page (desktop)
 - [ ] `packages/utils` — expand beyond permissions + format (stock calculations, order totals, etc.)
 - [ ] Web dashboard (`apps/web`) — Next.js owner read-only view with live WebSocket updates
 - [ ] Database migrations / seed data

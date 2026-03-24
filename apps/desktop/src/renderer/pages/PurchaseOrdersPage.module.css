@@ -1,0 +1,84 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.heading {
+  font-size: var(--bui-text-xl);
+  font-weight: 600;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.lineItem {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.grandTotal {
+  text-align: right;
+  font-size: var(--bui-text-lg);
+  font-weight: 600;
+  margin-top: 0.75rem;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.detailLabel {
+  font-size: var(--bui-text-sm);
+  color: var(--bui-text-secondary);
+}
+
+.detailValue {
+  font-size: var(--bui-text-base);
+  font-weight: 500;
+}
+
+.itemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bui-text-sm);
+  margin-bottom: 1rem;
+}
+
+.itemsTable th,
+.itemsTable td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--bui-border-color);
+}
+
+.itemsTable th {
+  font-weight: 600;
+  color: var(--bui-text-secondary);
+}
+
+.itemsTable tfoot td {
+  font-weight: 600;
+}

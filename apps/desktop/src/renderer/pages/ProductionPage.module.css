@@ -1,0 +1,50 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.heading {
+  font-size: var(--bui-text-xl);
+  font-weight: 600;
+}
+
+.filters {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  align-items: flex-end;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.ingredientsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bui-text-sm);
+  margin-top: 0.5rem;
+}
+
+.ingredientsTable th,
+.ingredientsTable td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--bui-border-color);
+}
+
+.ingredientsTable th {
+  font-weight: 600;
+  color: var(--bui-text-secondary);
+}

@@ -15,6 +15,7 @@ const MENU_ITEMS: MenuItem[] = [
   { path: '/sales-orders', label: 'Sales Orders', permission: 'sales:view' },
   { path: '/products', label: 'Products', permission: 'products:view' },
   { path: '/inventory', label: 'Inventory', permission: 'inventory:view' },
+  { path: '/inventory-counts', label: 'Inventory Counts', permission: 'inventory:view' },
   { path: '/production', label: 'Production', permission: 'production:view' },
   { path: '/suppliers', label: 'Suppliers', permission: 'suppliers:view' },
   { path: '/purchase-orders', label: 'Purchase Orders', permission: 'purchase-orders:view' },

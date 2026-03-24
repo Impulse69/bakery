@@ -1,0 +1,348 @@
+import { useState, useEffect, useCallback } from 'react';
+import type { InventoryItem, StockAdjustment } from '@bakery/types';
+import { DataTable, Pagination, Button, Modal, Input, Select, StockBadge, Badge } from '@bakery/ui';
+import type { DataTableColumn, SelectOption } from '@bakery/ui';
+import { api } from '../lib/api';
+import { useToast } from '../components/Toast';
+import styles from './InventoryPage.module.css';
+
+const UNIT_OPTIONS: SelectOption[] = [
+  { value: 'kg', label: 'kg' },
+  { value: 'g', label: 'g' },
+  { value: 'l', label: 'l' },
+  { value: 'ml', label: 'ml' },
+  { value: 'unit', label: 'unit' },
+  { value: 'pack', label: 'pack' },
+];
+
+const columns: DataTableColumn<InventoryItem>[] = [
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'unit', label: 'Unit' },
+  { key: 'quantityOnHand', label: 'Stock', sortable: true },
+  {
+    key: 'lowStockThreshold',
+    label: 'Status',
+    render: (row) => (
+      <StockBadge currentStock={row.quantityOnHand} reorderLevel={row.lowStockThreshold} />
+    ),
+  },
+  { key: 'reorderQuantity', label: 'Reorder Qty' },
+];
+
+const EMPTY_FORM = {
+  name: '',
+  unit: '',
+  quantityOnHand: '',
+  lowStockThreshold: '',
+  reorderQuantity: '',
+};
+
+const ADJUSTMENT_TYPE_MAP: Record<string, { variant: 'success' | 'info' | 'danger' | 'warning'; label: string }> = {
+  purchase: { variant: 'success', label: 'Purchase' },
+  production: { variant: 'info', label: 'Production' },
+  waste: { variant: 'danger', label: 'Waste' },
+  correction: { variant: 'warning', label: 'Correction' },
+};
+
+export function InventoryPage() {
+  const { showToast } = useToast();
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+
+  // Add modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+
+  // Detail modal
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [detailTab, setDetailTab] = useState<'details' | 'history'>('details');
+  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // Adjust stock
+  const [showAdjustForm, setShowAdjustForm] = useState(false);
+  const [adjustQty, setAdjustQty] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [adjusting, setAdjusting] = useState(false);
+
+  const limit = 20;
+  const totalPages = Math.ceil(total / limit);
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<{ data: InventoryItem[]; total: number }>(
+        `/inventory?page=${page}&limit=${limit}`,
+      );
+      setItems(res.data);
+      setTotal(res.total);
+    } catch {
+      setItems([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  // Fetch history when tab switches
+  useEffect(() => {
+    if (detailTab === 'history' && selectedItem) {
+      setHistoryLoading(true);
+      api
+        .get<StockAdjustment[]>(`/reports/stock-adjustment?itemId=${selectedItem.id}`)
+        .then(setAdjustments)
+        .catch(() => setAdjustments([]))
+        .finally(() => setHistoryLoading(false));
+    }
+  }, [detailTab, selectedItem]);
+
+  const openAddModal = () => {
+    setForm(EMPTY_FORM);
+    setShowAddModal(true);
+  };
+
+  const handleAdd = async () => {
+    if (!form.name.trim() || !form.unit) {
+      showToast('Name and unit are required', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.post('/inventory', {
+        name: form.name,
+        unit: form.unit,
+        quantityOnHand: Number(form.quantityOnHand) || 0,
+        lowStockThreshold: Number(form.lowStockThreshold) || 0,
+        reorderQuantity: Number(form.reorderQuantity) || 0,
+      });
+      showToast('Item created', 'success');
+      setShowAddModal(false);
+      fetchItems();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to create item', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openDetail = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setDetailTab('details');
+    setShowAdjustForm(false);
+    setAdjustQty('');
+    setAdjustReason('');
+  };
+
+  const closeDetail = () => {
+    setSelectedItem(null);
+  };
+
+  const handleAdjust = async () => {
+    if (!selectedItem) return;
+    const qty = Number(adjustQty);
+    if (!qty || !adjustReason.trim()) {
+      showToast('Quantity and reason are required', 'error');
+      return;
+    }
+    setAdjusting(true);
+    try {
+      await api.post(`/inventory/${selectedItem.id}/adjust`, {
+        quantityChange: qty,
+        reason: adjustReason,
+      });
+      showToast('Stock adjusted', 'success');
+      setShowAdjustForm(false);
+      setAdjustQty('');
+      setAdjustReason('');
+      fetchItems();
+      // Refresh the selected item
+      const updated = await api.get<InventoryItem>(`/inventory/${selectedItem.id}`);
+      setSelectedItem(updated);
+    } catch (err: any) {
+      showToast(err.message || 'Failed to adjust stock', 'error');
+    } finally {
+      setAdjusting(false);
+    }
+  };
+
+  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((f) => ({ ...f, [field]: e.target.value }));
+  };
+
+  return (
+    <div>
+      <div className={styles.header}>
+        <h1 className={styles.heading}>Inventory</h1>
+        <Button onClick={openAddModal}>Add Item</Button>
+      </div>
+
+      <DataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        onRowClick={openDetail}
+        emptyMessage="No inventory items found"
+      />
+
+      {totalPages > 1 && (
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+      )}
+
+      {/* Add Modal */}
+      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Inventory Item" size="md">
+        <div className={styles.form}>
+          <Input label="Name" value={form.name} onChange={setField('name')} />
+          <Select
+            label="Unit"
+            options={UNIT_OPTIONS}
+            value={form.unit}
+            onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
+            placeholder="Select unit"
+          />
+          <Input label="Quantity on Hand" type="number" value={form.quantityOnHand} onChange={setField('quantityOnHand')} />
+          <Input label="Low Stock Threshold" type="number" value={form.lowStockThreshold} onChange={setField('lowStockThreshold')} />
+          <Input label="Reorder Quantity" type="number" value={form.reorderQuantity} onChange={setField('reorderQuantity')} />
+          <div className={styles.actions}>
+            <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button onClick={handleAdd} loading={saving}>Create</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={!!selectedItem}
+        onClose={closeDetail}
+        title={selectedItem?.name ?? 'Item'}
+        size="lg"
+      >
+        {selectedItem && (
+          <>
+            <div className={styles.tabs}>
+              <Button
+                variant={detailTab === 'details' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setDetailTab('details')}
+              >
+                Details
+              </Button>
+              <Button
+                variant={detailTab === 'history' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setDetailTab('history')}
+              >
+                Stock History
+              </Button>
+            </div>
+
+            {detailTab === 'details' && (
+              <>
+                <div className={styles.detailGrid}>
+                  <div>
+                    <div className={styles.detailLabel}>Unit</div>
+                    <div className={styles.detailValue}>{selectedItem.unit}</div>
+                  </div>
+                  <div>
+                    <div className={styles.detailLabel}>Current Stock</div>
+                    <div className={styles.detailValue}>{selectedItem.quantityOnHand}</div>
+                  </div>
+                  <div>
+                    <div className={styles.detailLabel}>Status</div>
+                    <div className={styles.detailValue}>
+                      <StockBadge
+                        currentStock={selectedItem.quantityOnHand}
+                        reorderLevel={selectedItem.lowStockThreshold}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className={styles.detailLabel}>Reorder Level</div>
+                    <div className={styles.detailValue}>{selectedItem.lowStockThreshold}</div>
+                  </div>
+                  <div>
+                    <div className={styles.detailLabel}>Reorder Qty</div>
+                    <div className={styles.detailValue}>{selectedItem.reorderQuantity}</div>
+                  </div>
+                </div>
+
+                {!showAdjustForm ? (
+                  <Button size="sm" onClick={() => setShowAdjustForm(true)}>
+                    Adjust Stock
+                  </Button>
+                ) : (
+                  <div className={styles.adjustForm}>
+                    <Input
+                      label="Quantity Change (+/-)"
+                      type="number"
+                      value={adjustQty}
+                      onChange={(e) => setAdjustQty(e.target.value)}
+                      placeholder="e.g. 10 or -5"
+                    />
+                    <Input
+                      label="Reason"
+                      value={adjustReason}
+                      onChange={(e) => setAdjustReason(e.target.value)}
+                      placeholder="Reason for adjustment"
+                    />
+                    <div className={styles.actions}>
+                      <Button variant="ghost" size="sm" onClick={() => setShowAdjustForm(false)}>
+                        Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleAdjust} loading={adjusting}>
+                        Submit Adjustment
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {detailTab === 'history' && (
+              <>
+                {historyLoading ? (
+                  <p>Loading history...</p>
+                ) : adjustments.length === 0 ? (
+                  <p>No stock adjustments found</p>
+                ) : (
+                  <table className={styles.historyTable}>
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adjustments.map((adj) => {
+                        const typeInfo = ADJUSTMENT_TYPE_MAP[adj.adjustmentType] ?? { variant: 'neutral' as const, label: adj.adjustmentType };
+                        return (
+                          <tr key={adj.id}>
+                            <td>{new Date(adj.createdAt).toLocaleString()}</td>
+                            <td>
+                              <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>
+                            </td>
+                            <td style={{ fontWeight: 600 }}>
+                              {adj.quantityChange > 0 ? '+' : ''}{adj.quantityChange}
+                            </td>
+                            <td>{adj.notes || '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </Modal>
+    </div>
+  );
+}

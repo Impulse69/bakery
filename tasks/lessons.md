@@ -17,3 +17,11 @@
 ## Architecture
 - Desktop and web share UI components and types; server shares only types and utils with frontends.
 - `@bakery/ui` depends on `@bakery/types` (for domain-specific components like StockBadge, OrderStatusBadge) but NOT on `@bakery/utils`.
+
+## Desktop Page Patterns
+- All list pages follow the same pattern: `useCallback` fetch → `useEffect` trigger → DataTable + Pagination + Modal.
+- Currency: store in pesewas, display via `formatCurrency(pesewas)` which divides by 100. Input fields show `value / 100`, submit with `Math.round(Number(v) * 100)`.
+- Status tabs: array of `{ label, value }` driving a `statusFilter` state + query param.
+- Detail modals: fetch full entity on row click (e.g., `GET /products/:id` for variants, `GET /customers/:id` for orders).
+- Dynamic form arrays (e.g., PO line items): state is an array of objects, `addLineItem` pushes empty, `removeLineItem` splices by index.
+- Server gaps: if a GET-by-ID endpoint is missing, add it to the server before building the page (as done for inventory-counts).
