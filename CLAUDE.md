@@ -92,6 +92,19 @@ Turborepo v2 config — uses `tasks` (not `pipeline`) in `turbo.json`.
 
 Admin, Cashier, Baker, Owner (web-only, read-only). Role-permission matrix in `bakery-management-system.md`.
 
+## Key Design Decisions
+
+- **PaymentMethod enum**: `cash, momo, card, credit` (Prisma schema updated from defaults)
+- **StockMovement → StockAdjustment**: Renamed in both Prisma schema and shared types (`@@map()` preserves DB table names)
+- **TaxRate / barcode**: Deferred — not implemented yet
+- **UI styling**: CSS Modules with `bui-` prefix design tokens in `packages/ui/src/styles/variables.css`
+- **UI consumption**: Source-level (`main: "src/index.ts"`), no build step — consumers bundle directly
+
 ## Current State
 
-Project is scaffolded — workspace wiring and Turbo pipeline are configured. Source code implementation has not started yet.
+- **packages/types**: Complete. 15 type modules (common, api, user, product, customer, inventory, recipe, production, order, supplier, expense, inventory-count, document, report, ws-events) all exported from `index.ts`.
+- **packages/ui**: Complete. 13 React components with CSS Modules (Badge, Button, Input, Select, Modal, Card, DataTable, Pagination, SearchInput, StatCard, FormSection, StockBadge, OrderStatusBadge). Source-level consumption, design tokens via CSS custom properties.
+- **packages/utils**: Minimal. `permissions.ts` (role-permission map) and `format.ts` (currency formatting).
+- **apps/server**: Substantially implemented. Full Prisma schema (22 models, 9 enums), 12 route files (auth, products, customers, inventory, sales-orders, recipes, production, suppliers, purchase-orders, expenses, inventory-counts, reports), middleware (auth/JWT, error handling, pagination, role-based access), Socket.io setup.
+- **apps/desktop**: Partially implemented. Electron main process, React Router shell, auth context, API/socket client libs. POS page fully built (product grid, cart, payment). Login, Dashboard, SalesOrders pages exist. 9 other sections are placeholders.
+- **apps/web**: Scaffolded only (package.json with stubs). No source files yet.
