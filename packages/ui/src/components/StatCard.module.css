@@ -1,0 +1,51 @@
+.card {
+  background: #fff;
+  border: 1px solid var(--bui-border-color);
+  border-radius: var(--bui-radius-lg);
+  padding: var(--bui-space-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--bui-space-md);
+}
+
+.icon {
+  color: var(--bui-text-secondary);
+  flex-shrink: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--bui-text-sm);
+  color: var(--bui-text-secondary);
+  margin: 0;
+}
+
+.valueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bui-space-sm);
+}
+
+.value {
+  font-size: var(--bui-text-xl);
+  font-weight: 700;
+  color: var(--bui-text-primary);
+  margin: 0;
+}
+
+.trend {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--bui-text-sm);
+  font-weight: 500;
+}
+
+.up { color: var(--bui-success); }
+.down { color: var(--bui-danger); }
+.neutral { color: var(--bui-text-secondary); }

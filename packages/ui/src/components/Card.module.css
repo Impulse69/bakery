@@ -1,0 +1,37 @@
+.card {
+  background: #fff;
+  border: 1px solid var(--bui-border-color);
+  border-radius: var(--bui-radius-lg);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--bui-space-md) var(--bui-space-lg);
+  border-bottom: 1px solid var(--bui-border-color);
+}
+
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.title {
+  font-size: var(--bui-text-base);
+  font-weight: 600;
+  color: var(--bui-text-primary);
+  margin: 0;
+}
+
+.subtitle {
+  font-size: var(--bui-text-sm);
+  color: var(--bui-text-secondary);
+  margin: 0;
+}
+
+.body {
+  padding: var(--bui-space-lg);
+}

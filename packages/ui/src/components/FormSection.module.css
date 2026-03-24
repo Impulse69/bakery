@@ -1,0 +1,21 @@
+.section {
+  border: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--bui-border-color);
+  padding-top: var(--bui-space-lg);
+}
+
+.legend {
+  font-size: var(--bui-text-base);
+  font-weight: 600;
+  color: var(--bui-text-primary);
+  padding: 0;
+  margin-bottom: var(--bui-space-md);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bui-space-md);
+}

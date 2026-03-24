@@ -1,0 +1,31 @@
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--bui-text-secondary);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  font-size: var(--bui-text-sm);
+  border: 1px solid var(--bui-border-color);
+  border-radius: var(--bui-radius-md);
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff;
+  color: var(--bui-text-primary);
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--bui-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}

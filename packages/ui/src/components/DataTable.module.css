@@ -1,0 +1,75 @@
+.wrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--bui-text-sm);
+}
+
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  color: var(--bui-text-secondary);
+  background-color: var(--bui-bg-neutral);
+  border-bottom: 1px solid var(--bui-border-color);
+  white-space: nowrap;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  color: var(--bui-text-primary);
+}
+
+.sortIcon {
+  display: inline-block;
+  margin-left: 0.25rem;
+  font-size: 0.65em;
+  vertical-align: middle;
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--bui-border-color);
+  color: var(--bui-text-primary);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background-color: var(--bui-bg-neutral);
+}
+
+.empty {
+  text-align: center;
+  padding: var(--bui-space-xl);
+  color: var(--bui-text-secondary);
+}
+
+.loading {
+  text-align: center;
+  padding: var(--bui-space-xl);
+  color: var(--bui-text-secondary);
+}
+
+.spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--bui-border-color);
+  border-top-color: var(--bui-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

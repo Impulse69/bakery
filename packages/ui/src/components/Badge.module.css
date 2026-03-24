@@ -1,0 +1,35 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  font-size: var(--bui-text-xs);
+  font-weight: 600;
+  line-height: 1.25rem;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+.success {
+  background-color: var(--bui-bg-success);
+  color: var(--bui-text-success);
+}
+
+.warning {
+  background-color: var(--bui-bg-warning);
+  color: var(--bui-text-warning);
+}
+
+.danger {
+  background-color: var(--bui-bg-danger);
+  color: var(--bui-text-danger);
+}
+
+.info {
+  background-color: var(--bui-bg-info);
+  color: var(--bui-text-info);
+}
+
+.neutral {
+  background-color: var(--bui-bg-neutral);
+  color: var(--bui-text-secondary);
+}
