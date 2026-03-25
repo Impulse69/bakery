@@ -4,6 +4,22 @@ import { SearchInput, Modal, Button } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import styles from './ProductGrid.module.css';
 
+import breadIcon from '../../assets/categories/bread.png';
+import pastryIcon from '../../assets/categories/pastry.png';
+import cakeIcon from '../../assets/categories/cake.png';
+import snackIcon from '../../assets/categories/snack.png';
+import drinkIcon from '../../assets/categories/drink.png';
+import otherIcon from '../../assets/categories/other.png';
+
+const CATEGORY_ICONS: Record<string, string> = {
+  Bread: breadIcon,
+  Pastry: pastryIcon,
+  Cake: cakeIcon,
+  Snack: snackIcon,
+  Drink: drinkIcon,
+  Other: otherIcon,
+};
+
 interface ProductGridProps {
   products: Product[];
   onAddToCart: (product: Product, variant?: ProductVariant) => void;
@@ -53,9 +69,18 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
             className={styles.card}
             onClick={() => handleClick(product)}
           >
-            <span className={styles.name}>{product.name}</span>
-            <span className={styles.category}>{product.category}</span>
-            <span className={styles.price}>{formatCurrency(product.price)}</span>
+            <div className={styles.iconWrapper}>
+              <img 
+                src={CATEGORY_ICONS[product.category] || otherIcon} 
+                alt={product.category} 
+                className={styles.categoryIcon}
+              />
+            </div>
+            <div className={styles.cardContent}>
+              <span className={styles.name}>{product.name}</span>
+              <span className={styles.category}>{product.category}</span>
+              <span className={styles.price}>{formatCurrency(product.price)}</span>
+            </div>
           </button>
         ))}
         {filtered.length === 0 && (

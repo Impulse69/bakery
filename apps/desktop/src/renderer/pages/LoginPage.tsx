@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Input, Button } from '@bakery/ui';
 import { useAuth } from '../store/AuthContext';
 import styles from './LoginPage.module.css';
+import logo from '../assets/logo.png';
+import background from '../assets/login-bg.png';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -30,8 +32,12 @@ export function LoginPage() {
   };
 
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.wrapper} style={{ backgroundImage: `url(${background})` }}>
+      <div className={styles.overlay} />
       <form className={styles.card} onSubmit={handleSubmit}>
+        <div className={styles.logoContainer}>
+          <img src={logo} alt="Bread Faculty" className={styles.logo} />
+        </div>
         <h1 className={styles.title}>Bread Faculty</h1>
         <p className={styles.subtitle}>Sign in to your account</p>
 

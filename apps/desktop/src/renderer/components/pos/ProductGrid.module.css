@@ -15,21 +15,48 @@
 
 .card {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 1rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
   background: #fff;
   border: 1px solid var(--bui-border-color);
   border-radius: var(--bui-radius-md);
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: all 0.2s ease;
   text-align: left;
   font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .card:hover {
   border-color: var(--bui-primary);
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+  transform: translateY(-2px);
+}
+
+.iconWrapper {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8fafc;
+  border-radius: var(--bui-radius-md);
+  padding: 0.25rem;
+}
+
+.categoryIcon {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.cardContent {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .name {
@@ -47,7 +74,7 @@
 .price {
   font-weight: 600;
   color: var(--bui-primary);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   font-size: var(--bui-text-sm);
 }
 
