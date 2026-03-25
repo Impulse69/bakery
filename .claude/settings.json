@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npx turbo:*)",
-      "Bash(npx prisma:*)",
-      "Bash(npm install:*)"
-    ]
-  }
-}

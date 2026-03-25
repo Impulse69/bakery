@@ -3,3 +3,9 @@ node_modules/
 dist/
 build/
 .env
+
+# Workspace-specific config & notes (Private)
+CLAUDE.md
+script.md
+tasks/
+.claude/
