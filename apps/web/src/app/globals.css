@@ -1,11 +1,21 @@
 @import "tailwindcss";
 
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
 :root {
-  --app-bg: #f9fafb;
-  --app-surface: #ffffff;
   --app-sidebar: #131b2e;
-  --app-sidebar-text: rgba(255,255,255,0.7);
-  --app-sidebar-active: #ffffff;
-  --app-primary: #131b2e;
   --app-accent: #e07b3c;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f5f6fa;
+  color: #131b2e;
+  -webkit-font-smoothing: antialiased;
 }
