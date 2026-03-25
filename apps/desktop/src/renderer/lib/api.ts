@@ -29,6 +29,9 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
+    if (res.status === 401) {
+      window.dispatchEvent(new CustomEvent('bakery:auth-expired'));
+    }
     throw new ApiError(res.status, body.error || res.statusText);
   }
 

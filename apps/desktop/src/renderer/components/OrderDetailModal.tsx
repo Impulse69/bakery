@@ -38,6 +38,12 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
   }, [orderId, showToast]);
 
   const handleStatusChange = async (status: string) => {
+    if (status === 'cancelled' && order && order.amountPaid > 0) {
+      const confirmed = window.confirm(
+        `This order has ${formatCurrency(order.amountPaid)} in payments recorded. Cancelling will not automatically refund the customer. Continue?`,
+      );
+      if (!confirmed) return;
+    }
     setActionLoading(true);
     try {
       await api.patch(`/sales-orders/${orderId}/status`, { status });

@@ -11,6 +11,16 @@ import snackIcon from '../../assets/categories/snack.png';
 import drinkIcon from '../../assets/categories/drink.png';
 import otherIcon from '../../assets/categories/other.png';
 
+import butterRollImg from '../../assets/products/butter_roll.png';
+import chickenPieImg from '../../assets/products/chicken_pie.png';
+import chocolateCakeImg from '../../assets/products/chocolate_cake.png';
+import cocaColaImg from '../../assets/products/coca_cola.png';
+import doughnutImg from '../../assets/products/doughnut.png';
+import meatPieImg from '../../assets/products/meat_pie.png';
+import redVelvetImg from '../../assets/products/red_velvet.png';
+import sausageRollImg from '../../assets/products/sausage_roll.png';
+import springWaterImg from '../../assets/products/spring_water.png';
+
 const CATEGORY_ICONS: Record<string, string> = {
   Bread: breadIcon,
   Pastry: pastryIcon,
@@ -18,6 +28,18 @@ const CATEGORY_ICONS: Record<string, string> = {
   Snack: snackIcon,
   Drink: drinkIcon,
   Other: otherIcon,
+};
+
+const PRODUCT_IMAGES: Record<string, string> = {
+  'Butter Roll (6 pack)': butterRollImg,
+  'Chicken Pie': chickenPieImg,
+  'Chocolate Cake': chocolateCakeImg,
+  'Coca-Cola 500ml': cocaColaImg,
+  'Doughnut (Sugared)': doughnutImg,
+  'Meat Pie': meatPieImg,
+  'Red Velvet Cake': redVelvetImg,
+  'Sausage Roll': sausageRollImg,
+  'Spring Water 500ml': springWaterImg,
 };
 
 interface ProductGridProps {
@@ -71,8 +93,8 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
           >
             <div className={styles.iconWrapper}>
               <img 
-                src={CATEGORY_ICONS[product.category] || otherIcon} 
-                alt={product.category} 
+                src={PRODUCT_IMAGES[product.name] || CATEGORY_ICONS[product.category] || otherIcon} 
+                alt={product.name} 
                 className={styles.categoryIcon}
               />
             </div>

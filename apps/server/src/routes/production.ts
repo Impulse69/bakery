@@ -81,6 +81,19 @@ router.post(
         },
       });
 
+      // Pre-check: verify sufficient stock for all ingredients
+      for (const ingredient of recipe.ingredients) {
+        const item = await tx.inventoryItem.findUnique({ where: { id: ingredient.inventoryItemId } });
+        if (!item) throw new AppError(404, `Inventory item not found: ${ingredient.inventoryItemId}`);
+        const required = ingredient.quantityRequired * multiplier;
+        if (item.quantityOnHand < required) {
+          throw new AppError(
+            400,
+            `Insufficient stock for ${item.name}: need ${required} ${ingredient.unit}, have ${item.quantityOnHand}`,
+          );
+        }
+      }
+
       // Deduct ingredients from inventory
       for (const ingredient of recipe.ingredients) {
         const deduction = ingredient.quantityRequired * multiplier;

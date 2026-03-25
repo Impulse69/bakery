@@ -65,6 +65,9 @@ router.post(
     const { supplierId, expectedDeliveryDate, notes, items } = createPOSchema.parse(req.body);
 
     const po = await prisma.$transaction(async (tx) => {
+      const supplier = await tx.supplier.findUnique({ where: { id: supplierId } });
+      if (!supplier) throw new AppError(404, 'Supplier not found');
+
       const computedItems = items.map((item) => ({
         ...item,
         lineTotal: Math.round(item.quantityOrdered * item.unitCost),

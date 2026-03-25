@@ -58,6 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     disconnectSocket();
   }, []);
 
+  useEffect(() => {
+    const handleAuthExpired = () => logout();
+    window.addEventListener('bakery:auth-expired', handleAuthExpired);
+    return () => window.removeEventListener('bakery:auth-expired', handleAuthExpired);
+  }, [logout]);
+
   return (
     <AuthContext.Provider value={{ user, token, loading, login, logout }}>
       {children}
