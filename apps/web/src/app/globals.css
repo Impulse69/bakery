@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+:root {
+  --app-bg: #f9fafb;
+  --app-surface: #ffffff;
+  --app-sidebar: #131b2e;
+  --app-sidebar-text: rgba(255,255,255,0.7);
+  --app-sidebar-active: #ffffff;
+  --app-primary: #131b2e;
+  --app-accent: #e07b3c;
+}
