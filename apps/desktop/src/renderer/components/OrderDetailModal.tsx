@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { SalesOrder, PaymentMethod } from '@bakery/types';
 import { Modal, Button, OrderStatusBadge, Input, Select } from '@bakery/ui';
+import { useAuth } from '../store/AuthContext';
+import { Receipt } from './pos/Receipt';
 import type { SelectOption } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
@@ -22,12 +24,16 @@ interface OrderDetailModalProps {
 
 export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModalProps) {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [order, setOrder] = useState<SalesOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [showReceipt, setShowReceipt] = useState(false);
+
+  const canPrint = user?.role === 'admin' || user?.role === 'cashier';
 
   useEffect(() => {
     api
@@ -199,6 +205,11 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
                 Add Payment
               </Button>
             )}
+            {canPrint && (
+              <Button variant="secondary" onClick={() => setShowReceipt(true)}>
+                🖨 Print Receipt
+              </Button>
+            )}
             {!['paid', 'cancelled'].includes(order.status) && (
               <Button
                 variant="danger"
@@ -209,6 +220,9 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
               </Button>
             )}
           </div>
+          {showReceipt && (
+            <Receipt order={order} onClose={() => setShowReceipt(false)} />
+          )}
         </div>
       )}
     </Modal>

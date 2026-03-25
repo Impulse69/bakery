@@ -5,6 +5,7 @@ import { useToast } from '../components/Toast';
 import { ProductGrid } from '../components/pos/ProductGrid';
 import { CartPanel } from '../components/pos/CartPanel';
 import { PaymentSection } from '../components/pos/PaymentSection';
+import { Receipt } from '../components/pos/Receipt';
 import styles from './POSPage.module.css';
 
 export interface CartItem {
@@ -25,8 +26,9 @@ export function POSPage() {
   const [customerId, setCustomerId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountTendered, setAmountTendered] = useState(0);
-  const [discount, setDiscount] = useState(0);
+  const [discountPct, setDiscountPct] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [lastCompletedOrder, setLastCompletedOrder] = useState<SalesOrder | null>(null);
 
   useEffect(() => {
     api
@@ -89,7 +91,8 @@ export function POSPage() {
 
   const subtotal = cart.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxTotal = cart.reduce((s, item) => s + item.tax * item.quantity, 0);
-  const grandTotal = Math.max(0, subtotal + taxTotal - discount);
+  const discountAmount = Math.round(subtotal * discountPct / 100);
+  const grandTotal = Math.max(0, subtotal + taxTotal - discountAmount);
 
   const createOrder = useCallback(async () => {
     const items = cart.map((item) => ({
@@ -97,7 +100,7 @@ export function POSPage() {
       variantId: item.variant?.id,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      discount: 0,
+      discount: Math.round(item.quantity * item.unitPrice * discountPct / 100),
       tax: item.tax,
     }));
 
@@ -108,7 +111,7 @@ export function POSPage() {
     });
 
     return order;
-  }, [cart, customerId]);
+  }, [cart, customerId, discountPct]);
 
   const handleCompleteSale = async () => {
     setLoading(true);
@@ -120,11 +123,15 @@ export function POSPage() {
         method: paymentMethod,
       });
 
+      setLastCompletedOrder(order);
       showToast(`Sale completed! Order ${order.orderNumber}`);
       setCart([]);
-      setDiscount(0);
+      setDiscountPct(0);
       setAmountTendered(0);
       setCustomerId('');
+      
+      // Auto-print receipt if needed or just let the button handle it
+      // handlePrintReceipt(); 
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Sale failed', 'error');
     } finally {
@@ -132,13 +139,22 @@ export function POSPage() {
     }
   };
 
+  const handlePrintReceipt = useCallback(() => {
+    if (!lastCompletedOrder) {
+      showToast('No recent order to print', 'error');
+      return;
+    }
+    // Receipt overlay is already visible after sale; trigger print directly
+    window.print();
+  }, [lastCompletedOrder, showToast]);
+
   const handleSaveDraft = async () => {
     setLoading(true);
     try {
       const order = await createOrder();
       showToast(`Draft saved! Order ${order.orderNumber}`);
       setCart([]);
-      setDiscount(0);
+      setDiscountPct(0);
       setCustomerId('');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to save draft', 'error');
@@ -158,8 +174,8 @@ export function POSPage() {
           items={cart}
           onUpdateQuantity={updateQuantity}
           onRemoveItem={removeItem}
-          discount={discount}
-          onDiscountChange={setDiscount}
+          discountPct={discountPct}
+          onDiscountPctChange={setDiscountPct}
         />
         <PaymentSection
           customers={customers}
@@ -172,10 +188,18 @@ export function POSPage() {
           grandTotal={grandTotal}
           onCompleteSale={handleCompleteSale}
           onSaveDraft={handleSaveDraft}
+          onPrintReceipt={handlePrintReceipt}
           loading={loading}
           cartEmpty={cart.length === 0}
+          hasLastOrder={!!lastCompletedOrder}
         />
       </div>
+      {lastCompletedOrder && (
+        <Receipt
+          order={lastCompletedOrder}
+          onClose={() => setLastCompletedOrder(null)}
+        />
+      )}
     </div>
   );
 }

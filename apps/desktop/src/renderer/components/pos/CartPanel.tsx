@@ -1,4 +1,3 @@
-import { Button, Input } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import type { CartItem } from '../../pages/POSPage';
 import styles from './CartPanel.module.css';
@@ -7,20 +6,24 @@ interface CartPanelProps {
   items: CartItem[];
   onUpdateQuantity: (index: number, delta: number) => void;
   onRemoveItem: (index: number) => void;
-  discount: number;
-  onDiscountChange: (value: number) => void;
+  discountPct: number;
+  onDiscountPctChange: (pct: number) => void;
 }
 
 export function CartPanel({
   items,
   onUpdateQuantity,
   onRemoveItem,
-  discount,
-  onDiscountChange,
+  discountPct,
+  onDiscountPctChange,
 }: CartPanelProps) {
   const subtotal = items.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxTotal = items.reduce((s, item) => s + item.tax * item.quantity, 0);
-  const grandTotal = subtotal + taxTotal - discount;
+  const discountAmount = Math.round(subtotal * discountPct / 100);
+  const grandTotal = Math.max(0, subtotal + taxTotal - discountAmount);
+
+  const incrementDiscount = () => onDiscountPctChange(Math.min(100, discountPct + 1));
+  const decrementDiscount = () => onDiscountPctChange(Math.max(0, discountPct - 1));
 
   return (
     <div className={styles.panel}>
@@ -43,29 +46,14 @@ export function CartPanel({
             </div>
             <div className={styles.itemActions}>
               <div className={styles.qtyControls}>
-                <button
-                  className={styles.qtyBtn}
-                  onClick={() => onUpdateQuantity(index, -1)}
-                >
-                  -
-                </button>
+                <button className={styles.qtyBtn} onClick={() => onUpdateQuantity(index, -1)}>−</button>
                 <span className={styles.qty}>{item.quantity}</span>
-                <button
-                  className={styles.qtyBtn}
-                  onClick={() => onUpdateQuantity(index, 1)}
-                >
-                  +
-                </button>
+                <button className={styles.qtyBtn} onClick={() => onUpdateQuantity(index, 1)}>+</button>
               </div>
               <span className={styles.lineTotal}>
                 {formatCurrency(item.quantity * item.unitPrice)}
               </span>
-              <button
-                className={styles.removeBtn}
-                onClick={() => onRemoveItem(index)}
-              >
-                x
-              </button>
+              <button className={styles.removeBtn} onClick={() => onRemoveItem(index)}>×</button>
             </div>
           </div>
         ))}
@@ -83,16 +71,31 @@ export function CartPanel({
           </div>
         )}
         <div className={styles.totalRow}>
-          <Input
-            label="Discount"
-            type="number"
-            value={discount / 100}
-            onChange={(e) => onDiscountChange(Math.round(Number(e.target.value) * 100))}
-          />
+          <span>Discount</span>
+          <div className={styles.discountControl}>
+            <button
+              className={styles.discountBtn}
+              onClick={decrementDiscount}
+              disabled={discountPct <= 0}
+            >
+              −
+            </button>
+            <span className={styles.discountValue}>{discountPct}%</span>
+            <button
+              className={styles.discountBtn}
+              onClick={incrementDiscount}
+              disabled={discountPct >= 100}
+            >
+              +
+            </button>
+            {discountAmount > 0 && (
+              <span className={styles.discountAmount}>−{formatCurrency(discountAmount)}</span>
+            )}
+          </div>
         </div>
         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
           <span>Total</span>
-          <span>{formatCurrency(Math.max(0, grandTotal))}</span>
+          <span>{formatCurrency(grandTotal)}</span>
         </div>
       </div>
     </div>
