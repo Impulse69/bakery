@@ -415,6 +415,11 @@
   text-decoration: none;
 }
 
+.tableWrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -481,5 +486,35 @@
   }
   .middleRow {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .pageTitle {
+    font-size: 1.25rem;
+  }
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.625rem;
+  }
+  .statCard {
+    padding: 0.875rem;
+  }
+  .statIcon {
+    width: 36px;
+    height: 36px;
+  }
+  .statValue,
+  .statValueDark {
+    font-size: 1.125rem;
+  }
+  .ordersCard {
+    padding: 0.875rem;
+  }
+  .tableWrapper .table {
+    min-width: 420px;
+  }
+  .chartCard {
+    padding: 0.875rem 1rem;
   }
 }

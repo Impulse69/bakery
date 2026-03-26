@@ -41,8 +41,9 @@ export function LoginPage() {
           </div>
 
           <div className={styles.textContent}>
-            <h1 className={styles.title}>Welcome to the Faculty</h1>
-            <p className={styles.subtitle}>Manage your artisanal systems and curated inventory.</p>
+            <div className={styles.facultyBadge}>Faculty Access</div>
+            <h1 className={styles.title}>Secure Sign-In</h1>
+            <p className={styles.subtitle}>Enter your credentials to manage the bakery ecosystem.</p>
           </div>
 
           {error && <div className={styles.error}>{error}</div>}
@@ -98,8 +99,6 @@ export function LoginPage() {
 
           <div className={styles.divider}>
             <div className={styles.dividerLine}></div>
-            <span className={styles.dividerText}>Artisanal Systems</span>
-            <div className={styles.dividerLine}></div>
           </div>
         </div>
       </section>
@@ -107,7 +106,8 @@ export function LoginPage() {
       {/* Right Side: Visual Narrative */}
       <section className={styles.rightSide}>
         <div className={styles.bgImageContainer}>
-          <img src={background} alt="Bread Faculty Boutique" className={styles.bgImage} />
+          <img src={background} alt="Bread Faculty" className={styles.bgImage} />
+          <div className={styles.glassOverlay}></div>
         </div>
       </section>
     </main>

@@ -3,6 +3,8 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .heading {
@@ -12,7 +14,8 @@
 
 .filters {
   display: flex;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-bottom: 1rem;
   align-items: flex-end;
 }
@@ -36,4 +39,44 @@
   padding: 1rem 0.75rem;
   font-size: var(--bui-text-lg);
   font-weight: 600;
+}
+
+.detailCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detailLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--bui-text-secondary);
+}
+
+.detailValue {
+  font-size: var(--bui-text-base);
+  font-weight: 500;
+  color: var(--bui-text-primary);
+}
+
+.detailActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--bui-border-color);
 }

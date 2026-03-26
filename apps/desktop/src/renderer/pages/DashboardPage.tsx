@@ -2,7 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
 import { getSocket } from '../lib/socket';
+import { useAuth } from '../store/AuthContext';
 import styles from './DashboardPage.module.css';
+
+function getDashboardTitle(role: string | undefined): string {
+  if (role === 'admin')   return 'Executive Dashboard';
+  if (role === 'cashier') return 'Sales Dashboard';
+  if (role === 'baker')   return 'Production Dashboard';
+  if (role === 'owner')   return 'Owner Dashboard';
+  return 'Dashboard';
+}
 
 interface DailyReport {
   date: string;
@@ -105,29 +114,46 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function DashboardPage() {
+  const { user } = useAuth();
   const [report, setReport] = useState<DailyReport | null>(null);
   const [weeklyData, setWeeklyData] = useState<WeeklyEntry[]>([]);
   const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [orders, setOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const role = user?.role;
+  const canSeeSales = role === 'admin' || role === 'owner' || role === 'cashier';
+  const canSeeExpenses = role === 'admin' || role === 'owner';
+
   const fetchData = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const [reportRes, weeklyRes, lowStockRes, ordersRes] = await Promise.allSettled([
-        api.get<DailyReport>(`/reports/daily?date=${today}`),
-        api.get<WeeklyEntry[]>(`/reports/weekly?endDate=${today}`),
-        api.get<LowStockItem[]>('/inventory/low-stock'),
-        api.get<{ data: RecentOrder[] }>('/sales-orders?limit=5&page=1'),
-      ]);
-      if (reportRes.status === 'fulfilled') setReport(reportRes.value);
-      if (weeklyRes.status === 'fulfilled') setWeeklyData(weeklyRes.value);
-      if (lowStockRes.status === 'fulfilled') setLowStock(lowStockRes.value);
-      if (ordersRes.status === 'fulfilled') setOrders(ordersRes.value.data ?? []);
+      const calls: Promise<unknown>[] = [api.get<LowStockItem[]>('/inventory/low-stock')];
+      if (canSeeSales) {
+        calls.push(
+          api.get<DailyReport>(`/reports/daily?date=${today}`),
+          api.get<WeeklyEntry[]>(`/reports/weekly?endDate=${today}`),
+          api.get<{ data: RecentOrder[] }>('/sales-orders?limit=5&page=1'),
+        );
+      } else if (canSeeExpenses) {
+        calls.push(api.get<DailyReport>(`/reports/daily?date=${today}`));
+      }
+      const results = await Promise.allSettled(calls);
+      const lowStockRes = results[0];
+      if (lowStockRes.status === 'fulfilled') setLowStock(lowStockRes.value as LowStockItem[]);
+      if (canSeeSales) {
+        const [, reportRes, weeklyRes, ordersRes] = results as PromiseSettledResult<unknown>[];
+        if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
+        if (weeklyRes?.status === 'fulfilled') setWeeklyData(weeklyRes.value as WeeklyEntry[]);
+        if (ordersRes?.status === 'fulfilled') setOrders((ordersRes.value as { data: RecentOrder[] }).data ?? []);
+      } else if (canSeeExpenses) {
+        const reportRes = results[1];
+        if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canSeeSales, canSeeExpenses]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -147,68 +173,76 @@ export function DashboardPage() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Executive Dashboard</h1>
+          <h1 className={styles.pageTitle}>{getDashboardTitle(user?.role)}</h1>
           <p className={styles.pageQuote}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 
       {/* Stat cards row */}
-      <div className={styles.statsRow}>
-        {/* Today's Sales */}
-        <div className={styles.statCard}>
-          <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconOrange}`}><IconSales /></div>
-          </div>
-          <p className={styles.statLabel}>Today's Sales</p>
-          <p className={styles.statValue}>{loading ? '—' : formatCurrency(revenue)}</p>
-        </div>
+      {(canSeeSales || canSeeExpenses) && (
+        <div className={styles.statsRow}>
+          {canSeeSales && (
+            <div className={styles.statCard}>
+              <div className={styles.statTop}>
+                <div className={`${styles.statIcon} ${styles.statIconOrange}`}><IconSales /></div>
+              </div>
+              <p className={styles.statLabel}>Today's Sales</p>
+              <p className={styles.statValue}>{loading ? '—' : formatCurrency(revenue)}</p>
+            </div>
+          )}
 
-        {/* Today's Orders */}
-        <div className={styles.statCard}>
-          <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconBlue}`}><IconOrders /></div>
-            {orderCount > 0 && (
-              <span className={styles.statBadge} style={{ color: '#2563eb' }}>+{orderCount} Today</span>
-            )}
-          </div>
-          <p className={styles.statLabel}>Today's Orders</p>
-          <p className={styles.statValue}>{loading ? '—' : orderCount}</p>
-        </div>
+          {canSeeSales && (
+            <div className={styles.statCard}>
+              <div className={styles.statTop}>
+                <div className={`${styles.statIcon} ${styles.statIconBlue}`}><IconOrders /></div>
+                {orderCount > 0 && (
+                  <span className={styles.statBadge} style={{ color: '#2563eb' }}>+{orderCount} Today</span>
+                )}
+              </div>
+              <p className={styles.statLabel}>Today's Orders</p>
+              <p className={styles.statValue}>{loading ? '—' : orderCount}</p>
+            </div>
+          )}
 
-        {/* Today's Expenses */}
-        <div className={styles.statCard}>
-          <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconRed}`}><IconExpenses /></div>
-          </div>
-          <p className={styles.statLabel}>Today's Expenses</p>
-          <p className={styles.statValue}>{loading ? '—' : formatCurrency(expenses)}</p>
-        </div>
+          {canSeeExpenses && (
+            <div className={styles.statCard}>
+              <div className={styles.statTop}>
+                <div className={`${styles.statIcon} ${styles.statIconRed}`}><IconExpenses /></div>
+              </div>
+              <p className={styles.statLabel}>Today's Expenses</p>
+              <p className={styles.statValue}>{loading ? '—' : formatCurrency(expenses)}</p>
+            </div>
+          )}
 
-        {/* Today's Profit — dark card */}
-        <div className={`${styles.statCard} ${styles.statCardDark}`}>
-          <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconDarkInner}`}><IconProfit /></div>
-          </div>
-          <p className={styles.statLabelDark}>Today's Profit</p>
-          <p className={styles.statValueDark}>{loading ? '—' : formatCurrency(profit)}</p>
+          {canSeeExpenses && (
+            <div className={`${styles.statCard} ${styles.statCardDark}`}>
+              <div className={styles.statTop}>
+                <div className={`${styles.statIcon} ${styles.statIconDarkInner}`}><IconProfit /></div>
+              </div>
+              <p className={styles.statLabelDark}>Today's Profit</p>
+              <p className={styles.statValueDark}>{loading ? '—' : formatCurrency(profit)}</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Middle row: chart + right panel */}
       <div className={styles.middleRow}>
         {/* Sales Performance chart */}
-        <div className={styles.chartCard}>
-          <div className={styles.chartHeader}>
-            <div>
-              <h2 className={styles.chartTitle}>Sales Performance</h2>
-              <p className={styles.chartSub}>Revenue trends for the past 7 days</p>
+        {canSeeSales && (
+          <div className={styles.chartCard}>
+            <div className={styles.chartHeader}>
+              <div>
+                <h2 className={styles.chartTitle}>Sales Performance</h2>
+                <p className={styles.chartSub}>Revenue trends for the past 7 days</p>
+              </div>
             </div>
+            {weeklyData.length > 0
+              ? <WeeklyBar weeklyData={weeklyData} />
+              : <div style={{ padding: '2rem', color: '#9ca3af', fontSize: '0.875rem' }}>No sales data yet</div>
+            }
           </div>
-          {weeklyData.length > 0
-            ? <WeeklyBar weeklyData={weeklyData} />
-            : <div style={{ padding: '2rem', color: '#9ca3af', fontSize: '0.875rem' }}>No sales data yet</div>
-          }
-        </div>
+        )}
 
         {/* Right panel — Inventory Alerts only */}
         <div className={styles.rightPanel}>
@@ -250,11 +284,12 @@ export function DashboardPage() {
       </div>
 
       {/* Recent Orders */}
-      <div className={styles.ordersCard}>
+      {canSeeSales && <div className={styles.ordersCard}>
         <div className={styles.ordersHeader}>
           <h2 className={styles.ordersTitle}>Recent Orders</h2>
           <a href="#/sales-orders" className={styles.ordersLink}>View All Records</a>
         </div>
+        <div className={styles.tableWrapper}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -292,7 +327,8 @@ export function DashboardPage() {
             )}
           </tbody>
         </table>
-      </div>
+        </div>
+      </div>}
     </div>
   );
 }

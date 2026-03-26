@@ -50,7 +50,7 @@ router.get(
 // POST /api/expenses
 router.post(
   '/',
-  requireRole('admin'),
+  requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
     const data = createExpenseSchema.parse(req.body);
 
@@ -73,6 +73,48 @@ router.post(
     });
 
     res.status(201).json(expense);
+  }),
+);
+
+const updateExpenseSchema = z.object({
+  category: z.enum(['utilities', 'wages', 'packaging', 'ingredients', 'maintenance', 'other']).optional(),
+  description: z.string().min(1).optional(),
+  amount: z.number().int().min(1).optional(),
+  paymentMethod: z.enum(['cash', 'momo', 'card', 'credit']).optional(),
+  expenseDate: z.string().datetime().optional(),
+  receiptUrl: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// PATCH /api/expenses/:id
+router.patch(
+  '/:id',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const data = updateExpenseSchema.parse(req.body);
+
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.expenseDate) {
+      updateData.expenseDate = new Date(data.expenseDate);
+    }
+
+    const expense = await prisma.expense.update({
+      where: { id },
+      data: updateData,
+    });
+    res.json(expense);
+  }),
+);
+
+// DELETE /api/expenses/:id
+router.delete(
+  '/:id',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    await prisma.expense.delete({ where: { id } });
+    res.json({ success: true });
   }),
 );
 

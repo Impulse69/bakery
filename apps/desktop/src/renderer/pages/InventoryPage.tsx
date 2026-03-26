@@ -4,6 +4,8 @@ import { DataTable, Pagination, Button, Modal, Input, Select, StockBadge, Badge 
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../store/AuthContext';
+import { can } from '@bakery/utils';
 import styles from './InventoryPage.module.css';
 
 const UNIT_OPTIONS: SelectOption[] = [
@@ -46,6 +48,8 @@ const ADJUSTMENT_TYPE_MAP: Record<string, { variant: 'success' | 'info' | 'dange
 
 export function InventoryPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role ? can(user.role, 'inventory:write') : false;
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -186,6 +190,19 @@ export function InventoryPage() {
     setSelectedItem(null);
   };
 
+  const handleDelete = async () => {
+    if (!selectedItem) return;
+    if (!window.confirm(`Delete "${selectedItem.name}"? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/inventory/${selectedItem.id}`);
+      showToast('Item deleted', 'success');
+      closeDetail();
+      fetchItems();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete item', 'error');
+    }
+  };
+
   const handleAdjust = async () => {
     if (!selectedItem) return;
     const qty = Number(adjustQty);
@@ -195,7 +212,7 @@ export function InventoryPage() {
     }
     setAdjusting(true);
     try {
-      await api.post(`/inventory/${selectedItem.id}/adjust`, {
+      const updated = await api.post<InventoryItem>(`/inventory/${selectedItem.id}/adjust`, {
         quantityChange: qty,
         reason: adjustReason,
       });
@@ -204,8 +221,6 @@ export function InventoryPage() {
       setAdjustQty('');
       setAdjustReason('');
       fetchItems();
-      // Refresh the selected item
-      const updated = await api.get<InventoryItem>(`/inventory/${selectedItem.id}`);
       setSelectedItem(updated);
     } catch (err: any) {
       showToast(err.message || 'Failed to adjust stock', 'error');
@@ -249,8 +264,12 @@ export function InventoryPage() {
             placeholder="Select unit"
           />
           <Input label="Quantity on Hand" type="number" value={form.quantityOnHand === '0' || form.quantityOnHand === '' ? '' : form.quantityOnHand} placeholder="0" onChange={setField('quantityOnHand')} />
-          <Input label="Low Stock Threshold" type="number" value={form.lowStockThreshold === '0' || form.lowStockThreshold === '' ? '' : form.lowStockThreshold} placeholder="0" onChange={setField('lowStockThreshold')} />
-          <Input label="Reorder Quantity" type="number" value={form.reorderQuantity === '0' || form.reorderQuantity === '' ? '' : form.reorderQuantity} placeholder="0" onChange={setField('reorderQuantity')} />
+          <div title="When stock falls to or below this number, the item is flagged as Low stock — a signal to reorder" style={{ cursor: 'help' }}>
+            <Input label="Low Stock Threshold" type="number" value={form.lowStockThreshold === '0' || form.lowStockThreshold === '' ? '' : form.lowStockThreshold} placeholder="0" onChange={setField('lowStockThreshold')} />
+          </div>
+          <div title="Suggested quantity to order when restocking this item (used as a guide for purchase orders)" style={{ cursor: 'help' }}>
+            <Input label="Reorder Quantity" type="number" value={form.reorderQuantity === '0' || form.reorderQuantity === '' ? '' : form.reorderQuantity} placeholder="0" onChange={setField('reorderQuantity')} />
+          </div>
           <div className={styles.actions}>
             <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
             <Button onClick={handleAdd} loading={saving}>Create</Button>
@@ -305,23 +324,44 @@ export function InventoryPage() {
                     </div>
                   </div>
                   <div>
-                    <div className={styles.detailLabel}>Reorder Level</div>
+                    <div className={styles.detailLabel} title="When stock falls to or below this number, the item is flagged as Low stock — a signal to reorder" style={{ cursor: 'help', borderBottom: '1px dotted #9ca3af', display: 'inline-block' }}>Reorder Level</div>
                     <div className={styles.detailValue}>{selectedItem.lowStockThreshold}</div>
                   </div>
                   <div>
-                    <div className={styles.detailLabel}>Reorder Qty</div>
+                    <div className={styles.detailLabel} title="Suggested quantity to order when restocking this item (used as a guide for purchase orders)" style={{ cursor: 'help', borderBottom: '1px dotted #9ca3af', display: 'inline-block' }}>Reorder Qty</div>
                     <div className={styles.detailValue}>{selectedItem.reorderQuantity}</div>
                   </div>
                 </div>
 
                 {!showAdjustForm && !showEditForm && (
                   <div className={styles.detailActions}>
-                    <Button size="sm" variant="ghost" onClick={() => openEditForm(selectedItem)}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => openEditForm(selectedItem)}
+                      className={styles.actionBtn}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
                       Edit Item
                     </Button>
-                    <Button size="sm" onClick={() => setShowAdjustForm(true)}>
+                    <Button
+                      size="sm"
+                      onClick={() => setShowAdjustForm(true)}
+                      className={styles.actionBtn}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M12 5v14M5 12h14"/></svg>
                       Adjust Stock
                     </Button>
+                    {isAdmin && (
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={handleDelete}
+                        className={styles.actionBtn}
+                      >
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 )}
 
@@ -334,8 +374,12 @@ export function InventoryPage() {
                       value={editForm.unit}
                       onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
                     />
-                    <Input label="Low Stock Threshold" type="number" value={editForm.lowStockThreshold} onChange={(e) => setEditForm((f) => ({ ...f, lowStockThreshold: e.target.value }))} />
-                    <Input label="Reorder Quantity" type="number" value={editForm.reorderQuantity} onChange={(e) => setEditForm((f) => ({ ...f, reorderQuantity: e.target.value }))} />
+                    <div title="When stock falls to or below this number, the item is flagged as Low stock — a signal to reorder" style={{ cursor: 'help' }}>
+                      <Input label="Low Stock Threshold" type="number" value={editForm.lowStockThreshold} onChange={(e) => setEditForm((f) => ({ ...f, lowStockThreshold: e.target.value }))} />
+                    </div>
+                    <div title="Suggested quantity to order when restocking this item (used as a guide for purchase orders)" style={{ cursor: 'help' }}>
+                      <Input label="Reorder Quantity" type="number" value={editForm.reorderQuantity} onChange={(e) => setEditForm((f) => ({ ...f, reorderQuantity: e.target.value }))} />
+                    </div>
                     <div className={styles.actions}>
                       <Button variant="ghost" size="sm" onClick={() => setShowEditForm(false)}>Cancel</Button>
                       <Button size="sm" onClick={handleEdit} loading={editing}>Save Changes</Button>
@@ -378,6 +422,7 @@ export function InventoryPage() {
                 ) : adjustments.length === 0 ? (
                   <p>No stock adjustments found</p>
                 ) : (
+                  <div className={styles.tableWrapper}>
                   <table className={styles.historyTable}>
                     <thead>
                       <tr>
@@ -405,6 +450,7 @@ export function InventoryPage() {
                       })}
                     </tbody>
                   </table>
+                  </div>
                 )}
               </>
             )}

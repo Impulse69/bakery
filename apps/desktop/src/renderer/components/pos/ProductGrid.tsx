@@ -20,6 +20,9 @@ import meatPieImg from '../../assets/products/meat_pie.png';
 import redVelvetImg from '../../assets/products/red_velvet.png';
 import sausageRollImg from '../../assets/products/sausage_roll.png';
 import springWaterImg from '../../assets/products/spring_water.png';
+import whiteBreadImg from '../../assets/products/white_bread.png';
+import wholeWheatBreadImg from '../../assets/products/whole_wheat_bread.png';
+import vanillaCupcakeImg from '../../assets/products/vanilla_cupcake.png';
 
 const CATEGORY_ICONS: Record<string, string> = {
   Bread: breadIcon,
@@ -40,6 +43,9 @@ const PRODUCT_IMAGES: Record<string, string> = {
   'Red Velvet Cake': redVelvetImg,
   'Sausage Roll': sausageRollImg,
   'Spring Water 500ml': springWaterImg,
+  'White Bread': whiteBreadImg,
+  'Whole Wheat Bread': wholeWheatBreadImg,
+  'Vanilla Cupcake': vanillaCupcakeImg,
 };
 
 interface ProductGridProps {

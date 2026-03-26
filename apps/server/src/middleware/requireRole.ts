@@ -9,9 +9,10 @@ export function requireRole(...roles: UserRole[]) {
       return;
     }
 
-    // Owner can only use GET — read-only access
-    if (user.role === 'owner' && req.method !== 'GET') {
-      res.status(403).json({ error: 'Owner has read-only access' });
+    // If 'owner' is NOT explicitly listed in allowed roles,
+    // then owner is read-only for this route.
+    if (user.role === 'owner' && !roles.includes('owner') && req.method !== 'GET') {
+      res.status(403).json({ error: 'Owner has read-only access to this resource' });
       return;
     }
 

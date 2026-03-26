@@ -19,7 +19,7 @@ const PERMISSIONS: Record<UserRole, string[]> = {
     'production:create',
     'products:view',
   ],
-  owner: ['*:view'],
+  owner: ['*:view', 'expenses:*'],
 };
 
 export function can(role: UserRole, action: string): boolean {

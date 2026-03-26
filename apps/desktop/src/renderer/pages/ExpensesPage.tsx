@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Expense, ExpenseCategory, PaymentMethod } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
-import { formatCurrency } from '@bakery/utils';
+import { formatCurrency, can } from '@bakery/utils';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../store/AuthContext';
 import styles from './ExpensesPage.module.css';
 
 const CATEGORY_OPTIONS: SelectOption[] = [
@@ -84,6 +85,10 @@ const EMPTY_FORM = {
 
 export function ExpensesPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const isAdmin = user?.role ? (user.role === 'admin' || user.role === 'owner') : false;
+  const canEdit = user?.role ? can(user.role, 'expenses:write') : false; // or expenses:*
+
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -91,6 +96,12 @@ export function ExpensesPage() {
   const [dateFrom, setDateFrom] = useState(getFirstOfMonth());
   const [dateTo, setDateTo] = useState(getToday());
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Detail/Edit Modal
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -134,22 +145,67 @@ export function ExpensesPage() {
     }
     setSaving(true);
     try {
-      await api.post('/expenses', {
-        category: form.category,
-        description: form.description,
-        amount,
-        paymentMethod: form.paymentMethod,
-        expenseDate: new Date(form.expenseDate).toISOString(),
-        receiptUrl: form.receiptUrl || undefined,
-        notes: form.notes || undefined,
-      });
-      showToast('Expense recorded', 'success');
+      if (isEditing && selectedExpense) {
+        await api.patch(`/expenses/${selectedExpense.id}`, {
+          category: form.category,
+          description: form.description,
+          amount,
+          paymentMethod: form.paymentMethod,
+          expenseDate: new Date(form.expenseDate).toISOString(),
+          receiptUrl: form.receiptUrl || undefined,
+          notes: form.notes || undefined,
+        });
+        showToast('Expense updated', 'success');
+      } else {
+        await api.post('/expenses', {
+          category: form.category,
+          description: form.description,
+          amount,
+          paymentMethod: form.paymentMethod,
+          expenseDate: new Date(form.expenseDate).toISOString(),
+          receiptUrl: form.receiptUrl || undefined,
+          notes: form.notes || undefined,
+        });
+        showToast('Expense recorded', 'success');
+      }
       setShowAddModal(false);
+      setShowDetailModal(false);
       fetchExpenses();
     } catch (err: any) {
-      showToast(err.message || 'Failed to record expense', 'error');
+      showToast(err.message || 'Failed to save expense', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const openDetail = (expense: Expense) => {
+    setSelectedExpense(expense);
+    setShowDetailModal(true);
+  };
+
+  const openEdit = (expense: Expense) => {
+    setIsEditing(true);
+    setForm({
+      category: expense.category,
+      description: expense.description,
+      amountDisplay: String(expense.amount / 100),
+      paymentMethod: expense.paymentMethod,
+      expenseDate: expense.expenseDate.split('T')[0],
+      receiptUrl: expense.receiptUrl || '',
+      notes: expense.notes || '',
+    });
+    setShowAddModal(true);
+  };
+
+  const handleDelete = async (expense: Expense) => {
+    if (!window.confirm('Are you sure you want to delete this expense?')) return;
+    try {
+      await api.delete(`/expenses/${expense.id}`);
+      showToast('Expense deleted', 'success');
+      setShowDetailModal(false);
+      fetchExpenses();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete expense', 'error');
     }
   };
 
@@ -189,6 +245,7 @@ export function ExpensesPage() {
         columns={columns}
         data={expenses}
         loading={loading}
+        onRowClick={openDetail}
         emptyMessage="No expenses found"
       />
 
@@ -202,7 +259,12 @@ export function ExpensesPage() {
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
 
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Expense" size="md">
+      <Modal 
+        isOpen={showAddModal} 
+        onClose={() => { setShowAddModal(false); setIsEditing(false); }} 
+        title={isEditing ? "Edit Expense" : "Add Expense"} 
+        size="md"
+      >
         <div className={styles.form}>
           <Select
             label="Category"
@@ -234,6 +296,58 @@ export function ExpensesPage() {
             <Button onClick={handleAdd} loading={saving}>Save</Button>
           </div>
         </div>
+      </Modal>
+      <Modal 
+        isOpen={showDetailModal} 
+        onClose={() => setShowDetailModal(false)} 
+        title={`Expense Details — ${selectedExpense?.expenseNumber}`}
+        size="md"
+      >
+        {selectedExpense && (
+          <div className={styles.detailCard}>
+            <div className={styles.detailGrid}>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Category</span>
+                <Badge variant={CATEGORY_VARIANT[selectedExpense.category] ?? 'neutral'}>
+                  {selectedExpense.category.toUpperCase()}
+                </Badge>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Amount</span>
+                <span className={styles.detailValue}>{formatCurrency(selectedExpense.amount)}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Date</span>
+                <span className={styles.detailValue}>{new Date(selectedExpense.expenseDate).toLocaleDateString()}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Payment Method</span>
+                <span className={styles.detailValue}>{selectedExpense.paymentMethod.toUpperCase()}</span>
+              </div>
+            </div>
+            
+            <div className={styles.detailItem} style={{ marginTop: '1rem' }}>
+              <span className={styles.detailLabel}>Description</span>
+              <p className={styles.detailValue}>{selectedExpense.description}</p>
+            </div>
+
+            {selectedExpense.notes && (
+              <div className={styles.detailItem} style={{ marginTop: '1rem' }}>
+                <span className={styles.detailLabel}>Notes</span>
+                <p className={styles.detailValue}>{selectedExpense.notes}</p>
+              </div>
+            )}
+
+            {isAdmin && (
+              <div className={styles.detailActions}>
+                <Button variant="danger" size="sm" onClick={() => handleDelete(selectedExpense)}>Delete</Button>
+                <div style={{ flexGrow: 1 }} />
+                <Button variant="ghost" size="sm" onClick={() => setShowDetailModal(false)}>Close</Button>
+                <Button variant="primary" size="sm" onClick={() => openEdit(selectedExpense)}>Edit</Button>
+              </div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );
