@@ -13,6 +13,19 @@ interface DailyReport {
   profit: number;
 }
 
+interface WeeklyEntry {
+  date: string;
+  revenue: number;
+}
+
+interface LowStockItem {
+  id: string;
+  name: string;
+  unit: string;
+  quantityOnHand: number;
+  lowStockThreshold: number;
+}
+
 interface RecentOrder {
   id: string;
   orderNumber: string;
@@ -22,31 +35,58 @@ interface RecentOrder {
   status: string;
 }
 
-// Bar chart — 7 day sparkline using static pattern scaled to today's revenue
-function WeeklyBar({ revenue }: { revenue: number }) {
+// ── Icons ──────────────────────────────────────
+const IconSales = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e07b3c' }}>
+    <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
+    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.56-7.43H5.12"/>
+  </svg>
+);
+
+const IconOrders = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#2563eb' }}>
+    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+    <path d="M7 2v20"/>
+    <path d="M21 15V2v0a5 5 0 0 0-5 5v8c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2z"/>
+    <path d="M18 17v5"/>
+  </svg>
+);
+
+const IconExpenses = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#dc2626' }}>
+    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+    <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+    <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+  </svg>
+);
+
+const IconProfit = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#fbd5b5' }}>
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+  </svg>
+);
+
+// Bar chart — real 7-day data
+function WeeklyBar({ weeklyData }: { weeklyData: WeeklyEntry[] }) {
   const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  const today = new Date().getDay(); // 0=Sun
-  const todayIdx = today === 0 ? 6 : today - 1;
-  // Generate plausible relative heights; today is the real value
-  const factors = [0.55, 0.72, 0.61, 0.68, 0.48, 1.0, 0.82];
-  const max = revenue > 0 ? revenue : 5000;
-  const values = factors.map((f, i) => (i === todayIdx ? revenue : max * f * (0.8 + Math.random() * 0.4)));
-  const peak = Math.max(...values);
+  const todayISO = new Date().toISOString().split('T')[0];
+  const peak = Math.max(...weeklyData.map((d) => d.revenue), 1);
 
   return (
     <div className={styles.chartWrap}>
       <div className={styles.chartBars}>
-        {values.map((v, i) => {
-          const height = peak > 0 ? Math.max(8, (v / peak) * 100) : 8;
-          const isToday = i === todayIdx;
-          const isSun = i === 6;
+        {weeklyData.map((entry, i) => {
+          const height = Math.max(4, (entry.revenue / peak) * 100);
+          const isToday = entry.date === todayISO;
+          const dayLabel = days[new Date(entry.date + 'T12:00:00').getDay() === 0 ? 6 : new Date(entry.date + 'T12:00:00').getDay() - 1];
+          const isSun = new Date(entry.date + 'T12:00:00').getDay() === 0;
           return (
             <div key={i} className={styles.barCol}>
               <div
                 className={`${styles.bar} ${isToday ? styles.barToday : ''} ${isSun ? styles.barSun : ''}`}
                 style={{ height: `${height}%` }}
               />
-              <span className={`${styles.barLabel} ${isSun ? styles.barLabelSun : ''}`}>{days[i]}</span>
+              <span className={`${styles.barLabel} ${isSun ? styles.barLabelSun : ''}`}>{dayLabel}</span>
             </div>
           );
         })}
@@ -66,18 +106,24 @@ const STATUS_COLORS: Record<string, string> = {
 
 export function DashboardPage() {
   const [report, setReport] = useState<DailyReport | null>(null);
+  const [weeklyData, setWeeklyData] = useState<WeeklyEntry[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [orders, setOrders] = useState<RecentOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const [reportData, ordersData] = await Promise.allSettled([
+      const [reportRes, weeklyRes, lowStockRes, ordersRes] = await Promise.allSettled([
         api.get<DailyReport>(`/reports/daily?date=${today}`),
-        api.get<{ data: RecentOrder[] }>(`/sales-orders?limit=5&page=1`),
+        api.get<WeeklyEntry[]>(`/reports/weekly?endDate=${today}`),
+        api.get<LowStockItem[]>('/inventory/low-stock'),
+        api.get<{ data: RecentOrder[] }>('/sales-orders?limit=5&page=1'),
       ]);
-      if (reportData.status === 'fulfilled') setReport(reportData.value);
-      if (ordersData.status === 'fulfilled') setOrders(ordersData.value.data ?? []);
+      if (reportRes.status === 'fulfilled') setReport(reportRes.value);
+      if (weeklyRes.status === 'fulfilled') setWeeklyData(weeklyRes.value);
+      if (lowStockRes.status === 'fulfilled') setLowStock(lowStockRes.value);
+      if (ordersRes.status === 'fulfilled') setOrders(ordersRes.value.data ?? []);
     } finally {
       setLoading(false);
     }
@@ -102,7 +148,7 @@ export function DashboardPage() {
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Executive Dashboard</h1>
-          <p className={styles.pageQuote}>"Artisanal precision in every data point."</p>
+          <p className={styles.pageQuote}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 
@@ -111,8 +157,7 @@ export function DashboardPage() {
         {/* Today's Sales */}
         <div className={styles.statCard}>
           <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconOrange}`}>🛒</div>
-            <span className={styles.statBadge} style={{ color: '#16a34a' }}>+12.5%</span>
+            <div className={`${styles.statIcon} ${styles.statIconOrange}`}><IconSales /></div>
           </div>
           <p className={styles.statLabel}>Today's Sales</p>
           <p className={styles.statValue}>{loading ? '—' : formatCurrency(revenue)}</p>
@@ -121,8 +166,10 @@ export function DashboardPage() {
         {/* Today's Orders */}
         <div className={styles.statCard}>
           <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconBlue}`}>✂</div>
-            <span className={styles.statBadge} style={{ color: '#2563eb' }}>+{orderCount > 0 ? orderCount : 8} New</span>
+            <div className={`${styles.statIcon} ${styles.statIconBlue}`}><IconOrders /></div>
+            {orderCount > 0 && (
+              <span className={styles.statBadge} style={{ color: '#2563eb' }}>+{orderCount} Today</span>
+            )}
           </div>
           <p className={styles.statLabel}>Today's Orders</p>
           <p className={styles.statValue}>{loading ? '—' : orderCount}</p>
@@ -131,8 +178,7 @@ export function DashboardPage() {
         {/* Today's Expenses */}
         <div className={styles.statCard}>
           <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconRed}`}>💳</div>
-            <span className={styles.statBadge} style={{ color: '#dc2626' }}>-3%</span>
+            <div className={`${styles.statIcon} ${styles.statIconRed}`}><IconExpenses /></div>
           </div>
           <p className={styles.statLabel}>Today's Expenses</p>
           <p className={styles.statValue}>{loading ? '—' : formatCurrency(expenses)}</p>
@@ -141,8 +187,7 @@ export function DashboardPage() {
         {/* Today's Profit — dark card */}
         <div className={`${styles.statCard} ${styles.statCardDark}`}>
           <div className={styles.statTop}>
-            <div className={`${styles.statIcon} ${styles.statIconDarkInner}`}>↗</div>
-            <span className={styles.statBadgeDark}>Target Hit</span>
+            <div className={`${styles.statIcon} ${styles.statIconDarkInner}`}><IconProfit /></div>
           </div>
           <p className={styles.statLabelDark}>Today's Profit</p>
           <p className={styles.statValueDark}>{loading ? '—' : formatCurrency(profit)}</p>
@@ -156,54 +201,50 @@ export function DashboardPage() {
           <div className={styles.chartHeader}>
             <div>
               <h2 className={styles.chartTitle}>Sales Performance</h2>
-              <p className={styles.chartSub}>Revenue trends for the current week</p>
-            </div>
-            <div className={styles.chartTabs}>
-              <button className={styles.chartTabActive}>Week</button>
-              <button className={styles.chartTab}>Month</button>
+              <p className={styles.chartSub}>Revenue trends for the past 7 days</p>
             </div>
           </div>
-          <WeeklyBar revenue={revenue} />
+          {weeklyData.length > 0
+            ? <WeeklyBar weeklyData={weeklyData} />
+            : <div style={{ padding: '2rem', color: '#9ca3af', fontSize: '0.875rem' }}>No sales data yet</div>
+          }
         </div>
 
-        {/* Right panel */}
+        {/* Right panel — Inventory Alerts only */}
         <div className={styles.rightPanel}>
-          {/* Inventory Alerts */}
           <div className={styles.alertsCard}>
             <div className={styles.alertsHeader}>
               <h3 className={styles.alertsTitle}>Inventory Alerts</h3>
-              <span className={styles.alertsBadge}>2 Low</span>
+              {lowStock.length > 0 && (
+                <span className={styles.alertsBadge}>{lowStock.length} Low</span>
+              )}
             </div>
-            <div className={styles.alertItem}>
-              <div className={styles.alertThumb} style={{ background: '#fef3c7' }}>🌾</div>
-              <div className={styles.alertMeta}>
-                <span className={styles.alertName}>Organic Flour (T55)</span>
-                <div className={styles.alertBar}>
-                  <div className={styles.alertBarFill} style={{ width: '12%', background: '#dc2626' }} />
-                </div>
-              </div>
-              <span className={styles.alertQty} style={{ color: '#dc2626' }}>Low</span>
-            </div>
-            <div className={styles.alertItem}>
-              <div className={styles.alertThumb} style={{ background: '#fef3c7' }}>🧈</div>
-              <div className={styles.alertMeta}>
-                <span className={styles.alertName}>Cultured Butter</span>
-                <div className={styles.alertBar}>
-                  <div className={styles.alertBarFill} style={{ width: '35%', background: '#d97706' }} />
-                </div>
-              </div>
-              <span className={styles.alertQty} style={{ color: '#d97706' }}>Low</span>
-            </div>
-          </div>
-
-          {/* Upcoming Event */}
-          <div className={styles.eventCard}>
-            <span className={styles.eventLabel}>UPCOMING EVENT</span>
-            <h3 className={styles.eventTitle}>Sunday Market Prep</h3>
-            <p className={styles.eventDesc}>
-              Special batch of 200 sourdough boules and 400 croissants needed by 05:00 AM.
-            </p>
-            <button className={styles.eventBtn}>View Production Plan</button>
+            {loading ? (
+              <p style={{ fontSize: '0.8125rem', color: '#9ca3af', padding: '0.5rem 0' }}>Loading...</p>
+            ) : lowStock.length === 0 ? (
+              <p style={{ fontSize: '0.8125rem', color: '#16a34a', padding: '0.5rem 0' }}>All items sufficiently stocked</p>
+            ) : (
+              lowStock.slice(0, 5).map((item) => {
+                const pct = item.lowStockThreshold > 0
+                  ? Math.min(100, Math.round((item.quantityOnHand / item.lowStockThreshold) * 100))
+                  : 0;
+                const color = pct <= 25 ? '#dc2626' : '#d97706';
+                return (
+                  <div key={item.id} className={styles.alertItem}>
+                    <div className={styles.alertMeta}>
+                      <span className={styles.alertName}>{item.name}</span>
+                      <div className={styles.alertBar}>
+                        <div className={styles.alertBarFill} style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+                        {item.quantityOnHand} / {item.lowStockThreshold} {item.unit}
+                      </span>
+                    </div>
+                    <span className={styles.alertQty} style={{ color }}>Low</span>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -222,14 +263,13 @@ export function DashboardPage() {
               <th className={styles.th}>DATE</th>
               <th className={styles.th}>TOTAL</th>
               <th className={styles.th}>STATUS</th>
-              <th className={styles.th}>ACTION</th>
             </tr>
           </thead>
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={6} className={styles.emptyRow}>
-                  {loading ? 'Loading...' : 'No orders today'}
+                <td colSpan={5} className={styles.emptyRow}>
+                  {loading ? 'Loading...' : 'No orders yet'}
                 </td>
               </tr>
             ) : (
@@ -246,9 +286,6 @@ export function DashboardPage() {
                     >
                       {o.status.charAt(0).toUpperCase() + o.status.slice(1)}
                     </span>
-                  </td>
-                  <td className={styles.td}>
-                    <button className={styles.actionBtn}>•••</button>
                   </td>
                 </tr>
               ))

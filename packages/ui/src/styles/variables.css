@@ -45,4 +45,8 @@
   --bui-text-base: 1rem;
   --bui-text-lg: 1.125rem;
   --bui-text-xl: 1.25rem;
+
+  /* Font Families */
+  --bui-font-family-display: 'Manrope', sans-serif;
+  --bui-font-family-sans: 'Inter', sans-serif;
 }

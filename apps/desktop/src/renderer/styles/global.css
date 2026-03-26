@@ -21,9 +21,4 @@ body {
   min-height: 100vh;
 }
 
-/* ── Print: hide entire app, show only receipt ── */
-@media print {
-  #root {
-    display: none !important;
-  }
-}
+/* Print is handled via Electron IPC — no browser print CSS needed */

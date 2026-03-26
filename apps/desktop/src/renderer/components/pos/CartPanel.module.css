@@ -159,15 +159,51 @@
   cursor: not-allowed;
 }
 
-.discountValue {
-  min-width: 2.5rem;
-  text-align: center;
-  font-weight: 600;
+.discountInputWrapper {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 4.5rem;
+}
+
+.discountInput {
+  width: 100%;
+  border: 1px solid var(--bui-border-color);
+  border-radius: var(--bui-radius-sm);
+  padding: 0.125rem 1.25rem 0.125rem 0.5rem;
   font-size: var(--bui-text-sm);
+  font-weight: 600;
+  text-align: right;
+  font-family: inherit;
+  outline: none;
+  background: #fdfdfd;
+  appearance: none;
+  -moz-appearance: textfield;
+}
+
+.discountInput::-webkit-outer-spin-button,
+.discountInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.discountInput:focus {
+  border-color: var(--bui-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.percentSymbol {
+  position: absolute;
+  right: 0.5rem;
+  font-size: var(--bui-text-xs);
+  color: var(--bui-text-secondary);
+  pointer-events: none;
+  font-weight: 600;
 }
 
 .discountAmount {
   font-size: var(--bui-text-xs);
-  color: var(--bui-success);
-  font-weight: 500;
+  color: #16a34a;
+  font-weight: 600;
+  margin-left: auto;
 }

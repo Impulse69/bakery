@@ -21,6 +21,11 @@
   color: var(--bui-text-primary);
 }
 
+.input::placeholder {
+  color: #c6c5d4;
+  opacity: 1;
+}
+
 .input:focus {
   border-color: var(--bui-primary);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);

@@ -22,8 +22,10 @@ interface PaymentSectionProps {
   grandTotal: number;
   onCompleteSale: () => void;
   onSaveDraft: () => void;
+  onPrintReceipt: () => void;
   loading: boolean;
   cartEmpty: boolean;
+  hasLastOrder: boolean;
 }
 
 export function PaymentSection({
@@ -37,8 +39,10 @@ export function PaymentSection({
   grandTotal,
   onCompleteSale,
   onSaveDraft,
+  onPrintReceipt,
   loading,
   cartEmpty,
+  hasLastOrder,
 }: PaymentSectionProps) {
   const customerOptions: SelectOption[] = [
     { value: '', label: 'Walk-in Customer' },
@@ -68,7 +72,8 @@ export function PaymentSection({
           <Input
             label="Amount Tendered"
             type="number"
-            value={amountTendered / 100}
+            value={amountTendered === 0 ? '' : amountTendered / 100}
+            placeholder="0"
             onChange={(e) =>
               onAmountTenderedChange(Math.round(Number(e.target.value) * 100))
             }
@@ -96,7 +101,11 @@ export function PaymentSection({
         >
           Save as Draft
         </Button>
-        <Button variant="ghost" disabled={cartEmpty}>
+        <Button
+          variant="ghost" 
+          disabled={!hasLastOrder} 
+          onClick={onPrintReceipt}
+        >
           Print Receipt
         </Button>
       </div>

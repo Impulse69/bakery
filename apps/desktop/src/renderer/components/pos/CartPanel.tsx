@@ -80,7 +80,25 @@ export function CartPanel({
             >
               −
             </button>
-            <span className={styles.discountValue}>{discountPct}%</span>
+            <div className={styles.discountInputWrapper}>
+              <input
+                type="number"
+                className={styles.discountInput}
+                value={discountPct === 0 ? '' : discountPct}
+                placeholder="0"
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val)) {
+                    onDiscountPctChange(Math.max(0, Math.min(100, val)));
+                  } else if (e.target.value === '') {
+                    onDiscountPctChange(0);
+                  }
+                }}
+                min="0"
+                max="100"
+              />
+              <span className={styles.percentSymbol}>%</span>
+            </div>
             <button
               className={styles.discountBtn}
               onClick={incrementDiscount}

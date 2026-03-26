@@ -62,6 +62,11 @@ export function InventoryPage() {
   const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Edit item
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [editing, setEditing] = useState(false);
+
   // Adjust stock
   const [showAdjustForm, setShowAdjustForm] = useState(false);
   const [adjustQty, setAdjustQty] = useState('');
@@ -135,8 +140,46 @@ export function InventoryPage() {
     setSelectedItem(item);
     setDetailTab('details');
     setShowAdjustForm(false);
+    setShowEditForm(false);
     setAdjustQty('');
     setAdjustReason('');
+  };
+
+  const openEditForm = (item: InventoryItem) => {
+    setEditForm({
+      name: item.name,
+      unit: item.unit,
+      quantityOnHand: String(item.quantityOnHand),
+      lowStockThreshold: String(item.lowStockThreshold),
+      reorderQuantity: String(item.reorderQuantity),
+    });
+    setShowEditForm(true);
+    setShowAdjustForm(false);
+  };
+
+  const handleEdit = async () => {
+    if (!selectedItem) return;
+    if (!editForm.name.trim() || !editForm.unit) {
+      showToast('Name and unit are required', 'error');
+      return;
+    }
+    setEditing(true);
+    try {
+      const updated = await api.patch<InventoryItem>(`/inventory/${selectedItem.id}`, {
+        name: editForm.name.trim(),
+        unit: editForm.unit,
+        lowStockThreshold: Number(editForm.lowStockThreshold) || 0,
+        reorderQuantity: Number(editForm.reorderQuantity) || 0,
+      });
+      showToast('Item updated', 'success');
+      setSelectedItem(updated);
+      setShowEditForm(false);
+      fetchItems();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update item', 'error');
+    } finally {
+      setEditing(false);
+    }
   };
 
   const closeDetail = () => {
@@ -205,9 +248,9 @@ export function InventoryPage() {
             onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
             placeholder="Select unit"
           />
-          <Input label="Quantity on Hand" type="number" value={form.quantityOnHand} onChange={setField('quantityOnHand')} />
-          <Input label="Low Stock Threshold" type="number" value={form.lowStockThreshold} onChange={setField('lowStockThreshold')} />
-          <Input label="Reorder Quantity" type="number" value={form.reorderQuantity} onChange={setField('reorderQuantity')} />
+          <Input label="Quantity on Hand" type="number" value={form.quantityOnHand === '0' || form.quantityOnHand === '' ? '' : form.quantityOnHand} placeholder="0" onChange={setField('quantityOnHand')} />
+          <Input label="Low Stock Threshold" type="number" value={form.lowStockThreshold === '0' || form.lowStockThreshold === '' ? '' : form.lowStockThreshold} placeholder="0" onChange={setField('lowStockThreshold')} />
+          <Input label="Reorder Quantity" type="number" value={form.reorderQuantity === '0' || form.reorderQuantity === '' ? '' : form.reorderQuantity} placeholder="0" onChange={setField('reorderQuantity')} />
           <div className={styles.actions}>
             <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
             <Button onClick={handleAdd} loading={saving}>Create</Button>
@@ -271,16 +314,41 @@ export function InventoryPage() {
                   </div>
                 </div>
 
-                {!showAdjustForm ? (
-                  <Button size="sm" onClick={() => setShowAdjustForm(true)}>
-                    Adjust Stock
-                  </Button>
-                ) : (
+                {!showAdjustForm && !showEditForm && (
+                  <div className={styles.detailActions}>
+                    <Button size="sm" variant="ghost" onClick={() => openEditForm(selectedItem)}>
+                      Edit Item
+                    </Button>
+                    <Button size="sm" onClick={() => setShowAdjustForm(true)}>
+                      Adjust Stock
+                    </Button>
+                  </div>
+                )}
+
+                {showEditForm && (
+                  <div className={styles.adjustForm}>
+                    <Input label="Name" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
+                    <Select
+                      label="Unit"
+                      options={UNIT_OPTIONS}
+                      value={editForm.unit}
+                      onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
+                    />
+                    <Input label="Low Stock Threshold" type="number" value={editForm.lowStockThreshold} onChange={(e) => setEditForm((f) => ({ ...f, lowStockThreshold: e.target.value }))} />
+                    <Input label="Reorder Quantity" type="number" value={editForm.reorderQuantity} onChange={(e) => setEditForm((f) => ({ ...f, reorderQuantity: e.target.value }))} />
+                    <div className={styles.actions}>
+                      <Button variant="ghost" size="sm" onClick={() => setShowEditForm(false)}>Cancel</Button>
+                      <Button size="sm" onClick={handleEdit} loading={editing}>Save Changes</Button>
+                    </div>
+                  </div>
+                )}
+
+                {showAdjustForm && (
                   <div className={styles.adjustForm}>
                     <Input
                       label="Quantity Change (+/-)"
                       type="number"
-                      value={adjustQty}
+                      value={adjustQty === '0' || adjustQty === '' ? '' : adjustQty}
                       onChange={(e) => setAdjustQty(e.target.value)}
                       placeholder="e.g. 10 or -5"
                     />

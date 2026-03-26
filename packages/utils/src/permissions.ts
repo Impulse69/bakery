@@ -8,6 +8,7 @@ const PERMISSIONS: Record<UserRole, string[]> = {
     'sales:create',
     'customers:view',
     'customers:create',
+    'customers:delete',
     'inventory:view',
     'products:view',
   ],
