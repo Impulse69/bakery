@@ -28,19 +28,16 @@ const IconChart   = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const IconSettings = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.72v.18a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>;
 
 const MENU_ITEMS: MenuItem[] = [
-  { path: '/',                 label: 'Dashboard',         permission: 'dashboard:view',       icon: <IconLayout /> },
-  { path: '/pos',              label: 'POS / New Sale',    permission: 'sales:create',         icon: <IconPOS /> },
-  { path: '/sales-orders',     label: 'Sales Orders',      permission: 'sales:view',           icon: <IconOrders /> },
-  { path: '/products',         label: 'Products',          permission: 'products:view',        icon: <IconProducts /> },
-  { path: '/inventory',        label: 'Inventory',         permission: 'inventory:view',       icon: <IconBox /> },
-  { path: '/inventory-counts', label: 'Inventory Counts',  permission: 'inventory:view',       icon: <IconCounts /> },
-  { path: '/production',       label: 'Production',        permission: 'production:view',      icon: <IconFactory /> },
-  { path: '/suppliers',        label: 'Suppliers',         permission: 'suppliers:view',       icon: <IconTruck /> },
-  { path: '/purchase-orders',  label: 'Purchase Orders',   permission: 'purchase-orders:view', icon: <IconCart /> },
-  { path: '/expenses',         label: 'Expenses',          permission: 'expenses:view',        icon: <IconMoney /> },
-  { path: '/customers',        label: 'Customers',         permission: 'customers:view',       icon: <IconUsers /> },
-  { path: '/reports',          label: 'Reports',           permission: 'reports:view',         icon: <IconChart /> },
-  { path: '/settings',         label: 'Settings',          permission: 'settings:view',        icon: <IconSettings /> },
+  { path: '/sales-orders', label: 'Sales',            permission: 'sales:view',     icon: <IconOrders /> },
+  { path: '/customers',    label: 'Customers',        permission: 'customers:view', icon: <IconUsers /> },
+  { path: '/products',     label: 'Products',         permission: 'products:view',  icon: <IconProducts /> },
+  { path: '/inventory',    label: 'Stock',            permission: 'inventory:view', icon: <IconBox /> },
+  { path: '/production',   label: 'Online Catalog',   permission: 'production:view', icon: <IconFactory /> },
+  { path: '/expenses',     label: 'Accounts Payable', permission: 'expenses:view',  icon: <IconMoney /> },
+  { path: '/pos',          label: 'Register',         permission: 'sales:create',   icon: <IconPOS /> },
+  { path: '/reports',      label: 'Statistics',       permission: 'reports:view',   icon: <IconChart /> },
+  { path: '/settings',     label: 'Help Center',      permission: 'settings:view',  icon: <IconSettings /> },
+  { path: '/',             label: 'App',              permission: 'dashboard:view', icon: <IconLayout /> },
 ];
 
 interface SidebarProps {
