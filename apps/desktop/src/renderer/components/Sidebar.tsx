@@ -71,7 +71,7 @@ export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
         >
           <IconHamburger />
         </button>
-        <img src={logo} alt="Bread Faculty" className={styles.brandLogo} />
+        {!collapsed && <img src={logo} alt="Bread Faculty" className={styles.brandLogo} />}
         <div className={`${styles.brandText} ${collapsed ? styles.hiddenText : ''}`}>
           <span className={styles.brandName}>Bread Faculty</span>
           <span className={styles.brandSub}>PREMIUM BAKERY MANAGEMENT</span>
