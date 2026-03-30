@@ -5,6 +5,7 @@ import { getParam } from '../lib/params.js';
 import { getIO } from '../lib/socket.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { checkLowStockAndAlert } from '../services/alertService.js';
 
 const router = Router();
 
@@ -103,6 +104,10 @@ router.post(
     });
 
     getIO().emit('stock:updated', { itemId, quantityOnHand: result.quantityOnHand });
+    
+    // Check for low stock and send SMS alert asynchronously
+    checkLowStockAndAlert(itemId).catch(err => console.error('Low stock alert error:', err));
+
     res.json(result);
   }),
 );
