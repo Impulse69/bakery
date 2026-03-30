@@ -42,18 +42,37 @@ const MENU_ITEMS: MenuItem[] = [
 
 interface SidebarProps {
   role: UserRole;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function Sidebar({ role }: SidebarProps) {
+const IconHamburger = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+    <line x1="3" y1="6" x2="21" y2="6" />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
+export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
   const { user } = useAuth();
   const visibleItems = MENU_ITEMS.filter((item) => can(role, item.permission));
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
       {/* Brand */}
       <div className={styles.brand}>
+        <button
+          type="button"
+          className={styles.collapseBtn}
+          onClick={onToggleCollapse}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <IconHamburger />
+        </button>
         <img src={logo} alt="Bread Faculty" className={styles.brandLogo} />
-        <div className={styles.brandText}>
+        <div className={`${styles.brandText} ${collapsed ? styles.hiddenText : ''}`}>
           <span className={styles.brandName}>Bread Faculty</span>
           <span className={styles.brandSub}>PREMIUM BAKERY MANAGEMENT</span>
         </div>
@@ -66,12 +85,14 @@ export function Sidebar({ role }: SidebarProps) {
             key={item.path}
             to={item.path}
             end={item.path === '/'}
+            title={collapsed ? item.label : undefined}
+            aria-label={collapsed ? item.label : undefined}
             className={({ isActive }) =>
               `${styles.link} ${isActive ? styles.active : ''}`
             }
           >
             <span className={styles.icon}>{item.icon}</span>
-            <span className={styles.label}>{item.label}</span>
+            <span className={`${styles.label} ${collapsed ? styles.hiddenText : ''}`}>{item.label}</span>
           </NavLink>
         ))}
       </nav>
@@ -82,7 +103,7 @@ export function Sidebar({ role }: SidebarProps) {
           <div className={styles.userAvatarWrap}>
             <img src={logo} alt={user.name} className={styles.userAvatar} />
           </div>
-          <div className={styles.userMeta}>
+          <div className={`${styles.userMeta} ${collapsed ? styles.hiddenText : ''}`}>
             <span className={styles.userName}>{user.name}</span>
             <span className={styles.userPlan}>
               {user.role === 'admin' ? 'Premium Plan' : `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`}

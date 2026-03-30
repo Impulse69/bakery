@@ -5,15 +5,6 @@ import { Sidebar } from './Sidebar';
 import styles from './AppLayout.module.css';
 import logo from '../assets/logo.png';
 
-const IconMenu = ({ collapsed }: { collapsed: boolean }) => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    {collapsed
-      ? <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>
-      : <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>
-    }
-  </svg>
-);
-
 export function AppLayout() {
   const { user, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -27,18 +18,14 @@ export function AppLayout() {
 
   return (
     <div className={styles.layout}>
-      <Sidebar role={user.role} collapsed={sidebarCollapsed} />
+      <Sidebar
+        role={user.role}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+      />
       <div className={styles.main}>
         {/* Topbar */}
         <header className={styles.topbar}>
-          <button
-            className={styles.menuToggle}
-            onClick={() => setSidebarCollapsed((c) => !c)}
-            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <IconMenu collapsed={sidebarCollapsed} />
-          </button>
-
           {/* Right side */}
           <div className={styles.topbarRight}>
             <button className={styles.iconBtn} title="Notifications">
