@@ -6,10 +6,10 @@ import { useAuth } from '../store/AuthContext';
 import styles from './DashboardPage.module.css';
 
 function getDashboardTitle(role: string | undefined): string {
-  if (role === 'admin')   return 'Executive Dashboard';
+  if (role === 'admin') return 'Executive Dashboard';
   if (role === 'cashier') return 'Sales Dashboard';
-  if (role === 'baker')   return 'Production Dashboard';
-  if (role === 'owner')   return 'Owner Dashboard';
+  if (role === 'baker') return 'Production Dashboard';
+  if (role === 'owner') return 'Owner Dashboard';
   return 'Dashboard';
 }
 
@@ -47,33 +47,39 @@ interface RecentOrder {
 // ── Icons ──────────────────────────────────────
 const IconSales = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e07b3c' }}>
-    <circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/>
-    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.56-7.43H5.12"/>
+    <circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" />
+    <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.56-7.43H5.12" />
   </svg>
 );
 
 const IconOrders = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#2563eb' }}>
-    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
-    <path d="M7 2v20"/>
-    <path d="M21 15V2v0a5 5 0 0 0-5 5v8c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2z"/>
-    <path d="M18 17v5"/>
+    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+    <path d="M7 2v20" />
+    <path d="M21 15V2v0a5 5 0 0 0-5 5v8c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2z" />
+    <path d="M18 17v5" />
   </svg>
 );
 
 const IconExpenses = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#dc2626' }}>
-    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
-    <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
-    <path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/>
+    <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+    <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
+    <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
   </svg>
 );
 
+<<<<<<< HEAD
 const IconCashIn = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#16a34a' }}>
     <rect x="2" y="6" width="20" height="12" rx="2"/>
     <circle cx="12" cy="12" r="2"/>
     <path d="M6 12h.01M18 12h.01"/>
+=======
+const IconProfit = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#fbd5b5' }}>
+    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+>>>>>>> beta-build
   </svg>
 );
 
@@ -292,43 +298,43 @@ export function DashboardPage() {
           <a href="#/sales-orders" className={styles.ordersLink}>View All Records</a>
         </div>
         <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.th}>ORDER ID</th>
-              <th className={styles.th}>CUSTOMER</th>
-              <th className={styles.th}>DATE</th>
-              <th className={styles.th}>TOTAL</th>
-              <th className={styles.th}>STATUS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.length === 0 ? (
+          <table className={styles.table}>
+            <thead>
               <tr>
-                <td colSpan={5} className={styles.emptyRow}>
-                  {loading ? 'Loading...' : 'No orders yet'}
-                </td>
+                <th className={styles.th}>ORDER ID</th>
+                <th className={styles.th}>CUSTOMER</th>
+                <th className={styles.th}>DATE</th>
+                <th className={styles.th}>TOTAL</th>
+                <th className={styles.th}>STATUS</th>
               </tr>
-            ) : (
-              orders.map((o) => (
-                <tr key={o.id} className={styles.tr}>
-                  <td className={styles.td}>{o.orderNumber}</td>
-                  <td className={styles.td}>{o.customer?.name ?? 'Walk-in'}</td>
-                  <td className={styles.td}>{new Date(o.createdAt).toLocaleDateString()}</td>
-                  <td className={styles.td}>{formatCurrency(o.total)}</td>
-                  <td className={styles.td}>
-                    <span
-                      className={styles.statusPill}
-                      style={{ color: STATUS_COLORS[o.status] ?? '#6b7280', background: `${STATUS_COLORS[o.status] ?? '#6b7280'}18` }}
-                    >
-                      {o.status.charAt(0).toUpperCase() + o.status.slice(1)}
-                    </span>
+            </thead>
+            <tbody>
+              {orders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className={styles.emptyRow}>
+                    {loading ? 'Loading...' : 'No orders yet'}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                orders.map((o) => (
+                  <tr key={o.id} className={styles.tr}>
+                    <td className={styles.td}>{o.orderNumber}</td>
+                    <td className={styles.td}>{o.customer?.name ?? 'Walk-in'}</td>
+                    <td className={styles.td}>{new Date(o.createdAt).toLocaleDateString()}</td>
+                    <td className={styles.td}>{formatCurrency(o.total)}</td>
+                    <td className={styles.td}>
+                      <span
+                        className={styles.statusPill}
+                        style={{ color: STATUS_COLORS[o.status] ?? '#6b7280', background: `${STATUS_COLORS[o.status] ?? '#6b7280'}18` }}
+                      >
+                        {o.status.charAt(0).toUpperCase() + o.status.slice(1)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>}
     </div>

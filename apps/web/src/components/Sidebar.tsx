@@ -24,8 +24,8 @@ export function Sidebar() {
           B
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-sm font-bold text-white tracking-tight truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            BREAD FACULTY
+          <span className="text-[0.8125rem] font-bold text-white leading-tight truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            Bread Faculty
           </span>
           <span className="text-[0.6rem] font-bold tracking-[0.1em] text-white/30 uppercase mt-0.5">
             Enterprise ERP

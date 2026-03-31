@@ -46,10 +46,10 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
     }
     setActionLoading(true);
     try {
-      await api.patch(`/sales-orders/${orderId}/status`, { status });
+      const updatedOrder = await api.patch<SalesOrder>(`/sales-orders/${orderId}/status`, { status });
+      setOrder(updatedOrder);
       showToast(`Order ${status}`);
       onUpdate();
-      onClose();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Action failed', 'error');
     } finally {
@@ -61,13 +61,14 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
     if (paymentAmount <= 0) return;
     setActionLoading(true);
     try {
-      await api.post(`/sales-orders/${orderId}/payments`, {
+      const result = await api.post<{ payment: any, order: SalesOrder }>(`/sales-orders/${orderId}/payments`, {
         amount: paymentAmount,
         method: paymentMethod,
       });
+      setOrder(result.order);
       showToast('Payment recorded');
       onUpdate();
-      onClose();
+      setShowPayment(false);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Payment failed', 'error');
     } finally {
@@ -195,7 +196,7 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
             )}
             {canPrint && (
               <Button variant="secondary" onClick={() => setShowReceipt(true)}>
-                🖨 Print Receipt
+                🖨 {['invoiced', 'paid'].includes(order.status) ? 'Print Invoice' : 'Print Receipt'}
               </Button>
             )}
             {!['paid', 'cancelled'].includes(order.status) && (
@@ -209,7 +210,11 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
             )}
           </div>
           {showReceipt && (
-            <Receipt order={order} onClose={() => setShowReceipt(false)} />
+            <Receipt
+              order={order}
+              onClose={() => setShowReceipt(false)}
+              type={['invoiced', 'paid'].includes(order.status) ? 'invoice' : 'receipt'}
+            />
           )}
         </div>
       )}

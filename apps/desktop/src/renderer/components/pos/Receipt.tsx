@@ -5,9 +5,10 @@ import styles from './Receipt.module.css';
 interface ReceiptProps {
   order: SalesOrder;
   onClose?: () => void;
+  type?: 'receipt' | 'invoice';
 }
 
-export function Receipt({ order, onClose }: ReceiptProps) {
+export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
   const dateStr = order.completedAt
     ? new Date(order.completedAt).toLocaleString()
     : new Date(order.createdAt).toLocaleString();
@@ -25,28 +26,28 @@ export function Receipt({ order, onClose }: ReceiptProps) {
               <button className={styles.closeBtn} onClick={onClose}>✕ Close</button>
             )}
           </div>
-          <ReceiptContent order={order} dateStr={dateStr} />
+          <ReceiptContent order={order} dateStr={dateStr} type={type} />
         </div>
       </div>
 
       {/* Print target — visible only during print */}
       <div className={styles.printOnly}>
-        <ReceiptContent order={order} dateStr={dateStr} />
+        <ReceiptContent order={order} dateStr={dateStr} type={type} />
       </div>
     </>
   );
 }
 
-function ReceiptContent({ order, dateStr }: { order: SalesOrder; dateStr: string }) {
+function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: string; type: 'receipt' | 'invoice' }) {
   const paymentMethod = order.payments?.[0]?.method ?? 'N/A';
   const change = order.amountPaid > order.total ? order.amountPaid - order.total : 0;
 
   return (
-    <div className={styles.receipt}>
+    <div className={`${styles.receipt} ${type === 'invoice' ? styles.invoiceMode : ''}`}>
       {/* Header */}
       <div className={styles.header}>
+        {type === 'invoice' && <h2 className={styles.invoiceTitle}>INVOICE</h2>}
         <p className={styles.storeName}>Bread Faculty</p>
-        <p className={styles.storeTagline}>The Artisanal Curator</p>
         <p className={styles.storeMeta}>12 Baker Street, Accra</p>
         <p className={styles.storeMeta}>+233 20 000 0000</p>
       </div>

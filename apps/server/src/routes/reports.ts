@@ -8,7 +8,7 @@ const router = Router();
 // GET /api/reports/daily?date=YYYY-MM-DD
 router.get(
   '/daily',
-  requireRole('admin', 'owner'),
+  requireRole('admin', 'owner', 'cashier'),
   asyncHandler(async (req, res) => {
     const dateStr = req.query.date as string | undefined;
     if (!dateStr) throw new AppError(400, 'date query parameter is required');
@@ -44,6 +44,52 @@ router.get(
       totalExpenses,
       profit,
     });
+  }),
+);
+
+// GET /api/reports/weekly?endDate=YYYY-MM-DD
+router.get(
+  '/weekly',
+  requireRole('admin', 'owner', 'cashier'),
+  asyncHandler(async (req, res) => {
+    const endDateStr = req.query.endDate as string | undefined;
+    if (!endDateStr) throw new AppError(400, 'endDate query parameter is required');
+
+    const startDate = new Date(endDateStr);
+    startDate.setDate(startDate.getDate() - 6);
+
+    const nextDay = new Date(endDateStr);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const orders = await prisma.salesOrder.findMany({
+      where: {
+        createdAt: { gte: startDate, lt: nextDay },
+        status: { not: 'cancelled' },
+      },
+      select: { createdAt: true, total: true },
+    });
+
+    const dailyMap = new Map<string, number>();
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(startDate);
+        d.setDate(d.getDate() + i);
+        dailyMap.set(d.toISOString().split('T')[0], 0);
+    }
+    
+    for (const order of orders) {
+      const dateKey = order.createdAt.toISOString().split('T')[0];
+      if (dailyMap.has(dateKey)) {
+        dailyMap.set(dateKey, dailyMap.get(dateKey)! + order.total);
+      }
+    }
+
+    const results = Array.from(dailyMap.entries()).map(([date, revenue]) => ({
+      date,
+      revenue,
+    }));
+    results.sort((a, b) => a.date.localeCompare(b.date));
+
+    res.json(results);
   }),
 );
 

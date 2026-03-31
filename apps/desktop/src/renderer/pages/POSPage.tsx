@@ -85,6 +85,18 @@ export function POSPage() {
     });
   }, []);
 
+  const setQuantity = useCallback((index: number, quantity: number) => {
+    setCart((prev) => {
+      const updated = [...prev];
+      if (quantity <= 0) {
+        updated.splice(index, 1);
+      } else {
+        updated[index] = { ...updated[index], quantity };
+      }
+      return updated;
+    });
+  }, []);
+
   const removeItem = useCallback((index: number) => {
     setCart((prev) => prev.filter((_, i) => i !== index));
   }, []);
@@ -173,6 +185,7 @@ export function POSPage() {
         <CartPanel
           items={cart}
           onUpdateQuantity={updateQuantity}
+          onSetQuantity={setQuantity}
           onRemoveItem={removeItem}
           discountPct={discountPct}
           onDiscountPctChange={setDiscountPct}
