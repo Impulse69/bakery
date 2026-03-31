@@ -1,20 +1,14 @@
 import { useState, useEffect } from 'react';
-import type { SalesOrder, PaymentMethod } from '@bakery/types';
-import { Modal, Button, OrderStatusBadge, Input, Select } from '@bakery/ui';
+import type { SalesOrder } from '@bakery/types';
+import { Modal, Button, OrderStatusBadge, Input } from '@bakery/ui';
 import { useAuth } from '../store/AuthContext';
 import { Receipt } from './pos/Receipt';
-import type { SelectOption } from '@bakery/ui';
+
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
 import { useToast } from './Toast';
 import styles from './OrderDetailModal.module.css';
 
-const PAYMENT_METHODS: SelectOption[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'momo', label: 'Mobile Money' },
-  { value: 'card', label: 'Card' },
-  { value: 'credit', label: 'Credit' },
-];
 
 interface OrderDetailModalProps {
   orderId: string;
@@ -30,7 +24,7 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
   const [actionLoading, setActionLoading] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+  const [paymentMethod] = useState('cash');
   const [showReceipt, setShowReceipt] = useState(false);
 
   const canPrint = user?.role === 'admin' || user?.role === 'cashier';
@@ -162,18 +156,12 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
 
           {showPayment && (
             <div className={styles.paymentForm}>
-              <h4 className={styles.sectionTitle}>Add Payment</h4>
+              <h4 className={styles.sectionTitle}>Add Payment (Cash)</h4>
               <Input
                 label="Amount"
                 type="number"
                 value={paymentAmount / 100}
                 onChange={(e) => setPaymentAmount(Math.round(Number(e.target.value) * 100))}
-              />
-              <Select
-                label="Method"
-                options={PAYMENT_METHODS}
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
               />
               <Button onClick={handleAddPayment} loading={actionLoading} size="sm">
                 Submit Payment

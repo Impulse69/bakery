@@ -143,4 +143,84 @@ router.patch(
   }),
 );
 
+const createTargetSchema = z.object({
+  productId: z.string(),
+  date: z.string(), // ISO date string
+  target: z.number().int().min(0),
+  actual: z.number().int().min(0).optional().default(0),
+  carriedOver: z.number().int().min(0).optional().default(0),
+  shortage: z.number().int().min(0).optional().default(0),
+});
+
+const updateTargetSchema = z.object({
+  target: z.number().int().min(0).optional(),
+  actual: z.number().int().min(0).optional(),
+  carriedOver: z.number().int().min(0).optional(),
+  shortage: z.number().int().min(0).optional(),
+});
+
+// GET /api/production/targets
+router.get(
+  '/targets',
+  asyncHandler(async (req, res) => {
+    const { skip, take } = req.pagination;
+    const date = req.query.date as string | undefined;
+
+    const where: Record<string, unknown> = {};
+    if (date) {
+      const day = new Date(date);
+      const nextDay = new Date(date);
+      nextDay.setDate(nextDay.getDate() + 1);
+      where.date = { gte: day, lt: nextDay };
+    }
+
+    const [targets, total] = await Promise.all([
+      prisma.dailyProductionTarget.findMany({
+        where,
+        include: { product: true },
+        skip,
+        take,
+        orderBy: { date: 'desc' },
+      }),
+      prisma.dailyProductionTarget.count({ where }),
+    ]);
+    res.json({ data: targets, total, page: req.pagination.page, limit: req.pagination.limit });
+  }),
+);
+
+// POST /api/production/targets
+router.post(
+  '/targets',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const data = createTargetSchema.parse(req.body);
+    const targetDate = new Date(data.date);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const target = await prisma.dailyProductionTarget.create({
+      data: {
+        ...data,
+        date: targetDate,
+      },
+      include: { product: true },
+    });
+    res.status(201).json(target);
+  }),
+);
+
+// PUT /api/production/targets/:id
+router.put(
+  '/targets/:id',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const data = updateTargetSchema.parse(req.body);
+    const target = await prisma.dailyProductionTarget.update({
+      where: { id: getParam(req, 'id') },
+      data,
+      include: { product: true },
+    });
+    res.json(target);
+  }),
+);
+
 export default router;

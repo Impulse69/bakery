@@ -1,65 +1,68 @@
 'use client';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',    icon: '▦', active: true  },
-  { label: 'POS / New Sale', icon: '⊟', active: false },
-  { label: 'Sales Orders', icon: '▤', active: false },
-  { label: 'Products',     icon: '◫', active: false },
-  { label: 'Inventory',    icon: '▣', active: false },
-  { label: 'Production',   icon: '⚙', active: false },
-  { label: 'Suppliers',    icon: '◎', active: false },
-  { label: 'Expenses',     icon: '◉', active: false },
-  { label: 'Customers',    icon: '◌', active: false },
-  { label: 'Reports',      icon: '◑', active: false },
-  { label: 'Settings',     icon: '⊕', active: false },
+  { label: 'Dashboard',    icon: '📊', active: true  },
+  { label: 'POS / New Sale', icon: '🛒', active: false },
+  { label: 'Daily Targets', icon: '🎯', active: false },
+  { label: 'Sales Orders', icon: '📋', active: false },
+  { label: 'Products',     icon: '📦', active: false },
+  { label: 'Inventory',    icon: '🏢', active: false },
+  { label: 'Production',   icon: '🏭', active: false },
+  { label: 'Suppliers',    icon: '🤝', active: false },
+  { label: 'Expenses',     icon: '💸', active: false },
+  { label: 'Customers',    icon: '👤', active: false },
+  { label: 'Reports',      icon: '📈', active: false },
+  { label: 'Settings',     icon: '⚙️', active: false },
 ];
 
 export function Sidebar() {
   return (
-    <aside className="w-64 h-screen bg-[#131b2e] flex flex-col flex-shrink-0 overflow-hidden">
+    <aside className="w-64 h-screen bg-[#131b2e] flex flex-col flex-shrink-0 overflow-hidden text-slate-300">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-4 py-5 border-b border-white/[0.06]">
-        <div className="w-9 h-9 rounded-lg bg-[#e07b3c]/20 flex items-center justify-center text-[#e07b3c] font-bold text-sm flex-shrink-0">
-          BF
+      <div className="flex items-center gap-3 px-5 py-6 border-b border-white/5">
+        <div className="w-10 h-10 rounded-xl bg-[#e07b3c] flex items-center justify-center text-white font-black text-lg shadow-lg shadow-orange-950/20">
+          B
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-[0.8125rem] font-bold text-white leading-tight truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            The Artisanal Curator
+          <span className="text-sm font-bold text-white tracking-tight truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
+            BREAD FACULTY
           </span>
-          <span className="text-[0.625rem] font-semibold tracking-widest text-white/35 uppercase mt-px">
-            Premium Bakery Management
+          <span className="text-[0.6rem] font-bold tracking-[0.1em] text-white/30 uppercase mt-0.5">
+            Enterprise ERP
           </span>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col gap-px px-2.5 py-2.5 flex-1 overflow-y-auto">
+      <nav className="flex flex-col gap-0.5 px-3 py-4 flex-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => (
           <a
             key={item.label}
             href="#"
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-[0.8125rem] font-medium transition-colors ${
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-[0.85rem] font-medium transition-all group ${
               item.active
-                ? 'bg-white/[0.12] text-white font-semibold'
-                : 'text-white/60 hover:bg-white/[0.07] hover:text-white/90'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
           >
-            <span className="w-5 text-center text-base opacity-80">{item.icon}</span>
+            <span className={`text-lg transition-transform group-hover:scale-110 ${item.active ? 'opacity-100' : 'opacity-60'}`}>{item.icon}</span>
             <span>{item.label}</span>
           </a>
         ))}
       </nav>
 
       {/* User card */}
-      <div className="flex items-center gap-2.5 p-4 border-t border-white/[0.06] bg-white/[0.03]">
-        <div className="w-9 h-9 rounded-full bg-[#e07b3c]/30 flex items-center justify-center text-[#e07b3c] font-bold text-sm flex-shrink-0">
-          OW
+      <div className="flex items-center gap-3 p-5 border-t border-white/5 bg-black/10">
+        <div className="w-9 h-9 rounded-lg bg-slate-700 flex items-center justify-center text-white font-bold text-sm">
+          AD
         </div>
         <div className="flex flex-col min-w-0">
-          <span className="text-[0.8125rem] font-semibold text-white truncate">Owner</span>
-          <span className="text-[0.6875rem] text-white/50">Premium Plan</span>
-          <span className="text-[0.625rem] text-white/35">Status: Active Member</span>
+          <span className="text-xs font-semibold text-white truncate">Administrator</span>
+          <span className="text-[0.65rem] text-slate-500 font-medium">Bakery Master</span>
         </div>
+        <button className="ml-auto text-slate-500 hover:text-white transition-colors">
+          🚪
+        </button>
       </div>
     </aside>
   );

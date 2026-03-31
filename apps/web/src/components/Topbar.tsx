@@ -2,40 +2,40 @@
 
 export function Topbar() {
   return (
-    <header className="flex items-center gap-4 px-6 h-[60px] bg-white border-b border-[#eef0f4] flex-shrink-0">
+    <header className="flex items-center gap-4 px-6 h-[64px] bg-white border-b border-slate-200 flex-shrink-0">
       {/* Search */}
-      <div className="flex items-center gap-2 flex-1 max-w-[480px] bg-[#f5f6fa] rounded-[10px] px-3.5 h-[38px]">
-        <span className="text-gray-400 text-lg leading-none">⌕</span>
+      <div className="flex items-center gap-2.5 flex-1 max-w-[400px] bg-slate-50 border border-slate-200 rounded-lg px-3 h-[36px] group focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-50/50 transition-all">
+        <span className="text-slate-400 text-base">🔍</span>
         <input
           type="text"
-          placeholder="Search orders, products..."
-          readOnly
-          className="border-none bg-transparent outline-none text-sm text-gray-700 w-full placeholder-gray-400 font-[Inter,sans-serif]"
+          placeholder="Search for orders, products, customers..."
+          className="border-none bg-transparent outline-none text-[0.85rem] text-slate-700 w-full placeholder-slate-400 font-medium"
         />
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-2.5 ml-auto">
-        <button className="w-9 h-9 rounded-full border border-[#eef0f4] bg-white flex items-center justify-center text-gray-700 hover:bg-gray-50 transition-colors">
-          🔔
-        </button>
-        <button className="w-9 h-9 rounded-full border border-[#eef0f4] bg-white flex items-center justify-center text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-          ?
-        </button>
-
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-end">
-            <span className="text-[0.8125rem] font-semibold text-[#131b2e] leading-tight">Admin User</span>
-            <span className="text-[0.6875rem] text-gray-400 leading-tight">Master Baker</span>
-          </div>
-          <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[#eef0f4] bg-[#e07b3c]/20 flex items-center justify-center text-[#e07b3c] font-bold text-sm flex-shrink-0">
-            AU
-          </div>
+      <div className="flex items-center gap-4 ml-auto">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 border border-slate-100">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-wider">System Live</span>
         </div>
 
-        <button className="px-4 py-1.5 bg-[#131b2e] text-white rounded-lg text-[0.8125rem] font-semibold hover:bg-[#1e2d4a] transition-colors">
-          Logout
+        <div className="h-6 w-px bg-slate-200 mx-1" />
+
+        <button className="relative w-9 h-9 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-all">
+          🔔
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
         </button>
+
+        <div className="flex items-center gap-3 pl-2 border-l border-slate-100">
+          <div className="flex flex-col items-end">
+            <span className="text-xs font-bold text-slate-900 leading-tight">Admin User</span>
+            <span className="text-[0.65rem] font-medium text-slate-500 uppercase tracking-tighter">Main Branch</span>
+          </div>
+          <div className="w-9 h-9 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center shadow-inner">
+            👤
+          </div>
+        </div>
       </div>
     </header>
   );

@@ -131,17 +131,37 @@ model Product {
   name        String
   sku         String   @unique
   category    String
-  price       Int
+  price        Int
+  wholesalePrice Int?     @default(0)
   description String?
   isAvailable Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  variants        ProductVariant[]
-  salesOrderItems SalesOrderItem[]
+  variants              ProductVariant[]
+  salesOrderItems       SalesOrderItem[]
+  dailyProductionTargets DailyProductionTarget[]
 
   @@map("products")
 }
+
+model DailyProductionTarget {
+  id          String   @id @default(cuid())
+  productId   String
+  date        DateTime @db.Date
+  target      Int      @default(0)
+  actual      Int      @default(0)
+  carriedOver Int      @default(0)
+  shortage    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, date])
+  @@map("daily_production_targets")
+}
+
 
 model ProductVariant {
   id        String   @id @default(cuid())
@@ -285,6 +305,7 @@ model SalesOrderItem {
   variantId    String?
   quantity     Int
   unitPrice    Int
+  unitWholesalePrice Int? @default(0)
   discount     Int    @default(0)
   tax          Int    @default(0)
   total        Int

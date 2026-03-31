@@ -9,7 +9,8 @@
     "clean": "rm -rf dist",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
+    "db:push": "echo 'Use db:migrate instead of db:push to avoid data loss' && exit 1",
+    "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts"
   },

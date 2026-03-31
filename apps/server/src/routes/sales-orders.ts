@@ -139,10 +139,23 @@ router.post(
     const { customerId, locationId, items, notes } = createOrderSchema.parse(req.body);
 
     const order = await prisma.$transaction(async (tx) => {
+      // Lookup wholesale prices for the products
+      const productIds = items.map((i) => i.productId);
+      const products = await tx.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, wholesalePrice: true },
+      });
+      const productMap = new Map(products.map((p) => [p.id, p]));
+
       // Compute totals from items
       const computedItems = items.map((item) => {
         const lineTotal = item.quantity * item.unitPrice - item.discount + item.tax;
-        return { ...item, total: lineTotal };
+        const product = productMap.get(item.productId);
+        return { 
+          ...item, 
+          total: lineTotal,
+          unitWholesalePrice: product?.wholesalePrice ?? 0,
+        };
       });
 
       const subtotal = computedItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);

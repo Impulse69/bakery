@@ -12,6 +12,7 @@ const createProductSchema = z.object({
   sku: z.string().min(1),
   category: z.string().min(1),
   price: z.number().int().min(0),
+  wholesalePrice: z.number().int().min(0).optional(),
   description: z.string().optional(),
 });
 

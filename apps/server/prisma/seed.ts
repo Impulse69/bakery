@@ -1,7 +1,13 @@
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL ?? 'postgresql://user:password@localhost:5432/bread_faculty';
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Seeding database...');
@@ -20,33 +26,33 @@ async function main() {
   const bakerHash    = await bcrypt.hash('baker123', 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@breadfaculty.com' },
-    update: {},
+    where: { email: 'admin@bakery.com' },
+    update: { passwordHash },
     create: {
       name: 'Admin User',
-      email: 'admin@breadfaculty.com',
+      email: 'admin@bakery.com',
       passwordHash,
       role: 'admin',
     },
   });
 
   const cashier = await prisma.user.upsert({
-    where: { email: 'cashier@breadfaculty.com' },
-    update: {},
+    where: { email: 'cashier@bakery.com' },
+    update: { passwordHash: cashierHash },
     create: {
       name: 'Ama Cashier',
-      email: 'cashier@breadfaculty.com',
+      email: 'cashier@bakery.com',
       passwordHash: cashierHash,
       role: 'cashier',
     },
   });
 
   const baker = await prisma.user.upsert({
-    where: { email: 'baker@breadfaculty.com' },
-    update: {},
+    where: { email: 'baker@bakery.com' },
+    update: { passwordHash: bakerHash },
     create: {
       name: 'Kofi Baker',
-      email: 'baker@breadfaculty.com',
+      email: 'baker@bakery.com',
       passwordHash: bakerHash,
       role: 'baker',
     },
@@ -205,9 +211,9 @@ async function main() {
 
   console.log('\n✅ Seeding complete!');
   console.log('\nLogin credentials:');
-  console.log('  Admin:   admin@breadfaculty.com   / admin123');
-  console.log('  Cashier: cashier@breadfaculty.com / cashier123');
-  console.log('  Baker:   baker@breadfaculty.com   / baker123');
+  console.log('  Admin:   admin@bakery.com   / admin123');
+  console.log('  Cashier: cashier@bakery.com / cashier123');
+  console.log('  Baker:   baker@bakery.com   / baker123');
 }
 
 main()

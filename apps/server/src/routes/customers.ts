@@ -42,6 +42,41 @@ router.get(
   }),
 );
 
+// GET /api/customers/leaderboard
+router.get(
+  '/leaderboard',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    // Top 10 customers by total spend
+    const result = await prisma.salesOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { not: 'cancelled' },
+        customerId: { not: null },
+      },
+      _sum: { total: true },
+      _count: { id: true },
+      orderBy: { _sum: { total: 'desc' } },
+      take: 10,
+    });
+
+    const customerIds = result.map((r) => r.customerId).filter(Boolean) as string[];
+    const customers = await prisma.customer.findMany({
+      where: { id: { in: customerIds } },
+      select: { id: true, name: true, phone: true },
+    });
+    const cMap = new Map(customers.map(c => [c.id, c]));
+
+    const enriched = result.map(r => ({
+      ...cMap.get(r.customerId!),
+      totalSpent: r._sum.total || 0,
+      totalOrders: r._count.id,
+    }));
+
+    res.json(enriched);
+  }),
+);
+
 // GET /api/customers/:id
 router.get(
   '/:id',
@@ -82,6 +117,64 @@ router.patch(
       data,
     });
     res.json(customer);
+  }),
+);
+
+// GET /api/customers/:id/stats
+router.get(
+  '/:id/stats',
+  requireRole('admin', 'owner', 'cashier'),
+  asyncHandler(async (req, res) => {
+    const customerId = getParam(req, 'id');
+    const [stats, orders] = await Promise.all([
+      prisma.salesOrder.aggregate({
+        where: { customerId, status: { not: 'cancelled' } },
+        _sum: { total: true },
+        _count: { id: true },
+        _max: { createdAt: true },
+      }),
+      prisma.salesOrder.findMany({
+        where: { customerId, status: { not: 'cancelled' } },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    // Compute week-streak: consecutive ISO weeks (Mon–Sun) with ≥1 order
+    const weekKeys = new Set(
+      orders.map((o) => {
+        const d = new Date(o.createdAt);
+        // ISO week start = Monday
+        const day = d.getDay() === 0 ? 7 : d.getDay(); // 1=Mon … 7=Sun
+        const mon = new Date(d);
+        mon.setDate(d.getDate() - (day - 1));
+        return mon.toISOString().split('T')[0];
+      }),
+    );
+
+    let weekStreak = 0;
+    const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
+    // Walk backwards from the current week
+    const now = new Date();
+    const todayDay = now.getDay() === 0 ? 7 : now.getDay();
+    const thisMon = new Date(now);
+    thisMon.setDate(now.getDate() - (todayDay - 1));
+    thisMon.setHours(0, 0, 0, 0);
+
+    let cursor = new Date(thisMon);
+    while (true) {
+      const key = cursor.toISOString().split('T')[0];
+      if (!weekKeys.has(key)) break;
+      weekStreak++;
+      cursor = new Date(cursor.getTime() - MS_WEEK);
+    }
+
+    res.json({
+      totalSpent: stats._sum.total || 0,
+      totalOrders: stats._count.id,
+      lastOrderDate: stats._max.createdAt,
+      weekStreak,
+    });
   }),
 );
 

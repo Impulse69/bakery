@@ -4,7 +4,11 @@
 
 :root {
   --app-sidebar: #131b2e;
+  --app-sidebar-hover: #1e293b;
   --app-accent: #e07b3c;
+  --app-bg: #f8fafc;
+  --app-border: #e2e8f0;
+  --app-text: #0f172a;
 }
 
 * {
@@ -14,8 +18,59 @@
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background: #f5f6fa;
-  color: #131b2e;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--app-bg);
+  color: var(--app-text);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 700;
+  color: var(--app-sidebar);
+}
+
+/* Global Transition Override for Enterprise Feel */
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* High-Density Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--app-border);
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--app-border);
+  color: #334155;
+}
+
+tr:hover td {
+  background-color: #f8fafc;
+}
+
+/* Strip Dark Mode Media Queries if they exist elsewhere - enforce light mode */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--app-bg);
+    color: var(--app-text);
+  }
 }

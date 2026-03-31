@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { ProductionBatch, Recipe } from '@bakery/types';
+import type { ProductionBatch, Recipe, Product } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge, FormSection, StockBadge } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
+import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../store/AuthContext';
 import styles from './ProductionPage.module.css';
 
 const STATUS_VARIANT: Record<string, 'info' | 'success' | 'danger'> = {
@@ -22,15 +24,25 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export function ProductionPage() {
+interface DailyTarget {
+  id: string;
+  productId: string;
+  date: string;
+  target: number;
+  actual: number;
+  carriedOver: number;
+  shortage: number;
+  product: Product;
+}
+
+// ─── Batches Tab ──────────────────────────────────────────────────────────────
+function BatchesTab() {
   const { showToast } = useToast();
   const [batches, setBatches] = useState<ProductionBatch[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(getToday());
-
-  // New batch modal
   const [showNewModal, setShowNewModal] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
@@ -42,8 +54,8 @@ export function ProductionPage() {
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
-
   const selectedRecipe = recipes.find((r) => r.id === selectedRecipeId) ?? null;
+  const multiplier = selectedRecipe && Number(quantity) ? Number(quantity) / selectedRecipe.yieldQuantity : 0;
 
   const fetchBatches = useCallback(async () => {
     setLoading(true);
@@ -60,23 +72,13 @@ export function ProductionPage() {
     }
   }, [page, selectedDate]);
 
+  useEffect(() => { fetchBatches(); }, [fetchBatches]);
   useEffect(() => {
-    fetchBatches();
-  }, [fetchBatches]);
-
-  // Fetch recipes once
-  useEffect(() => {
-    api
-      .get<{ data: Recipe[] }>('/recipes?limit=100')
-      .then((res) => setRecipes(res.data))
-      .catch(() => {});
+    api.get<{ data: Recipe[] }>('/recipes?limit=100').then((res) => setRecipes(res.data)).catch(() => {});
   }, []);
 
   const openNewModal = () => {
-    setSelectedRecipeId('');
-    setQuantity('');
-    setQuantityUnit('');
-    setNotes('');
+    setSelectedRecipeId(''); setQuantity(''); setQuantityUnit(''); setNotes('');
     setShowNewModal(true);
   };
 
@@ -84,32 +86,20 @@ export function ProductionPage() {
     const id = e.target.value;
     setSelectedRecipeId(id);
     const recipe = recipes.find((r) => r.id === id);
-    if (recipe) {
-      setQuantityUnit(recipe.yieldUnit);
-    }
+    if (recipe) setQuantityUnit(recipe.yieldUnit);
   };
 
   const handleCreateBatch = async () => {
-    if (!selectedRecipeId || !quantity) {
-      showToast('Recipe and quantity are required', 'error');
-      return;
-    }
+    if (!selectedRecipeId || !quantity) { showToast('Recipe and quantity are required', 'error'); return; }
     setSaving(true);
     try {
-      await api.post('/production', {
-        recipeId: selectedRecipeId,
-        quantityProduced: Number(quantity),
-        quantityUnit,
-        notes: notes || undefined,
-      });
+      await api.post('/production', { recipeId: selectedRecipeId, quantityProduced: Number(quantity), quantityUnit, notes: notes || undefined });
       showToast('Production batch created', 'success');
       setShowNewModal(false);
       fetchBatches();
     } catch (err: any) {
       showToast(err.message || 'Failed to create batch', 'error');
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const handleComplete = async (batchId: string, e: React.MouseEvent) => {
@@ -121,137 +111,50 @@ export function ProductionPage() {
       fetchBatches();
     } catch (err: any) {
       showToast(err.message || 'Failed to complete batch', 'error');
-    } finally {
-      setCompleting(null);
-    }
+    } finally { setCompleting(null); }
   };
 
-  const recipeOptions: SelectOption[] = recipes.map((r) => ({
-    value: r.id,
-    label: `${r.name} (yields ${r.yieldQuantity} ${r.yieldUnit})`,
-  }));
-
-  const multiplier = selectedRecipe && Number(quantity)
-    ? Number(quantity) / selectedRecipe.yieldQuantity
-    : 0;
+  const recipeOptions: SelectOption[] = recipes.map((r) => ({ value: r.id, label: `${r.name} (yields ${r.yieldQuantity} ${r.yieldUnit})` }));
 
   const columns: DataTableColumn<ProductionBatch>[] = [
     { key: 'batchNumber', label: 'Batch #', sortable: true },
+    { key: 'recipe', label: 'Recipe', render: (row: any) => row.recipe?.name ?? '—' },
+    { key: 'quantityProduced', label: 'Quantity', render: (row) => `${row.quantityProduced} ${row.quantityUnit}` },
+    { key: 'status', label: 'Status', render: (row) => <Badge variant={STATUS_VARIANT[row.status] ?? 'neutral'}>{STATUS_LABEL[row.status] ?? row.status}</Badge> },
+    { key: 'startedAt', label: 'Started', render: (row) => new Date(row.startedAt).toLocaleTimeString() },
+    { key: 'completedAt', label: 'Completed', render: (row) => row.completedAt ? new Date(row.completedAt).toLocaleTimeString() : '—' },
     {
-      key: 'recipe',
-      label: 'Recipe',
-      render: (row: any) => row.recipe?.name ?? '—',
-    },
-    {
-      key: 'quantityProduced',
-      label: 'Quantity',
-      render: (row) => `${row.quantityProduced} ${row.quantityUnit}`,
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (row) => (
-        <Badge variant={STATUS_VARIANT[row.status] ?? 'neutral'}>
-          {STATUS_LABEL[row.status] ?? row.status}
-        </Badge>
-      ),
-    },
-    {
-      key: 'startedAt',
-      label: 'Started',
-      render: (row) => new Date(row.startedAt).toLocaleTimeString(),
-    },
-    {
-      key: 'completedAt',
-      label: 'Completed',
-      render: (row) => row.completedAt ? new Date(row.completedAt).toLocaleTimeString() : '—',
-    },
-    {
-      key: 'actions',
-      label: '',
-      render: (row) =>
-        row.status === 'in_progress' ? (
-          <Button
-            size="sm"
-            onClick={(e) => handleComplete(row.id, e)}
-            loading={completing === row.id}
-          >
-            Complete
-          </Button>
-        ) : null,
+      key: 'actions', label: '',
+      render: (row) => row.status === 'in_progress' ? (
+        <Button size="sm" onClick={(e) => handleComplete(row.id, e)} loading={completing === row.id}>Complete</Button>
+      ) : null,
     },
   ];
 
   return (
     <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Production</h1>
-        <Button onClick={openNewModal}>New Batch</Button>
-      </div>
-
       <div className={styles.filters}>
-        <Input
-          label="Production Date"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => { setSelectedDate(e.target.value); setPage(1); }}
-        />
+        <Input label="Production Date" type="date" value={selectedDate} onChange={(e) => { setSelectedDate(e.target.value); setPage(1); }} />
+        <Button onClick={openNewModal}>+ New Batch</Button>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={batches}
-        loading={loading}
-        emptyMessage="No batches found for this date"
-      />
-
-      {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-      )}
+      <DataTable columns={columns} data={batches} loading={loading} emptyMessage="No batches found for this date" />
+      {totalPages > 1 && <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />}
 
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="New Production Batch" size="md">
         <div className={styles.form}>
-          <Select
-            label="Recipe"
-            options={recipeOptions}
-            value={selectedRecipeId}
-            onChange={handleRecipeChange}
-            placeholder="Select recipe"
-          />
-          <Input
-            label="Quantity Produced"
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-          />
-          <Input
-            label="Unit"
-            value={quantityUnit}
-            onChange={(e) => setQuantityUnit(e.target.value)}
-          />
-          <Input
-            label="Notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+          <Select label="Recipe" options={recipeOptions} value={selectedRecipeId} onChange={handleRecipeChange} placeholder="Select recipe" />
+          <Input label="Quantity Produced" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+          <Input label="Unit" value={quantityUnit} onChange={(e) => setQuantityUnit(e.target.value)} />
+          <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
 
-          {selectedRecipe && selectedRecipe.ingredients && selectedRecipe.ingredients.length > 0 && (
+          {selectedRecipe?.ingredients && selectedRecipe.ingredients.length > 0 && (
             <FormSection title="Ingredients Required">
               <table className={styles.ingredientsTable}>
-                <thead>
-                  <tr>
-                    <th>Ingredient</th>
-                    <th>Required</th>
-                    <th>Unit</th>
-                    <th>In Stock</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Ingredient</th><th>Required</th><th>Unit</th><th>In Stock</th><th>Status</th></tr></thead>
                 <tbody>
                   {selectedRecipe.ingredients.map((ing) => {
-                    const required = multiplier > 0
-                      ? (ing.quantityRequired * multiplier).toFixed(2)
-                      : ing.quantityRequired.toString();
+                    const required = multiplier > 0 ? (ing.quantityRequired * multiplier).toFixed(2) : ing.quantityRequired.toString();
                     const stock = ing.inventoryItem?.quantityOnHand ?? 0;
                     const threshold = ing.inventoryItem?.lowStockThreshold ?? 0;
                     return (
@@ -260,9 +163,7 @@ export function ProductionPage() {
                         <td>{required}</td>
                         <td>{ing.unit}</td>
                         <td>{stock}</td>
-                        <td>
-                          <StockBadge currentStock={stock} reorderLevel={threshold} />
-                        </td>
+                        <td><StockBadge currentStock={stock} reorderLevel={threshold} /></td>
                       </tr>
                     );
                   })}
@@ -277,6 +178,216 @@ export function ProductionPage() {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+// ─── Daily Targets Tab ────────────────────────────────────────────────────────
+function DailyTargetsTab() {
+  const { showToast } = useToast();
+  const [targets, setTargets] = useState<DailyTarget[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(getToday());
+  const [showModal, setShowModal] = useState(false);
+  const [editTarget, setEditTarget] = useState<DailyTarget | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({ productId: '', target: '', actual: '', carriedOver: '', shortage: '' });
+
+  const fetchTargets = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<{ data: DailyTarget[]; total: number }>(`/production/targets?date=${selectedDate}&limit=50`);
+      setTargets(res.data);
+    } catch {
+      setTargets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => { fetchTargets(); }, [fetchTargets]);
+  useEffect(() => {
+    api.get<{ data: Product[] }>('/products?limit=100').then((res) => setProducts(res.data)).catch(() => {});
+  }, []);
+
+  const openAdd = () => {
+    setEditTarget(null);
+    setForm({ productId: '', target: '', actual: '', carriedOver: '', shortage: '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (t: DailyTarget) => {
+    setEditTarget(t);
+    setForm({ productId: t.productId, target: String(t.target), actual: String(t.actual), carriedOver: String(t.carriedOver), shortage: String(t.shortage) });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.productId || !form.target) { showToast('Product and target are required', 'error'); return; }
+    setSaving(true);
+    try {
+      const payload = {
+        productId: form.productId,
+        date: selectedDate,
+        target: Number(form.target),
+        actual: Number(form.actual || 0),
+        carriedOver: Number(form.carriedOver || 0),
+        shortage: Number(form.shortage || 0),
+      };
+      if (editTarget) {
+        await api.put(`/production/targets/${editTarget.id}`, { target: payload.target, actual: payload.actual, carriedOver: payload.carriedOver, shortage: payload.shortage });
+        showToast('Target updated', 'success');
+      } else {
+        await api.post('/production/targets', payload);
+        showToast('Target set', 'success');
+      }
+      setShowModal(false);
+      fetchTargets();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to save target', 'error');
+    } finally { setSaving(false); }
+  };
+
+  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const productOptions: SelectOption[] = products.map((p) => ({ value: p.id, label: p.name }));
+
+  // Auto-calculate shortage when actual & target are filled
+  const computedShortage = form.target && form.actual ? Math.max(0, Number(form.target) - Number(form.actual)) : 0;
+
+  return (
+    <div>
+      <div className={styles.filters}>
+        <Input label="Target Date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+        <Button onClick={openAdd}>+ Set Target</Button>
+      </div>
+
+      {loading ? (
+        <div className={styles.emptyState}>Loading targets…</div>
+      ) : targets.length === 0 ? (
+        <div className={styles.emptyState}>
+          No targets set for {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.
+          <br /><span style={{ color: 'var(--color-primary)' }}>Click "Set Target" to begin.</span>
+        </div>
+      ) : (
+        <div className={styles.targetsGrid}>
+          {/* Header */}
+          <div className={styles.targetsHeader}>
+            <span>Product</span>
+            <span style={{ textAlign: 'right' }}>Target</span>
+            <span style={{ textAlign: 'right' }}>Actual</span>
+            <span style={{ textAlign: 'right' }}>Shortage</span>
+            <span style={{ textAlign: 'right' }}>Carry-Over</span>
+            <span style={{ textAlign: 'right' }}>Completion</span>
+            <span></span>
+          </div>
+
+          {targets.map((t) => {
+            const pct = t.target > 0 ? Math.min(100, Math.round((t.actual / t.target) * 100)) : 0;
+            const met = pct >= 100;
+            const statusColor = met ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626';
+
+            return (
+              <div key={t.id} className={styles.targetRow}>
+                <div className={styles.targetProduct}>
+                  <span className={styles.targetProductName}>{t.product?.name ?? '—'}</span>
+                  {t.carriedOver > 0 && (
+                    <span className={styles.carryoverBadge}>+{t.carriedOver} carried</span>
+                  )}
+                </div>
+                <span className={styles.targetNum}>{t.target.toLocaleString()}</span>
+                <span className={styles.targetNum}>{t.actual.toLocaleString()}</span>
+                <span className={styles.targetNum} style={{ color: t.shortage > 0 ? '#dc2626' : '#16a34a' }}>
+                  {t.shortage > 0 ? `-${t.shortage}` : '✓'}
+                </span>
+                <span className={styles.targetNum}>{t.carriedOver > 0 ? t.carriedOver.toLocaleString() : '—'}</span>
+                <div className={styles.targetProgress}>
+                  <div className={styles.progressBar}>
+                    <div className={styles.progressFill} style={{ width: `${pct}%`, background: statusColor }} />
+                  </div>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: statusColor }}>{pct}%</span>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => openEdit(t)}>Edit</Button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editTarget ? 'Update Target' : 'Set Daily Target'} size="sm">
+        <div className={styles.form}>
+          {!editTarget && (
+            <Select label="Product" options={productOptions} value={form.productId} onChange={setField('productId')} placeholder="Select product" />
+          )}
+          {editTarget && (
+            <div className={styles.editProductLabel}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</span>
+              <span style={{ fontWeight: 700 }}>{editTarget.product?.name}</span>
+            </div>
+          )}
+          <Input label="Production Target" type="number" value={form.target} onChange={setField('target')} />
+          <Input label="Actual Produced" type="number" value={form.actual} onChange={setField('actual')} />
+          <Input label="Carried Over (from previous day)" type="number" value={form.carriedOver} onChange={setField('carriedOver')} />
+          {Number(form.target) > 0 && Number(form.actual) >= 0 && (
+            <div className={styles.shortageHint}>
+              {computedShortage > 0
+                ? <span style={{ color: '#dc2626' }}>⚠ Shortage: {computedShortage} units will carry forward</span>
+                : Number(form.actual) > 0
+                  ? <span style={{ color: '#16a34a' }}>✓ Target met — no shortfall</span>
+                  : null
+              }
+            </div>
+          )}
+
+          <div className={styles.actions}>
+            <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button onClick={handleSave} loading={saving}>{editTarget ? 'Update' : 'Set Target'}</Button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+export function ProductionPage() {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'batches' | 'targets'>('batches');
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.heading}>Production</h1>
+          <p className={styles.subheading}>Track batches and manage daily production targets.</p>
+        </div>
+      </div>
+
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${activeTab === 'batches' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('batches')}
+        >
+          Production Batches
+        </button>
+        {isAdmin && (
+          <button
+            className={`${styles.tab} ${activeTab === 'targets' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('targets')}
+          >
+            Daily Targets
+          </button>
+        )}
+      </div>
+
+      <div className={styles.tabContent}>
+        {activeTab === 'batches' && <BatchesTab />}
+        {activeTab === 'targets' && isAdmin && <DailyTargetsTab />}
+      </div>
     </div>
   );
 }

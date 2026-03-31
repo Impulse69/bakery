@@ -115,4 +115,47 @@ router.get(
   }),
 );
 
+// GET /api/reports/weekly?endDate=YYYY-MM-DD
+// Returns last 7 days of revenue data for the chart
+router.get(
+  '/weekly',
+  requireRole('admin', 'owner', 'cashier'),
+  asyncHandler(async (req, res) => {
+    const endDateStr = req.query.endDate as string | undefined;
+    const end = endDateStr ? new Date(endDateStr) : new Date();
+    end.setHours(23, 59, 59, 999);
+
+    const start = new Date(end);
+    start.setDate(start.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+
+    const orders = await prisma.salesOrder.findMany({
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: { not: 'cancelled' },
+      },
+      select: { createdAt: true, total: true },
+    });
+
+    // Build a map of date -> revenue
+    const revenueMap: Record<string, number> = {};
+    for (const order of orders) {
+      const day = order.createdAt.toISOString().split('T')[0];
+      revenueMap[day] = (revenueMap[day] ?? 0) + order.total;
+    }
+
+    // Fill all 7 days (even if 0 revenue)
+    const result = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const day = d.toISOString().split('T')[0];
+      result.push({ date: day, revenue: revenueMap[day] ?? 0 });
+    }
+
+    res.json(result);
+  }),
+);
+
 export default router;
+

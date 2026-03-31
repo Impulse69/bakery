@@ -3,35 +3,27 @@ import { Topbar } from '../components/Topbar';
 
 // ── Stat card ────────────────────────────────────────────────
 function StatCard({
-  icon, iconBg, label, value, badge, badgeColor, dark,
+  icon, iconBg, label, value, badge, badgeColor, highlight,
 }: {
   icon: string; iconBg: string; label: string; value: string;
-  badge: string; badgeColor: string; dark?: boolean;
+  badge: string; badgeColor: string; highlight?: boolean;
 }) {
-  if (dark) {
-    return (
-      <div className="bg-[#131b2e] rounded-2xl p-5 flex flex-col gap-2 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center text-white text-lg">
-            {icon}
-          </div>
-          <span className="text-[0.6875rem] font-bold bg-white/10 text-white/80 px-2 py-0.5 rounded-full tracking-wide">
-            {badge}
-          </span>
-        </div>
-        <p className="text-[0.8125rem] text-white/50 m-0">Today's Profit</p>
-        <p className="text-2xl font-extrabold text-white m-0" style={{ fontFamily: 'Manrope,sans-serif' }}>{value}</p>
-      </div>
-    );
-  }
   return (
-    <div className="bg-white rounded-2xl p-5 flex flex-col gap-2 shadow-sm">
+    <div className={`rounded-xl p-5 flex flex-col gap-2 shadow-sm border border-[#e2e8f0] ${highlight ? 'bg-[#131b2e] text-white' : 'bg-white text-[#131b2e]'}`}>
       <div className="flex items-center justify-between">
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl ${iconBg}`}>{icon}</div>
-        <span className={`text-[0.75rem] font-semibold ${badgeColor}`}>{badge}</span>
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl ${highlight ? 'bg-white/10' : iconBg}`}>
+          {icon}
+        </div>
+        <span className={`text-[0.7rem] font-bold px-2 py-0.5 rounded-md ${highlight ? 'bg-white/10 text-white/80' : 'bg-gray-50 ' + badgeColor}`}>
+          {badge}
+        </span>
       </div>
-      <p className="text-[0.8125rem] text-gray-400 m-0">{label}</p>
-      <p className="text-2xl font-extrabold text-[#131b2e] m-0" style={{ fontFamily: 'Manrope,sans-serif' }}>{value}</p>
+      <p className={`text-[0.75rem] font-medium uppercase tracking-wider ${highlight ? 'text-white/60' : 'text-gray-400'}`}>
+        {label}
+      </p>
+      <p className="text-2xl font-bold m-0" style={{ fontFamily: 'Manrope,sans-serif' }}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -95,10 +87,10 @@ export default function DashboardPage() {
 
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4">
-            <StatCard icon="🛒" iconBg="bg-orange-50"  label="Today's Sales"    value="GH₵ 4,250" badge="+12.5%"  badgeColor="text-green-600" />
-            <StatCard icon="✂"  iconBg="bg-blue-50"    label="Today's Orders"   value="142"       badge="+8 New"  badgeColor="text-blue-600"  />
-            <StatCard icon="💳" iconBg="bg-red-50"     label="Today's Expenses" value="GH₵ 1,120" badge="-3%"    badgeColor="text-red-500"   />
-            <StatCard icon="↗"  iconBg=""              label="Today's Profit"   value="GH₵ 3,130" badge="Target Hit" badgeColor="" dark />
+            <StatCard icon="🛒" iconBg="bg-orange-50"  label="Total Cash-ins" value="GH₵ 4,250" badge="+12.5%"  badgeColor="text-green-600" />
+            <StatCard icon="✂"  iconBg="bg-blue-50"    label="Sales Volume"  value="142"       badge="+8 New"  badgeColor="text-blue-600"  />
+            <StatCard icon="💳" iconBg="bg-red-50"     label="Expenses"      value="GH₵ 1,120" badge="-3%"    badgeColor="text-red-500"   />
+            <StatCard icon="↗"  iconBg=""              label="Net Profit"    value="GH₵ 3,130" badge="Target Hit" badgeColor="" highlight />
           </div>
 
           {/* Middle row */}
