@@ -45,6 +45,8 @@ function BatchesTab() {
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [showNewModal, setShowNewModal] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedRecipeId, setSelectedRecipeId] = useState('');
   const [quantity, setQuantity] = useState('');
   const [quantityUnit, setQuantityUnit] = useState('');
@@ -74,12 +76,36 @@ function BatchesTab() {
 
   useEffect(() => { fetchBatches(); }, [fetchBatches]);
   useEffect(() => {
-    api.get<{ data: Recipe[] }>('/recipes?limit=100').then((res) => setRecipes(res.data)).catch(() => {});
+    Promise.all([
+      api.get<{ data: Recipe[] }>('/recipes?limit=100'),
+      api.get<{ data: Product[] }>('/products?limit=100')
+    ]).then(([resRecipes, resProducts]) => {
+      setRecipes(resRecipes.data);
+      setProducts(resProducts.data);
+    }).catch(() => {});
   }, []);
 
   const openNewModal = () => {
-    setSelectedRecipeId(''); setQuantity(''); setQuantityUnit(''); setNotes('');
+    setSelectedProductId(''); setSelectedRecipeId(''); setQuantity(''); setQuantityUnit(''); setNotes('');
     setShowNewModal(true);
+  };
+
+  const handleProductChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const productId = e.target.value;
+    setSelectedProductId(productId);
+    
+    // Auto-select recipe based on product name match
+    const product = products.find(p => p.id === productId);
+    if (product) {
+      const matchingRecipe = recipes.find(r => r.name.toLowerCase() === product.name.toLowerCase());
+      if (matchingRecipe) {
+        setSelectedRecipeId(matchingRecipe.id);
+        setQuantityUnit(matchingRecipe.yieldUnit);
+      } else {
+        setSelectedRecipeId('');
+        setQuantityUnit('');
+      }
+    }
   };
 
   const handleRecipeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -87,6 +113,12 @@ function BatchesTab() {
     setSelectedRecipeId(id);
     const recipe = recipes.find((r) => r.id === id);
     if (recipe) setQuantityUnit(recipe.yieldUnit);
+    
+    // Optionally clear product if manual recipe selection differs
+    const product = products.find(p => p.id === selectedProductId);
+    if (product && recipe && product.name.toLowerCase() !== recipe.name.toLowerCase()) {
+      setSelectedProductId('');
+    }
   };
 
   const handleCreateBatch = async () => {
@@ -102,19 +134,14 @@ function BatchesTab() {
     } finally { setSaving(false); }
   };
 
-  const handleComplete = async (batchId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setCompleting(batchId);
-    try {
-      await api.patch(`/production/${batchId}/complete`);
-      showToast('Batch completed', 'success');
-      fetchBatches();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to complete batch', 'error');
-    } finally { setCompleting(null); }
-  };
+  const breadTypeOptions: SelectOption[] = products
+    .filter(p => p.category.toLowerCase().includes('bread'))
+    .map(p => ({ value: p.id, label: p.name }));
 
-  const recipeOptions: SelectOption[] = recipes.map((r) => ({ value: r.id, label: `${r.name} (yields ${r.yieldQuantity} ${r.yieldUnit})` }));
+  const recipeOptions: SelectOption[] = recipes.map((r) => ({ 
+    value: r.id, 
+    label: `${r.name} (yields ${r.yieldQuantity} ${r.yieldUnit})` 
+  }));
 
   const columns: DataTableColumn<ProductionBatch>[] = [
     { key: 'batchNumber', label: 'Batch #', sortable: true },
@@ -143,7 +170,20 @@ function BatchesTab() {
 
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="New Production Batch" size="md">
         <div className={styles.form}>
-          <Select label="Recipe" options={recipeOptions} value={selectedRecipeId} onChange={handleRecipeChange} placeholder="Select recipe" />
+          <Select 
+            label="Bread Type (Available)" 
+            options={breadTypeOptions} 
+            value={selectedProductId} 
+            onChange={handleProductChange} 
+            placeholder="Select bread type" 
+          />
+          <Select 
+            label="Recipe (Auto-selected)" 
+            options={recipeOptions} 
+            value={selectedRecipeId} 
+            onChange={handleRecipeChange} 
+            placeholder="Select recipe" 
+          />
           <Input label="Quantity Produced" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           <Input label="Unit" value={quantityUnit} onChange={(e) => setQuantityUnit(e.target.value)} />
           <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -218,6 +258,22 @@ function DailyTargetsTab() {
     setShowModal(true);
   };
 
+  const handleLoadShortage = async () => {
+    if (!form.productId) {
+      showToast('Select a product first', 'error');
+      return;
+    }
+    try {
+      const res = await api.get<{ shortage: number }>(
+        `/production/targets/previous-shortage?productId=${form.productId}&date=${selectedDate}`
+      );
+      setForm((prev) => ({ ...prev, carriedOver: String(res.shortage) }));
+      showToast(`Loaded shortage: ${res.shortage} units`, 'info');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to load shortage', 'error');
+    }
+  };
+
   const openEdit = (t: DailyTarget) => {
     setEditTarget(t);
     setForm({ productId: t.productId, target: String(t.target), actual: String(t.actual), carriedOver: String(t.carriedOver), shortage: String(t.shortage) });
@@ -228,13 +284,17 @@ function DailyTargetsTab() {
     if (!form.productId || !form.target) { showToast('Product and target are required', 'error'); return; }
     setSaving(true);
     try {
+      const targetVal = Number(form.target);
+      const actualVal = Number(form.actual || 0);
+      const shortageVal = Math.max(0, targetVal - actualVal);
+
       const payload = {
         productId: form.productId,
         date: selectedDate,
-        target: Number(form.target),
-        actual: Number(form.actual || 0),
+        target: targetVal,
+        actual: actualVal,
         carriedOver: Number(form.carriedOver || 0),
-        shortage: Number(form.shortage || 0),
+        shortage: shortageVal,
       };
       if (editTarget) {
         await api.put(`/production/targets/${editTarget.id}`, { target: payload.target, actual: payload.actual, carriedOver: payload.carriedOver, shortage: payload.shortage });
@@ -330,7 +390,12 @@ function DailyTargetsTab() {
           )}
           <Input label="Production Target" type="number" value={form.target} onChange={setField('target')} />
           <Input label="Actual Produced" type="number" value={form.actual} onChange={setField('actual')} />
-          <Input label="Carried Over (from previous day)" type="number" value={form.carriedOver} onChange={setField('carriedOver')} />
+          <div className={styles.inputGroup}>
+            <Input label="Carried Over" type="number" value={form.carriedOver} onChange={setField('carriedOver')} />
+            {!editTarget && (
+              <Button size="sm" variant="ghost" onClick={handleLoadShortage} className={styles.loadBtn}>Load Prev. Shortage</Button>
+            )}
+          </div>
           {Number(form.target) > 0 && Number(form.actual) >= 0 && (
             <div className={styles.shortageHint}>
               {computedShortage > 0
