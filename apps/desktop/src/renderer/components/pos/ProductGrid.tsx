@@ -11,18 +11,11 @@ import snackIcon from '../../assets/categories/snack.png';
 import drinkIcon from '../../assets/categories/drink.png';
 import otherIcon from '../../assets/categories/other.png';
 
-import butterRollImg from '../../assets/products/butter_roll.png';
-import chickenPieImg from '../../assets/products/chicken_pie.png';
-import chocolateCakeImg from '../../assets/products/chocolate_cake.png';
-import cocaColaImg from '../../assets/products/coca_cola.png';
-import doughnutImg from '../../assets/products/doughnut.png';
-import meatPieImg from '../../assets/products/meat_pie.png';
-import redVelvetImg from '../../assets/products/red_velvet.png';
-import sausageRollImg from '../../assets/products/sausage_roll.png';
-import springWaterImg from '../../assets/products/spring_water.png';
-import whiteBreadImg from '../../assets/products/white_bread.png';
-import wholeWheatBreadImg from '../../assets/products/whole_wheat_bread.png';
-import vanillaCupcakeImg from '../../assets/products/vanilla_cupcake.png';
+import sugarBreadImg from '../../assets/products/sugar_bread.png';
+import teaBreadImg from '../../assets/products/tea_bread.png';
+import butterBreadImg from '../../assets/products/butter_bread.png';
+import wheatBreadImg from '../../assets/products/wheat_bread.png';
+import cocoaBreadImg from '../../assets/products/cocoa_bread.png';
 
 const CATEGORY_ICONS: Record<string, string> = {
   Bread: breadIcon,
@@ -34,18 +27,11 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 const PRODUCT_IMAGES: Record<string, string> = {
-  'Butter Roll (6 pack)': butterRollImg,
-  'Chicken Pie': chickenPieImg,
-  'Chocolate Cake': chocolateCakeImg,
-  'Coca-Cola 500ml': cocaColaImg,
-  'Doughnut (Sugared)': doughnutImg,
-  'Meat Pie': meatPieImg,
-  'Red Velvet Cake': redVelvetImg,
-  'Sausage Roll': sausageRollImg,
-  'Spring Water 500ml': springWaterImg,
-  'White Bread': whiteBreadImg,
-  'Whole Wheat Bread': wholeWheatBreadImg,
-  'Vanilla Cupcake': vanillaCupcakeImg,
+  'Sugar Bread': sugarBreadImg,
+  'Tea Bread': teaBreadImg,
+  'Butter Bread': butterBreadImg,
+  'Wheat Bread': wheatBreadImg,
+  'Cocoa Bread': cocoaBreadImg,
 };
 
 interface ProductGridProps {

@@ -1,0 +1,5 @@
+❌ Error on postgresql://user:password@localhost:5432/bread_faculty: password authentication failed for user "user"
+❌ Error on postgresql://postgres:postgres@localhost:5432/bread_faculty: password authentication failed for user "postgres"
+❌ Error on postgresql://postgres:postgres@localhost:5432/postgres: password authentication failed for user "postgres"
+Connected to: postgresql://postgres.szpxssnixwujvgfcksct:ERRjT1KztAOlbcxS@aws-1-eu-west-1.pooler.supabase.com:5432/postgres
+✅ Successfully truncated inventory_items on postgresql://postgres.szpxssnixwujvgfcksct:ERRjT1KztAOlbcxS@aws-1-eu-west-1.pooler.supabase.com:5432/postgres

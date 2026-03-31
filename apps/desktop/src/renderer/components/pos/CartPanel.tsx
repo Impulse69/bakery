@@ -5,6 +5,7 @@ import styles from './CartPanel.module.css';
 interface CartPanelProps {
   items: CartItem[];
   onUpdateQuantity: (index: number, delta: number) => void;
+  onSetQuantity: (index: number, quantity: number) => void;
   onRemoveItem: (index: number) => void;
   discountPct: number;
   onDiscountPctChange: (pct: number) => void;
@@ -13,6 +14,7 @@ interface CartPanelProps {
 export function CartPanel({
   items,
   onUpdateQuantity,
+  onSetQuantity,
   onRemoveItem,
   discountPct,
   onDiscountPctChange,
@@ -47,7 +49,24 @@ export function CartPanel({
             <div className={styles.itemActions}>
               <div className={styles.qtyControls}>
                 <button className={styles.qtyBtn} onClick={() => onUpdateQuantity(index, -1)}>−</button>
-                <span className={styles.qty}>{item.quantity}</span>
+                <input
+                  type="number"
+                  className={styles.qtyInput}
+                  value={item.quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val)) {
+                      onSetQuantity(index, val);
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Ensure we don't leave it empty or 0 if user just deleted everything
+                    if (e.target.value === '' || parseInt(e.target.value) === 0) {
+                      onRemoveItem(index);
+                    }
+                  }}
+                  min="0"
+                />
                 <button className={styles.qtyBtn} onClick={() => onUpdateQuantity(index, 1)}>+</button>
               </div>
               <span className={styles.lineTotal}>
