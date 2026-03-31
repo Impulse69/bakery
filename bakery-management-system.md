@@ -48,12 +48,11 @@ Electron wraps a React app into a true native Windows executable. Staff at the s
 
 **Inventory Management**
 - Raw material tracking and real-time stock levels
-- Automatic stock deductions when a production batch is logged
-- Low-stock warnings
+- Manual stock adjustments and low-stock warnings
 
-**Production & Recipes**
-- Define recipes with exact ingredient quantities
-- Log production runs and auto-deduct inventory per batch
+**Batch Production**
+- Log production runs for finished goods
+- Track daily production targets and actuals
 
 **Supplier Management**
 - Supplier profiles and purchase orders
@@ -138,9 +137,8 @@ A **monorepo with Turborepo** lets the desktop app and web dashboard share compo
 - Cloudflare Tunnel configuration
 
 ### Phase 2 — Production & Suppliers (4–5 weeks)
-- Recipe management
 - Production batch logging
-- Inventory auto-deduction on batch creation
+- Daily production targets tracking
 - Supplier profiles and purchase orders
 
 ### Phase 3 — Remote Dashboard & Financials (4–5 weeks)

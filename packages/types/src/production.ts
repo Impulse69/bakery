@@ -2,7 +2,7 @@ export type ProductionBatchStatus = 'in_progress' | 'completed' | 'failed';
 
 export type ProductionBatch = {
   id: string;
-  recipeId: string;
+  productId: string;
   batchNumber: string;
   quantityProduced: number;
   quantityUnit: string;

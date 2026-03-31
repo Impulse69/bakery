@@ -176,7 +176,6 @@ model InventoryItem {
   updatedAt         DateTime @updatedAt
 
   stockAdjustments    StockAdjustment[]
-  recipeIngredients   RecipeIngredient[]
   purchaseOrderItems  PurchaseOrderLineItem[]
   inventoryCountItems InventoryCountItem[]
 
@@ -201,41 +200,9 @@ model StockAdjustment {
   @@map("stock_movements")
 }
 
-model Recipe {
-  id            String   @id @default(cuid())
-  name          String
-  description   String?
-  yieldQuantity Float
-  yieldUnit     String
-  instructions  String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  ingredients       RecipeIngredient[]
-  productionBatches ProductionBatch[]
-
-  @@map("recipes")
-}
-
-model RecipeIngredient {
-  id               String @id @default(cuid())
-  recipeId         String
-  inventoryItemId  String
-  quantityRequired Float
-  unit             String
-  notes            String?
-
-  recipe        Recipe        @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
-
-  @@unique([recipeId, inventoryItemId])
-  @@map("recipe_ingredients")
-}
-
 model ProductionBatch {
   id               String                @id @default(cuid())
-  recipeId         String
+  productId        String
   batchSequence    Int                   @default(autoincrement()) @unique
   batchNumber      String                @unique
   quantityProduced Float
@@ -246,8 +213,8 @@ model ProductionBatch {
   completedAt      DateTime?
   notes            String?
 
-  recipe Recipe @relation(fields: [recipeId], references: [id])
-  user   User   @relation(fields: [producedBy], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [producedBy], references: [id])
 
   @@map("production_batches")
 }

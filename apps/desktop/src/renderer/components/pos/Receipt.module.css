@@ -208,8 +208,10 @@
   /* Show only the print-only receipt */
   .printOnly {
     display: block !important;
-    position: fixed;
-    inset: 0;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 
   .overlay {
@@ -224,31 +226,73 @@
 
   .invoiceMode {
     width: 210mm; /* A4 width */
+    min-height: 297mm; /* A4 height */
+    font-family: 'Inter', 'Segoe UI', sans-serif;
     font-size: 14px;
     padding: 20mm; /* standard A4 margins */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
   }
 
   .invoiceMode .invoiceTitle {
-    font-size: 28px;
+    font-size: 32px;
+    font-weight: 800;
     text-align: right;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    color: #111827;
+    text-transform: uppercase;
   }
 
   .invoiceMode .header {
     text-align: left;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+  }
+
+  .invoiceMode .storeName {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+
+  .invoiceMode .meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
   }
 
   .invoiceMode .items {
-    font-size: 12px;
+    font-size: 14px;
+    margin-bottom: 40px;
   }
 
   .invoiceMode .items th {
-    font-size: 11px;
+    font-size: 12px;
+    background: #f9fafb;
+    border-top: 2px solid #111827;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 12px 8px;
+  }
+
+  .invoiceMode .items td {
+    padding: 12px 8px;
+    border-bottom: 1px solid #f3f4f6;
   }
 
   .invoiceMode .grandTotal {
-    font-size: 16px;
+    font-size: 20px;
+    padding-top: 15px;
+    border-top: 2px solid #111827;
+  }
+
+  .invoiceMode .footer {
+    margin-top: auto;
+    padding-top: 40px;
+    border-top: 1px solid #e5e7eb;
+    text-align: left;
   }
 }

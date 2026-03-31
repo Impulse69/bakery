@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { ProductionBatch, Recipe, Product } from '@bakery/types';
-import { DataTable, Pagination, Button, Modal, Input, Select, Badge, FormSection, StockBadge } from '@bakery/ui';
+import type { ProductionBatch, Product } from '@bakery/types';
+import { DataTable, Pagination, Button, Modal, Input, Select, Badge } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
-import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
@@ -28,9 +27,9 @@ interface DailyTarget {
   id: string;
   productId: string;
   date: string;
-  target: number;
-  actual: number;
-  carriedOver: number;
+  targetQty: number;
+  actualQty: number;
+  carriedOverShortage: number;
   shortage: number;
   product: Product;
 }
@@ -44,20 +43,16 @@ function BatchesTab() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(getToday());
   const [showNewModal, setShowNewModal] = useState(false);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [selectedRecipeId, setSelectedRecipeId] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [quantityUnit, setQuantityUnit] = useState('');
+  const [quantityUnit, setQuantityUnit] = useState('units');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState<string | null>(null);
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
-  const selectedRecipe = recipes.find((r) => r.id === selectedRecipeId) ?? null;
-  const multiplier = selectedRecipe && Number(quantity) ? Number(quantity) / selectedRecipe.yieldQuantity : 0;
 
   const fetchBatches = useCallback(async () => {
     setLoading(true);
@@ -76,56 +71,19 @@ function BatchesTab() {
 
   useEffect(() => { fetchBatches(); }, [fetchBatches]);
   useEffect(() => {
-    Promise.all([
-      api.get<{ data: Recipe[] }>('/recipes?limit=100'),
-      api.get<{ data: Product[] }>('/products?limit=100')
-    ]).then(([resRecipes, resProducts]) => {
-      setRecipes(resRecipes.data);
-      setProducts(resProducts.data);
-    }).catch(() => {});
+    api.get<{ data: Product[] }>('/products?limit=100').then((res) => setProducts(res.data)).catch(() => {});
   }, []);
 
   const openNewModal = () => {
-    setSelectedProductId(''); setSelectedRecipeId(''); setQuantity(''); setQuantityUnit(''); setNotes('');
+    setSelectedProductId(''); setQuantity(''); setQuantityUnit('units'); setNotes('');
     setShowNewModal(true);
   };
 
-  const handleProductChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const productId = e.target.value;
-    setSelectedProductId(productId);
-    
-    // Auto-select recipe based on product name match
-    const product = products.find(p => p.id === productId);
-    if (product) {
-      const matchingRecipe = recipes.find(r => r.name.toLowerCase() === product.name.toLowerCase());
-      if (matchingRecipe) {
-        setSelectedRecipeId(matchingRecipe.id);
-        setQuantityUnit(matchingRecipe.yieldUnit);
-      } else {
-        setSelectedRecipeId('');
-        setQuantityUnit('');
-      }
-    }
-  };
-
-  const handleRecipeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = e.target.value;
-    setSelectedRecipeId(id);
-    const recipe = recipes.find((r) => r.id === id);
-    if (recipe) setQuantityUnit(recipe.yieldUnit);
-    
-    // Optionally clear product if manual recipe selection differs
-    const product = products.find(p => p.id === selectedProductId);
-    if (product && recipe && product.name.toLowerCase() !== recipe.name.toLowerCase()) {
-      setSelectedProductId('');
-    }
-  };
-
   const handleCreateBatch = async () => {
-    if (!selectedRecipeId || !quantity) { showToast('Recipe and quantity are required', 'error'); return; }
+    if (!selectedProductId || !quantity) { showToast('Product and quantity are required', 'error'); return; }
     setSaving(true);
     try {
-      await api.post('/production', { recipeId: selectedRecipeId, quantityProduced: Number(quantity), quantityUnit, notes: notes || undefined });
+      await api.post('/production', { productId: selectedProductId, quantityProduced: Number(quantity), quantityUnit, notes: notes || undefined });
       showToast('Production batch created', 'success');
       setShowNewModal(false);
       fetchBatches();
@@ -138,14 +96,9 @@ function BatchesTab() {
     .filter(p => p.category.toLowerCase().includes('bread'))
     .map(p => ({ value: p.id, label: p.name }));
 
-  const recipeOptions: SelectOption[] = recipes.map((r) => ({ 
-    value: r.id, 
-    label: `${r.name} (yields ${r.yieldQuantity} ${r.yieldUnit})` 
-  }));
-
   const columns: DataTableColumn<ProductionBatch>[] = [
     { key: 'batchNumber', label: 'Batch #', sortable: true },
-    { key: 'recipe', label: 'Recipe', render: (row: any) => row.recipe?.name ?? '—' },
+    { key: 'product', label: 'Product', render: (row: any) => row.product?.name ?? '—' },
     { key: 'quantityProduced', label: 'Quantity', render: (row) => `${row.quantityProduced} ${row.quantityUnit}` },
     { key: 'status', label: 'Status', render: (row) => <Badge variant={STATUS_VARIANT[row.status] ?? 'neutral'}>{STATUS_LABEL[row.status] ?? row.status}</Badge> },
     { key: 'startedAt', label: 'Started', render: (row) => new Date(row.startedAt).toLocaleTimeString() },
@@ -157,6 +110,18 @@ function BatchesTab() {
       ) : null,
     },
   ];
+
+  const handleComplete = async (batchId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCompleting(batchId);
+    try {
+      await api.patch(`/production/${batchId}/complete`);
+      showToast('Batch completed', 'success');
+      fetchBatches();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to complete batch', 'error');
+    } finally { setCompleting(null); }
+  };
 
   return (
     <div>
@@ -171,46 +136,15 @@ function BatchesTab() {
       <Modal isOpen={showNewModal} onClose={() => setShowNewModal(false)} title="New Production Batch" size="md">
         <div className={styles.form}>
           <Select 
-            label="Bread Type (Available)" 
+            label="Bread Type" 
             options={breadTypeOptions} 
             value={selectedProductId} 
-            onChange={handleProductChange} 
+            onChange={(e) => setSelectedProductId(e.target.value)} 
             placeholder="Select bread type" 
-          />
-          <Select 
-            label="Recipe (Auto-selected)" 
-            options={recipeOptions} 
-            value={selectedRecipeId} 
-            onChange={handleRecipeChange} 
-            placeholder="Select recipe" 
           />
           <Input label="Quantity Produced" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           <Input label="Unit" value={quantityUnit} onChange={(e) => setQuantityUnit(e.target.value)} />
           <Input label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-
-          {selectedRecipe?.ingredients && selectedRecipe.ingredients.length > 0 && (
-            <FormSection title="Ingredients Required">
-              <table className={styles.ingredientsTable}>
-                <thead><tr><th>Ingredient</th><th>Required</th><th>Unit</th><th>In Stock</th><th>Status</th></tr></thead>
-                <tbody>
-                  {selectedRecipe.ingredients.map((ing) => {
-                    const required = multiplier > 0 ? (ing.quantityRequired * multiplier).toFixed(2) : ing.quantityRequired.toString();
-                    const stock = ing.inventoryItem?.quantityOnHand ?? 0;
-                    const threshold = ing.inventoryItem?.lowStockThreshold ?? 0;
-                    return (
-                      <tr key={ing.id}>
-                        <td>{ing.inventoryItem?.name ?? '—'}</td>
-                        <td>{required}</td>
-                        <td>{ing.unit}</td>
-                        <td>{stock}</td>
-                        <td><StockBadge currentStock={stock} reorderLevel={threshold} /></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </FormSection>
-          )}
 
           <div className={styles.actions}>
             <Button variant="ghost" onClick={() => setShowNewModal(false)}>Cancel</Button>
@@ -276,7 +210,13 @@ function DailyTargetsTab() {
 
   const openEdit = (t: DailyTarget) => {
     setEditTarget(t);
-    setForm({ productId: t.productId, target: String(t.target), actual: String(t.actual), carriedOver: String(t.carriedOver), shortage: String(t.shortage) });
+    setForm({ 
+      productId: t.productId, 
+      target: String(t.targetQty), 
+      actual: String(t.actualQty), 
+      carriedOver: String(t.carriedOverShortage), 
+      shortage: String(t.shortage) 
+    });
     setShowModal(true);
   };
 
@@ -346,7 +286,7 @@ function DailyTargetsTab() {
           </div>
 
           {targets.map((t) => {
-            const pct = t.target > 0 ? Math.min(100, Math.round((t.actual / t.target) * 100)) : 0;
+            const pct = t.targetQty > 0 ? Math.min(100, Math.round((t.actualQty / t.targetQty) * 100)) : 0;
             const met = pct >= 100;
             const statusColor = met ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626';
 
@@ -354,16 +294,16 @@ function DailyTargetsTab() {
               <div key={t.id} className={styles.targetRow}>
                 <div className={styles.targetProduct}>
                   <span className={styles.targetProductName}>{t.product?.name ?? '—'}</span>
-                  {t.carriedOver > 0 && (
-                    <span className={styles.carryoverBadge}>+{t.carriedOver} carried</span>
+                  {t.carriedOverShortage > 0 && (
+                    <span className={styles.carryoverBadge}>+{t.carriedOverShortage} carried</span>
                   )}
                 </div>
-                <span className={styles.targetNum}>{t.target.toLocaleString()}</span>
-                <span className={styles.targetNum}>{t.actual.toLocaleString()}</span>
+                <span className={styles.targetNum}>{t.targetQty.toLocaleString()}</span>
+                <span className={styles.targetNum}>{t.actualQty.toLocaleString()}</span>
                 <span className={styles.targetNum} style={{ color: t.shortage > 0 ? '#dc2626' : '#16a34a' }}>
                   {t.shortage > 0 ? `-${t.shortage}` : '✓'}
                 </span>
-                <span className={styles.targetNum}>{t.carriedOver > 0 ? t.carriedOver.toLocaleString() : '—'}</span>
+                <span className={styles.targetNum}>{t.carriedOverShortage > 0 ? t.carriedOverShortage.toLocaleString() : '—'}</span>
                 <div className={styles.targetProgress}>
                   <div className={styles.progressBar}>
                     <div className={styles.progressFill} style={{ width: `${pct}%`, background: statusColor }} />

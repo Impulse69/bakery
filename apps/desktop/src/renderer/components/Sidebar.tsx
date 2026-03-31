@@ -25,16 +25,17 @@ const IconChart = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="no
 const IconSettings = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
 
 const MENU_ITEMS: MenuItem[] = [
-  { path: '/', label: 'Dashboard', permission: 'dashboard:view', icon: <img src={logo} alt="" style={{ width: 22, height: 22, borderRadius: 4, objectFit: 'cover' }} /> },
-  { path: '/sales-orders', label: 'Records', permission: 'sales:view', icon: <IconOrders /> },
-  { path: '/customers', label: 'Customers', permission: 'customers:view', icon: <IconUsers /> },
-  { path: '/products', label: 'Products', permission: 'products:view', icon: <IconProducts /> },
-  { path: '/inventory', label: 'Stock', permission: 'inventory:view', icon: <IconBox /> },
-  { path: '/production', label: 'Production', permission: 'production:view', icon: <IconFactory /> },
+  { path: '/', label: 'Dashboard', permission: 'dashboard:view', icon: <IconLayout /> },
+  { path: '/pos', label: 'Sales Terminal', permission: 'sales:create', icon: <IconPOS /> },
+  { path: '/sales-orders', label: 'Sales Records', permission: 'sales:view', icon: <IconOrders /> },
+  { path: '/customers', label: 'Customer List', permission: 'customers:view', icon: <IconUsers /> },
+  { path: '/products', label: 'Product List', permission: 'products:view', icon: <IconProducts /> },
+  { path: '/inventory', label: 'Inventory Stock', permission: 'inventory:view', icon: <IconBox /> },
+  { path: '/production', label: 'Batch Production', permission: 'production:view', icon: <IconFactory /> },
+  { path: '/purchase-orders', label: 'Purchase Orders', permission: 'purchase_orders:view', icon: <IconOrders /> },
   { path: '/expenses', label: 'Accounts Payable', permission: 'expenses:view', icon: <IconMoney /> },
-  { path: '/pos', label: 'Sales', permission: 'sales:create', icon: <IconPOS /> },
-  { path: '/reports', label: 'Statistics', permission: 'reports:view', icon: <IconChart /> },
-  { path: '/settings', label: 'Help Center', permission: 'settings:view', icon: <IconSettings /> },
+  { path: '/reports', label: 'Analytics', permission: 'reports:view', icon: <IconChart /> },
+  { path: '/settings', label: 'System Setup', permission: 'settings:view', icon: <IconSettings /> },
 ];
 
 interface SidebarProps {

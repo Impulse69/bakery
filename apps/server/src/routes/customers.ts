@@ -126,7 +126,16 @@ router.get(
   requireRole('admin', 'owner', 'cashier'),
   asyncHandler(async (req, res) => {
     const customerId = getParam(req, 'id');
-    const [stats, orders] = await Promise.all([
+    const now = new Date();
+    
+    // Date boundaries
+    const startOfDay = new Date(now); startOfDay.setHours(0,0,0,0);
+    const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1)); startOfWeek.setHours(0,0,0,0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfQuarter = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+
+    const [stats, orders, periodic, topProducts] = await Promise.all([
       prisma.salesOrder.aggregate({
         where: { customerId, status: { not: 'cancelled' } },
         _sum: { total: true },
@@ -138,14 +147,35 @@ router.get(
         select: { createdAt: true },
         orderBy: { createdAt: 'desc' },
       }),
+      // Periodic stats
+      Promise.all([
+        prisma.salesOrder.aggregate({ where: { customerId, createdAt: { gte: startOfDay }, status: { not: 'cancelled' } }, _sum: { total: true } }),
+        prisma.salesOrder.aggregate({ where: { customerId, createdAt: { gte: startOfWeek }, status: { not: 'cancelled' } }, _sum: { total: true } }),
+        prisma.salesOrder.aggregate({ where: { customerId, createdAt: { gte: startOfMonth }, status: { not: 'cancelled' } }, _sum: { total: true } }),
+        prisma.salesOrder.aggregate({ where: { customerId, createdAt: { gte: startOfQuarter }, status: { not: 'cancelled' } }, _sum: { total: true } }),
+        prisma.salesOrder.aggregate({ where: { customerId, createdAt: { gte: startOfYear }, status: { not: 'cancelled' } }, _sum: { total: true } }),
+      ]),
+      // Top reordered products
+      prisma.salesOrderItem.groupBy({
+        by: ['productId'],
+        where: { salesOrder: { customerId, status: { not: 'cancelled' } } },
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: 'desc' } },
+        take: 5
+      })
     ]);
+
+    // Enrich top products with names
+    const enrichedProducts = await Promise.all(topProducts.map(async (tp) => {
+      const p = await prisma.product.findUnique({ where: { id: tp.productId }, select: { name: true } });
+      return { name: p?.name, quantity: tp._sum.quantity };
+    }));
 
     // Compute week-streak: consecutive ISO weeks (Mon–Sun) with ≥1 order
     const weekKeys = new Set(
       orders.map((o) => {
         const d = new Date(o.createdAt);
-        // ISO week start = Monday
-        const day = d.getDay() === 0 ? 7 : d.getDay(); // 1=Mon … 7=Sun
+        const day = d.getDay() === 0 ? 7 : d.getDay();
         const mon = new Date(d);
         mon.setDate(d.getDate() - (day - 1));
         return mon.toISOString().split('T')[0];
@@ -154,12 +184,7 @@ router.get(
 
     let weekStreak = 0;
     const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
-    // Walk backwards from the current week
-    const now = new Date();
-    const todayDay = now.getDay() === 0 ? 7 : now.getDay();
-    const thisMon = new Date(now);
-    thisMon.setDate(now.getDate() - (todayDay - 1));
-    thisMon.setHours(0, 0, 0, 0);
+    const thisMon = new Date(startOfWeek);
 
     let cursor = new Date(thisMon);
     while (true) {
@@ -174,6 +199,14 @@ router.get(
       totalOrders: stats._count.id,
       lastOrderDate: stats._max.createdAt,
       weekStreak,
+      periodic: {
+        daily: periodic[0]._sum.total || 0,
+        weekly: periodic[1]._sum.total || 0,
+        monthly: periodic[2]._sum.total || 0,
+        quarterly: periodic[3]._sum.total || 0,
+        yearly: periodic[4]._sum.total || 0,
+      },
+      topProducts: enrichedProducts,
     });
   }),
 );

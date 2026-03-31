@@ -19,7 +19,8 @@ interface DailyReport {
   totalRevenue: number;
   totalTax: number;
   totalExpenses: number;
-  profit: number;
+  marginalProfit: number;
+  netProfit: number;
 }
 
 interface WeeklyEntry {
@@ -173,7 +174,8 @@ export function DashboardPage() {
 
   const revenue = report?.totalRevenue ?? 0;
   const expenses = report?.totalExpenses ?? 0;
-  const profit = report?.profit ?? 0;
+  const marginalProfit = report?.marginalProfit ?? 0;
+  const netProfit = report?.netProfit ?? 0;
   const orderCount = report?.totalOrders ?? 0;
 
   return (
@@ -181,8 +183,8 @@ export function DashboardPage() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>{getDashboardTitle(user?.role)}</h1>
-          <p className={styles.pageQuote}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h1 className={styles.heading}>{getDashboardTitle(user?.role)}</h1>
+          <p className={styles.subheading}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 
@@ -223,11 +225,21 @@ export function DashboardPage() {
           )}
 
           {canSeeExpenses && (
+            <div className={styles.statCard}>
+              <div className={styles.statTop}>
+                <div className={`${styles.statIcon} ${styles.statIconGreen}`}><IconProfit /></div>
+              </div>
+              <p className={styles.statLabel}>Marginal Profit</p>
+              <p className={styles.statValue} style={{ color: '#16a34a' }}>{loading ? '—' : formatCurrency(marginalProfit)}</p>
+            </div>
+          )}
+
+          {canSeeExpenses && (
             <div className={`${styles.statCard} ${styles.statCardDark}`}>
               <div className={styles.statTop}>
                 <div className={`${styles.statIcon} ${styles.statIconDarkInner}`}><IconCashIn /></div>
               </div>
-              <p className={styles.statLabelDark}>Today's Cash-in</p>
+              <p className={styles.statLabelDark}>Total Cash-ins</p>
               <p className={styles.statValueDark}>{loading ? '—' : formatCurrency(revenue)}</p>
             </div>
           )}

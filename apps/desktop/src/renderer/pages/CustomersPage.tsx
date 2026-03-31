@@ -46,15 +46,33 @@ const orderColumns: DataTableColumn<SalesOrder>[] = [
 
 const EMPTY_FORM = { name: '', phone: '', email: '', address: '', notes: '' };
 
+interface CustomerStats {
+  totalSpent: number;
+  totalOrders: number;
+  lastOrderDate: string;
+  weekStreak: number;
+  periodic: {
+    daily: number;
+    weekly: number;
+    monthly: number;
+    quarterly: number;
+    yearly: number;
+  };
+  topProducts: Array<{ name: string; quantity: number }>;
+}
+
 export function CustomersPage() {
   const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState<'all' | 'leaderboard'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedStats, setSelectedCustomerStats] = useState<CustomerStats | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -64,18 +82,23 @@ export function CustomersPage() {
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
-      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-      const res = await api.get<{ data: Customer[]; total: number }>(
-        `/customers?page=${page}&limit=${limit}${searchParam}`,
-      );
-      setCustomers(res.data);
-      setTotal(res.total);
+      if (activeTab === 'all') {
+        const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+        const res = await api.get<{ data: Customer[]; total: number }>(
+          `/customers?page=${page}&limit=${limit}${searchParam}`,
+        );
+        setCustomers(res.data);
+        setTotal(res.total);
+      } else {
+        const res = await api.get<any[]>('/customers/leaderboard');
+        setLeaderboard(res);
+      }
     } catch {
       setCustomers([]);
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [page, search, activeTab]);
 
   useEffect(() => {
     fetchCustomers();
@@ -111,10 +134,14 @@ export function CustomersPage() {
 
   const openDetail = async (customer: Customer) => {
     try {
-      const full = await api.get<Customer>(`/customers/${customer.id}`);
+      const [full, stats] = await Promise.all([
+        api.get<Customer>(`/customers/${customer.id}`),
+        api.get<CustomerStats>(`/customers/${customer.id}/stats`)
+      ]);
       setSelectedCustomer(full);
+      setSelectedCustomerStats(stats);
     } catch (err: any) {
-      showToast(err.message || 'Failed to load customer', 'error');
+      showToast(err.message || 'Failed to load customer details', 'error');
     }
   };
 
@@ -125,28 +152,62 @@ export function CustomersPage() {
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.heading}>Customers</h1>
-        <Button onClick={openAddModal}>Add Customer</Button>
+        <div>
+          <h1 className={styles.heading}>Customers</h1>
+          <p className={styles.subheading}>Manage customer relationships and track buying history.</p>
+        </div>
+        <Button onClick={openAddModal}>+ New Customer</Button>
       </div>
 
-      <div className={styles.search}>
-        <SearchInput
-          value={search}
-          onChange={handleSearchChange}
-          placeholder="Search by name or phone..."
+      <div className={styles.tabs}>
+        <button
+          className={`${styles.tab} ${activeTab === 'all' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('all')}
+        >
+          All Customers
+        </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('leaderboard')}
+        >
+          Top Spenders
+        </button>
+      </div>
+
+      {activeTab === 'all' ? (
+        <>
+          <div className={styles.search}>
+            <SearchInput
+              value={search}
+              onChange={handleSearchChange}
+              placeholder="Search by name or phone..."
+            />
+          </div>
+
+          <DataTable
+            columns={columns}
+            data={customers}
+            loading={loading}
+            onRowClick={openDetail}
+            emptyMessage="No customers found"
+          />
+
+          {totalPages > 1 && (
+            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          )}
+        </>
+      ) : (
+        <DataTable
+          columns={[
+            { key: 'name', label: 'Customer' },
+            { key: 'phone', label: 'Phone' },
+            { key: 'totalOrders', label: 'Orders', render: (row) => row.totalOrders.toLocaleString() },
+            { key: 'totalSpent', label: 'Total Revenue', render: (row) => formatCurrency(row.totalSpent) },
+          ]}
+          data={leaderboard}
+          loading={loading}
+          onRowClick={openDetail}
         />
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={customers}
-        loading={loading}
-        onRowClick={openDetail}
-        emptyMessage="No customers found"
-      />
-
-      {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
 
       {/* Add Modal */}
@@ -167,34 +228,50 @@ export function CustomersPage() {
       {/* Detail Modal */}
       <Modal
         isOpen={!!selectedCustomer}
-        onClose={() => setSelectedCustomer(null)}
-        title={selectedCustomer?.name ?? 'Customer'}
+        onClose={() => { setSelectedCustomer(null); setSelectedCustomerStats(null); }}
+        title={selectedCustomer?.name ?? 'Customer Details'}
         size="lg"
       >
         {selectedCustomer && (
-          <>
+          <div className={styles.detailContainer}>
             <div className={styles.detailGrid}>
-              <div>
-                <div className={styles.detailLabel}>Phone</div>
-                <div className={styles.detailValue}>{selectedCustomer.phone || '—'}</div>
-              </div>
-              <div>
-                <div className={styles.detailLabel}>Email</div>
-                <div className={styles.detailValue}>{selectedCustomer.email || '—'}</div>
-              </div>
-              <div>
-                <div className={styles.detailLabel}>Address</div>
-                <div className={styles.detailValue}>{selectedCustomer.address || '—'}</div>
-              </div>
-              <div>
-                <div className={styles.detailLabel}>Credit Balance</div>
-                <div className={styles.detailValue}>{formatCurrency(selectedCustomer.creditBalance)}</div>
-              </div>
-              <div>
-                <div className={styles.detailLabel}>Notes</div>
-                <div className={styles.detailValue}>{selectedCustomer.notes || '—'}</div>
-              </div>
+              <Card className={styles.infoCard}>
+                <div className={styles.detailLabel}>Contact Information</div>
+                <div className={styles.infoRow}><span>Phone:</span> <strong>{selectedCustomer.phone || '—'}</strong></div>
+                <div className={styles.infoRow}><span>Email:</span> <strong>{selectedCustomer.email || '—'}</strong></div>
+                <div className={styles.infoRow}><span>Address:</span> <strong>{selectedCustomer.address || '—'}</strong></div>
+                <div className={styles.infoRow}><span>Credit:</span> <strong style={{ color: 'var(--color-danger)' }}>{formatCurrency(selectedCustomer.creditBalance)}</strong></div>
+              </Card>
+
+              {selectedStats && (
+                <Card className={styles.statsCard}>
+                  <div className={styles.detailLabel}>Buying Statistics</div>
+                  <div className={styles.streakBadge}>
+                    <span className={styles.streakIcon}>🔥</span>
+                    <span><strong>{selectedStats.weekStreak} Week</strong> Purchase Streak</span>
+                  </div>
+                  <div className={styles.periodicGrid}>
+                    <div className={styles.periodBox}><span>Day</span><strong>{formatCurrency(selectedStats.periodic.daily)}</strong></div>
+                    <div className={styles.periodBox}><span>Week</span><strong>{formatCurrency(selectedStats.periodic.weekly)}</strong></div>
+                    <div className={styles.periodBox}><span>Month</span><strong>{formatCurrency(selectedStats.periodic.monthly)}</strong></div>
+                    <div className={styles.periodBox}><span>Year</span><strong>{formatCurrency(selectedStats.periodic.yearly)}</strong></div>
+                  </div>
+                </Card>
+              )}
             </div>
+
+            {selectedStats && selectedStats.topProducts.length > 0 && (
+              <div className={styles.reorderSection}>
+                <h4 className={styles.sectionTitle}>Most Reordered Items</h4>
+                <div className={styles.topProducts}>
+                  {selectedStats.topProducts.map((p, i) => (
+                    <div key={i} className={styles.productPill}>
+                      {p.name} <span>({p.quantity})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <h3 className={styles.ordersHeading}>Recent Orders</h3>
             <DataTable
@@ -202,7 +279,7 @@ export function CustomersPage() {
               data={selectedCustomer.salesOrders ?? []}
               emptyMessage="No orders yet"
             />
-          </>
+          </div>
         )}
       </Modal>
     </div>

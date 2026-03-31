@@ -23,6 +23,7 @@ router.get(
           createdAt: { gte: day, lt: nextDay },
           status: { not: 'cancelled' },
         },
+        include: { items: true },
       }),
       prisma.expense.findMany({
         where: {
@@ -34,7 +35,16 @@ router.get(
     const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
     const totalTax = orders.reduce((s, o) => s + o.taxTotal, 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const profit = totalRevenue - totalExpenses;
+    
+    // Marginal Profit calculation: (Price - WholesalePrice) * Quantity
+    const totalMarginalProfit = orders.reduce((sum, order) => {
+      return sum + order.items.reduce((itemSum, item) => {
+        const wholesale = item.unitWholesalePrice ?? 0;
+        return itemSum + ((item.unitPrice - wholesale) * item.quantity);
+      }, 0);
+    }, 0);
+
+    const netProfit = totalRevenue - totalExpenses;
 
     res.json({
       date: dateStr,
@@ -42,8 +52,55 @@ router.get(
       totalRevenue,
       totalTax,
       totalExpenses,
-      profit,
+      marginalProfit: totalMarginalProfit,
+      netProfit,
     });
+  }),
+);
+
+// GET /api/reports/profit-analysis?from=&to=
+router.get(
+  '/profit-analysis',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const { from, to } = req.query as Record<string, string | undefined>;
+
+    const where: Record<string, unknown> = {
+      salesOrder: { status: { not: 'cancelled' } },
+    };
+    if (from || to) {
+      const dateFilter: Record<string, Date> = {};
+      if (from) dateFilter.gte = new Date(from);
+      if (to) dateFilter.lte = new Date(to);
+      (where.salesOrder as Record<string, unknown>).createdAt = dateFilter;
+    }
+
+    const items = await prisma.salesOrderItem.findMany({
+      where,
+      include: { product: { select: { name: true, sku: true } } },
+    });
+
+    const profitByProduct = new Map<string, any>();
+    for (const item of items) {
+      const key = item.productId;
+      const existing = profitByProduct.get(key) || {
+        productName: item.product.name,
+        sku: item.product.sku,
+        quantity: 0,
+        revenue: 0,
+        cost: 0,
+        profit: 0,
+      };
+
+      const cost = (item.unitWholesalePrice ?? 0) * item.quantity;
+      existing.quantity += item.quantity;
+      existing.revenue += item.total;
+      existing.cost += cost;
+      existing.profit += (item.total - cost);
+      profitByProduct.set(key, existing);
+    }
+
+    res.json(Array.from(profitByProduct.values()));
   }),
 );
 

@@ -9,7 +9,7 @@ import { requireRole } from '../middleware/requireRole.js';
 const router = Router();
 
 const createBatchSchema = z.object({
-  recipeId: z.string(),
+  productId: z.string(),
   quantityProduced: z.number().positive(),
   quantityUnit: z.string().min(1),
   notes: z.string().optional(),
@@ -25,7 +25,8 @@ router.get(
     const where: Record<string, unknown> = {};
     if (date) {
       const day = new Date(date);
-      const nextDay = new Date(date);
+      day.setHours(0, 0, 0, 0);
+      const nextDay = new Date(day);
       nextDay.setDate(nextDay.getDate() + 1);
       where.startedAt = { gte: day, lt: nextDay };
     }
@@ -33,7 +34,7 @@ router.get(
     const [batches, total] = await Promise.all([
       prisma.productionBatch.findMany({
         where,
-        include: { recipe: true, user: { select: { id: true, name: true } } },
+        include: { product: true, user: { select: { id: true, name: true } } },
         skip,
         take,
         orderBy: { startedAt: 'desc' },
@@ -49,22 +50,18 @@ router.post(
   '/',
   requireRole('admin', 'baker'),
   asyncHandler(async (req, res) => {
-    const { recipeId, quantityProduced, quantityUnit, notes } = createBatchSchema.parse(req.body);
+    const { productId, quantityProduced, quantityUnit, notes } = createBatchSchema.parse(req.body);
 
     const batch = await prisma.$transaction(async (tx) => {
-      const recipe = await tx.recipe.findUnique({
-        where: { id: recipeId },
-        include: { ingredients: true },
+      const product = await tx.product.findUnique({
+        where: { id: productId },
       });
-      if (!recipe) throw new AppError(404, 'Recipe not found');
-
-      // Calculate multiplier based on how many batches of the yield we're producing
-      const multiplier = quantityProduced / recipe.yieldQuantity;
+      if (!product) throw new AppError(404, 'Product not found');
 
       // Create batch with placeholder batchNumber
       const created = await tx.productionBatch.create({
         data: {
-          recipeId,
+          productId,
           batchNumber: 'TEMP',
           quantityProduced,
           quantityUnit,
@@ -81,45 +78,10 @@ router.post(
         },
       });
 
-      // Pre-check: verify sufficient stock for all ingredients
-      for (const ingredient of recipe.ingredients) {
-        const item = await tx.inventoryItem.findUnique({ where: { id: ingredient.inventoryItemId } });
-        if (!item) throw new AppError(404, `Inventory item not found: ${ingredient.inventoryItemId}`);
-        const required = ingredient.quantityRequired * multiplier;
-        if (item.quantityOnHand < required) {
-          throw new AppError(
-            400,
-            `Insufficient stock for ${item.name}: need ${required} ${ingredient.unit}, have ${item.quantityOnHand}`,
-          );
-        }
-      }
-
-      // Deduct ingredients from inventory
-      for (const ingredient of recipe.ingredients) {
-        const deduction = ingredient.quantityRequired * multiplier;
-
-        await tx.stockAdjustment.create({
-          data: {
-            inventoryItemId: ingredient.inventoryItemId,
-            quantityChange: -deduction,
-            adjustmentType: 'production',
-            referenceId: updated.id,
-            notes: `Production batch ${updated.batchNumber}`,
-            createdBy: req.user!.id,
-          },
-        });
-
-        await tx.inventoryItem.update({
-          where: { id: ingredient.inventoryItemId },
-          data: { quantityOnHand: { decrement: deduction } },
-        });
-      }
-
       return updated;
     });
 
     getIO().emit('production:updated', { batchId: batch.id });
-    getIO().emit('stock:updated', { reason: 'production_deduction', batchId: batch.id });
     res.status(201).json(batch);
   }),
 );
@@ -140,6 +102,38 @@ router.patch(
 
     getIO().emit('production:updated', { batchId: updated.id, status: 'completed' });
     res.json(updated);
+  }),
+);
+
+// GET /api/production/targets/previous-shortage?productId=...&date=...
+router.get(
+  '/targets/previous-shortage',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const productId = req.query.productId as string;
+    const dateStr = req.query.date as string;
+
+    if (!productId || !dateStr) {
+      throw new AppError(400, 'productId and date are required');
+    }
+
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const prevDate = new Date(targetDate);
+    prevDate.setDate(prevDate.getDate() - 1);
+
+    const prevTarget = await prisma.dailyProductionTarget.findFirst({
+      where: {
+        productId,
+        targetDate: {
+          gte: prevDate,
+          lt: targetDate,
+        },
+      },
+    });
+
+    res.json({ shortage: prevTarget?.shortage ?? 0 });
   }),
 );
 
@@ -169,9 +163,10 @@ router.get(
     const where: Record<string, unknown> = {};
     if (date) {
       const day = new Date(date);
-      const nextDay = new Date(date);
+      day.setHours(0, 0, 0, 0);
+      const nextDay = new Date(day);
       nextDay.setDate(nextDay.getDate() + 1);
-      where.date = { gte: day, lt: nextDay };
+      where.targetDate = { gte: day, lt: nextDay };
     }
 
     const [targets, total] = await Promise.all([
@@ -180,7 +175,7 @@ router.get(
         include: { product: true },
         skip,
         take,
-        orderBy: { date: 'desc' },
+        orderBy: { targetDate: 'desc' },
       }),
       prisma.dailyProductionTarget.count({ where }),
     ]);
@@ -199,8 +194,12 @@ router.post(
 
     const target = await prisma.dailyProductionTarget.create({
       data: {
-        ...data,
-        date: targetDate,
+        productId: data.productId,
+        targetDate,
+        targetQty: data.target,
+        actualQty: data.actual,
+        carriedOverShortage: data.carriedOver,
+        shortage: data.shortage,
       },
       include: { product: true },
     });
@@ -214,9 +213,15 @@ router.put(
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
     const data = updateTargetSchema.parse(req.body);
+    const updateData: Record<string, any> = {};
+    if (data.target !== undefined) updateData.targetQty = data.target;
+    if (data.actual !== undefined) updateData.actualQty = data.actual;
+    if (data.carriedOver !== undefined) updateData.carriedOverShortage = data.carriedOver;
+    if (data.shortage !== undefined) updateData.shortage = data.shortage;
+
     const target = await prisma.dailyProductionTarget.update({
       where: { id: getParam(req, 'id') },
-      data,
+      data: updateData,
       include: { product: true },
     });
     res.json(target);

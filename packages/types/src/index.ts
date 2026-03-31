@@ -4,7 +4,6 @@ export type { User, AuthPayload } from './user';
 export type { Product, ProductVariant } from './product';
 export type { Customer } from './customer';
 export type { InventoryItem, StockAdjustment, StockAdjustmentType } from './inventory';
-export type { Recipe, RecipeIngredient } from './recipe';
 export type { ProductionBatch, ProductionBatchStatus } from './production';
 export type { SalesOrder, SalesOrderItem, SalesOrderStatus, Payment } from './order';
 export type { Supplier, PurchaseOrder, PurchaseOrderLineItem, PurchaseOrderStatus } from './supplier';
