@@ -9,3 +9,8 @@ CLAUDE.md
 script.md
 tasks/
 .claude/
+
+.next/
+out/
+*.log
+*.tsbuildinfo

@@ -1,13 +1,9 @@
-<<<<<<< HEAD
-import 'dotenv/config';
-=======
 import * as dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
->>>>>>> beta-build
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
@@ -20,6 +16,12 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Seeding database...');
+
+  // ── Clear Existing Data ──────────────────────────────────────────────────
+  await prisma.product.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.location.deleteMany();
+  console.log('✓ Database cleared');
 
   // ── Location ──────────────────────────────────────────────────────────────
   const location = await prisma.location.upsert({
