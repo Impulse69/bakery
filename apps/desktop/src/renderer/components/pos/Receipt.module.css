@@ -63,7 +63,7 @@
   display: none;
 }
 
-/* ── Receipt layout ──────────────────────────── */
+/* ── Receipt & Invoice layout ── */
 .receipt {
   width: 80mm;
   font-family: 'Courier New', Courier, monospace;
@@ -72,6 +72,20 @@
   background: #fff;
   padding: 4mm;
   line-height: 1.4;
+}
+
+.invoiceMode {
+  width: 140mm; /* A wider layout for screen preview */
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+
+.invoiceTitle {
+  font-size: 18px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  letter-spacing: 0.1em;
+  text-align: center;
 }
 
 .header {
@@ -206,5 +220,35 @@
     width: 80mm;
     margin: 0;
     padding: 4mm;
+  }
+
+  .invoiceMode {
+    width: 210mm; /* A4 width */
+    font-size: 14px;
+    padding: 20mm; /* standard A4 margins */
+  }
+
+  .invoiceMode .invoiceTitle {
+    font-size: 28px;
+    text-align: right;
+    margin-bottom: 20px;
+  }
+
+  .invoiceMode .header {
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .invoiceMode .items {
+    font-size: 12px;
+  }
+
+  .invoiceMode .items th {
+    font-size: 11px;
+  }
+
+  .invoiceMode .grandTotal {
+    font-size: 16px;
   }
 }

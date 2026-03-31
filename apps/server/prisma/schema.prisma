@@ -4,8 +4,6 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 // ─── ENUMS ──────────────────────────────────────────────
@@ -129,18 +127,20 @@ model Customer {
 }
 
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  sku         String   @unique
-  category    String
-  price       Int
-  description String?
-  isAvailable Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  sku            String   @unique
+  category       String
+  price          Int
+  wholesalePrice Int      @default(0)
+  description    String?
+  isAvailable    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   variants        ProductVariant[]
   salesOrderItems SalesOrderItem[]
+  dailyTargets    DailyProductionTarget[]
 
   @@map("products")
 }
@@ -249,6 +249,23 @@ model ProductionBatch {
   @@map("production_batches")
 }
 
+model DailyProductionTarget {
+  id                  String   @id @default(cuid())
+  targetDate          DateTime @db.Date // Ensures grouping by day natively
+  productId           String
+  targetQty           Int      @default(0)
+  carriedOverShortage Int      @default(0)
+  actualQty           Int      @default(0)
+  shortage            Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  product             Product  @relation(fields: [productId], references: [id])
+
+  @@unique([targetDate, productId])
+  @@map("daily_production_targets")
+}
+
 model SalesOrder {
   id            String           @id @default(cuid())
   orderSequence Int              @default(autoincrement()) @unique
@@ -281,15 +298,16 @@ model SalesOrder {
 }
 
 model SalesOrderItem {
-  id           String @id @default(cuid())
-  salesOrderId String
-  productId    String
-  variantId    String?
-  quantity     Int
-  unitPrice    Int
-  discount     Int    @default(0)
-  tax          Int    @default(0)
-  total        Int
+  id                 String @id @default(cuid())
+  salesOrderId       String
+  productId          String
+  variantId          String?
+  quantity           Int
+  unitPrice          Int
+  unitWholesalePrice Int    @default(0)
+  discount           Int    @default(0)
+  tax                Int    @default(0)
+  total              Int
 
   salesOrder SalesOrder      @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   product    Product         @relation(fields: [productId], references: [id])

@@ -24,7 +24,7 @@ export function Sidebar() {
         </div>
         <div className="flex flex-col min-w-0">
           <span className="text-[0.8125rem] font-bold text-white leading-tight truncate" style={{ fontFamily: 'Manrope, sans-serif' }}>
-            The Artisanal Curator
+            Bread Faculty
           </span>
           <span className="text-[0.625rem] font-semibold tracking-widest text-white/35 uppercase mt-px">
             Premium Bakery Management
