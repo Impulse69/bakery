@@ -75,12 +75,8 @@ export function POSPage() {
   const updateQuantity = useCallback((index: number, delta: number) => {
     setCart((prev) => {
       const updated = [...prev];
-      const newQty = updated[index].quantity + delta;
-      if (newQty <= 0) {
-        updated.splice(index, 1);
-      } else {
-        updated[index] = { ...updated[index], quantity: newQty };
-      }
+      const newQty = Math.max(0, updated[index].quantity + delta);
+      updated[index] = { ...updated[index], quantity: newQty };
       return updated;
     });
   }, []);
@@ -88,11 +84,7 @@ export function POSPage() {
   const setQuantity = useCallback((index: number, quantity: number) => {
     setCart((prev) => {
       const updated = [...prev];
-      if (quantity <= 0) {
-        updated.splice(index, 1);
-      } else {
-        updated[index] = { ...updated[index], quantity };
-      }
+      updated[index] = { ...updated[index], quantity: Math.max(0, quantity) };
       return updated;
     });
   }, []);
@@ -126,6 +118,10 @@ export function POSPage() {
   }, [cart, customerId, discountPct]);
 
   const handleCompleteSale = async () => {
+    if (cart.some((item) => item.quantity <= 0)) {
+      showToast('Please enter a valid quantity for all items', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const order = await createOrder();
@@ -161,6 +157,10 @@ export function POSPage() {
   }, [lastCompletedOrder, showToast]);
 
   const handleSaveDraft = async () => {
+    if (cart.some((item) => item.quantity <= 0)) {
+      showToast('Please enter a valid quantity for all items', 'error');
+      return;
+    }
     setLoading(true);
     try {
       const order = await createOrder();

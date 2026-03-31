@@ -52,17 +52,14 @@ export function CartPanel({
                 <input
                   type="number"
                   className={styles.qtyInput}
-                  value={item.quantity}
+                  value={item.quantity === 0 ? '' : item.quantity}
+                  placeholder="0"
                   onChange={(e) => {
                     const val = parseInt(e.target.value);
                     if (!isNaN(val)) {
                       onSetQuantity(index, val);
-                    }
-                  }}
-                  onBlur={(e) => {
-                    // Ensure we don't leave it empty or 0 if user just deleted everything
-                    if (e.target.value === '' || parseInt(e.target.value) === 0) {
-                      onRemoveItem(index);
+                    } else if (e.target.value === '') {
+                      onSetQuantity(index, 0);
                     }
                   }}
                   min="0"

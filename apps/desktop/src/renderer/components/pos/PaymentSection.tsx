@@ -7,8 +7,6 @@ import styles from './PaymentSection.module.css';
 const PAYMENT_METHODS: SelectOption[] = [
   { value: 'cash', label: 'Cash' },
   { value: 'momo', label: 'Mobile Money' },
-  { value: 'card', label: 'Card' },
-  { value: 'credit', label: 'Credit' },
 ];
 
 interface PaymentSectionProps {
