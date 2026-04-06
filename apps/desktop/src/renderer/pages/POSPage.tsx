@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Product, ProductVariant, Customer, PaymentMethod, SalesOrder } from '@bakery/types';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
@@ -28,7 +29,22 @@ export function POSPage() {
   const [amountTendered, setAmountTendered] = useState(0);
   const [discountPct, setDiscountPct] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [lastCompletedOrder, setLastCompletedOrder] = useState<SalesOrder | null>(null);
+  
+  // Persisted last order for re-printing
+  const [persistedLastOrder, setPersistedLastOrder] = useState<{ order: SalesOrder; type: 'receipt' | 'invoice' } | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const queryCustomerId = searchParams.get('customerId');
+
+  useEffect(() => {
+    if (queryCustomerId && customers.some(c => c.id === queryCustomerId)) {
+      setCustomerId(queryCustomerId);
+    } else if (queryCustomerId && customers.length > 0) {
+      // In case we haven't loaded them yet but we just loaded them.
+      setCustomerId(queryCustomerId);
+    }
+  }, [queryCustomerId, customers]);
 
   useEffect(() => {
     api
@@ -117,29 +133,27 @@ export function POSPage() {
     return order;
   }, [cart, customerId, discountPct]);
 
+  const resetCart = () => {
+    setCart([]);
+    setDiscountPct(0);
+    setAmountTendered(0);
+    setCustomerId('');
+  };
+
   const handleCompleteSale = async () => {
-    if (cart.some((item) => item.quantity <= 0)) {
-      showToast('Please enter a valid quantity for all items', 'error');
-      return;
-    }
+    if (cart.length === 0) return;
     setLoading(true);
     try {
       const order = await createOrder();
-
       await api.post(`/sales-orders/${order.id}/payments`, {
         amount: grandTotal,
         method: paymentMethod,
       });
 
-      setLastCompletedOrder(order);
+      setPersistedLastOrder({ order, type: 'receipt' });
+      setShowPreview(true);
       showToast(`Sale completed! Order ${order.orderNumber}`);
-      setCart([]);
-      setDiscountPct(0);
-      setAmountTendered(0);
-      setCustomerId('');
-      
-      // Auto-print receipt if needed or just let the button handle it
-      // handlePrintReceipt(); 
+      resetCart();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Sale failed', 'error');
     } finally {
@@ -147,27 +161,37 @@ export function POSPage() {
     }
   };
 
-  const handlePrintReceipt = useCallback(() => {
-    if (!lastCompletedOrder) {
+  const handleGenerateInvoice = async () => {
+    if (cart.length === 0) return;
+    setLoading(true);
+    try {
+      const order = await createOrder();
+      setPersistedLastOrder({ order, type: 'invoice' });
+      setShowPreview(true);
+      showToast(`Invoice generated for ${order.orderNumber}`);
+      resetCart();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to generate invoice', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePrintLast = useCallback(() => {
+    if (!persistedLastOrder) {
       showToast('No recent order to print', 'error');
       return;
     }
-    // Receipt overlay is already visible after sale; trigger print directly
-    window.print();
-  }, [lastCompletedOrder, showToast]);
+    setShowPreview(true);
+  }, [persistedLastOrder, showToast]);
 
   const handleSaveDraft = async () => {
-    if (cart.some((item) => item.quantity <= 0)) {
-      showToast('Please enter a valid quantity for all items', 'error');
-      return;
-    }
+    if (cart.length === 0) return;
     setLoading(true);
     try {
       const order = await createOrder();
       showToast(`Draft saved! Order ${order.orderNumber}`);
-      setCart([]);
-      setDiscountPct(0);
-      setCustomerId('');
+      resetCart();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to save draft', 'error');
     } finally {
@@ -178,7 +202,7 @@ export function POSPage() {
   return (
     <div className={styles.page}>
       <div className={styles.productArea}>
-        <h1 className={styles.heading}>POS / New Sale</h1>
+        <h1 className={styles.heading}>POS / Sales Terminal</h1>
         <ProductGrid products={products} onAddToCart={addToCart} />
       </div>
       <div className={styles.cartArea}>
@@ -187,8 +211,6 @@ export function POSPage() {
           onUpdateQuantity={updateQuantity}
           onSetQuantity={setQuantity}
           onRemoveItem={removeItem}
-          discountPct={discountPct}
-          onDiscountPctChange={setDiscountPct}
         />
         <PaymentSection
           customers={customers}
@@ -200,17 +222,19 @@ export function POSPage() {
           onAmountTenderedChange={setAmountTendered}
           grandTotal={grandTotal}
           onCompleteSale={handleCompleteSale}
+          onGenerateInvoice={handleGenerateInvoice}
+          onPrintLast={handlePrintLast}
           onSaveDraft={handleSaveDraft}
-          onPrintReceipt={handlePrintReceipt}
           loading={loading}
           cartEmpty={cart.length === 0}
-          hasLastOrder={!!lastCompletedOrder}
+          hasLastOrder={!!persistedLastOrder}
         />
       </div>
-      {lastCompletedOrder && (
+      {showPreview && persistedLastOrder && (
         <Receipt
-          order={lastCompletedOrder}
-          onClose={() => setLastCompletedOrder(null)}
+          order={persistedLastOrder.order}
+          type={persistedLastOrder.type}
+          onClose={() => setShowPreview(false)}
         />
       )}
     </div>

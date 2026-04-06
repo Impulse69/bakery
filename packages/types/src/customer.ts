@@ -8,6 +8,7 @@ export type Customer = Timestamps & {
   email?: string;
   address?: string;
   notes?: string;
+  isActive: boolean;
   creditBalance: number;
   salesOrders?: SalesOrder[];
 };

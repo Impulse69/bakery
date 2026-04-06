@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { User } from '@bakery/types';
 import { api, ApiError } from '../lib/api';
 import { disconnectSocket } from '../lib/socket';
+import { db } from '../lib/db';
 
 interface AuthState {
   user: User | null;
@@ -42,13 +43,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [token]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await api.post<{ token: string; user: User }>('/auth/login', {
-      email,
-      password,
-    });
-    localStorage.setItem('bakery_token', res.token);
-    setToken(res.token);
-    setUser(res.user);
+    try {
+      const res = await api.post<{ token: string; user: User }>('/auth/login', {
+        email,
+        password,
+      });
+      // Cache for offline use
+      try {
+        await db.users.put({
+          email,
+          passwordHash: password, // Simple plain text for offline comparison
+          token: res.token,
+          user: res.user,
+        });
+      } catch (dbErr) {
+        console.error('Failed to cache user offline', dbErr);
+      }
+      
+      localStorage.setItem('bakery_token', res.token);
+      setToken(res.token);
+      setUser(res.user);
+    } catch (err) {
+      // Offline fallback
+      const isNetworkOr500 = err instanceof TypeError || (err instanceof ApiError && err.status >= 500);
+      if (isNetworkOr500) {
+        const cached = await db.users.get(email);
+        if (cached && cached.passwordHash === password) {
+          localStorage.setItem('bakery_token', cached.token);
+          setToken(cached.token);
+          setUser(cached.user);
+          return;
+        }
+        if (cached) {
+          throw new Error('Invalid offline credentials');
+        }
+      }
+      throw err;
+    }
   }, []);
 
   const logout = useCallback(() => {

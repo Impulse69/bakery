@@ -101,7 +101,6 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
                 <th>Product</th>
                 <th>Qty</th>
                 <th>Unit Price</th>
-                <th>Discount</th>
                 <th>Tax</th>
                 <th>Total</th>
               </tr>
@@ -112,7 +111,6 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
                   <td>{item.product?.name}{item.variantId ? ` (variant)` : ''}</td>
                   <td>{item.quantity}</td>
                   <td>{formatCurrency(item.unitPrice)}</td>
-                  <td>{formatCurrency(item.discount)}</td>
                   <td>{formatCurrency(item.tax)}</td>
                   <td>{formatCurrency(item.total)}</td>
                 </tr>
@@ -123,7 +121,6 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
           <div className={styles.totalsGrid}>
             <div>Subtotal: {formatCurrency(order.subtotal)}</div>
             <div>Tax: {formatCurrency(order.taxTotal)}</div>
-            <div>Discount: {formatCurrency(order.discountTotal)}</div>
             <div className={styles.bold}>Total: {formatCurrency(order.total)}</div>
             <div>Paid: {formatCurrency(order.amountPaid)}</div>
             <div className={styles.bold}>Balance: {formatCurrency(order.balanceDue)}</div>
@@ -196,7 +193,7 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
             )}
             {canPrint && (
               <Button variant="secondary" onClick={() => setShowReceipt(true)}>
-                🖨 {['invoiced', 'paid'].includes(order.status) ? 'Print Invoice' : 'Print Receipt'}
+                🖨 {order.status === 'paid' ? 'Print Receipt' : 'Print Invoice'}
               </Button>
             )}
             {!['paid', 'cancelled'].includes(order.status) && (
@@ -213,7 +210,7 @@ export function OrderDetailModal({ orderId, onClose, onUpdate }: OrderDetailModa
             <Receipt
               order={order}
               onClose={() => setShowReceipt(false)}
-              type={['invoiced', 'paid'].includes(order.status) ? 'invoice' : 'receipt'}
+              type={order.status === 'paid' ? 'receipt' : 'invoice'}
             />
           )}
         </div>

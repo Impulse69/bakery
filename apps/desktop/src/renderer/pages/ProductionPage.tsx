@@ -79,6 +79,24 @@ function BatchesTab() {
     setShowNewModal(true);
   };
 
+  const handleProductChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value;
+    setSelectedProductId(id);
+    if (!id) return;
+
+    try {
+      const res = await api.get<{ shortage: number }>(
+        `/production/targets/previous-shortage?productId=${id}&date=${selectedDate}`
+      );
+      if (res.shortage > 0) {
+        setNotes((prev) => (prev ? `${prev} (Auto-loaded shortage: ${res.shortage})` : `Auto-loaded shortage: ${res.shortage}`));
+        showToast(`Previous shortage found: ${res.shortage} units`);
+      }
+    } catch {
+      // Ignore errors for auto-fetch
+    }
+  };
+
   const handleCreateBatch = async () => {
     if (!selectedProductId || !quantity) { showToast('Product and quantity are required', 'error'); return; }
     setSaving(true);
@@ -202,7 +220,7 @@ function DailyTargetsTab() {
         `/production/targets/previous-shortage?productId=${form.productId}&date=${selectedDate}`
       );
       setForm((prev) => ({ ...prev, carriedOver: String(res.shortage) }));
-      showToast(`Loaded shortage: ${res.shortage} units`, 'info');
+      showToast(`Loaded shortage: ${res.shortage} units`);
     } catch (err: any) {
       showToast(err.message || 'Failed to load shortage', 'error');
     }
@@ -258,11 +276,53 @@ function DailyTargetsTab() {
   // Auto-calculate shortage when actual & target are filled
   const computedShortage = form.target && form.actual ? Math.max(0, Number(form.target) - Number(form.actual)) : 0;
 
+  const handleInitializeBreads = async () => {
+    const breadProducts = products.filter(p => p.category.toLowerCase().includes('bread'));
+    if (breadProducts.length === 0) {
+      showToast('No bread products found in system', 'error');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let createdCount = 0;
+      for (const p of breadProducts) {
+        // Skip if target already exists for this product and date
+        const exists = targets.some(t => t.productId === p.id);
+        if (exists) continue;
+
+        // Fetch previous shortage
+        const shortRes = await api.get<{ shortage: number }>(
+          `/production/targets/previous-shortage?productId=${p.id}&date=${selectedDate}`
+        );
+
+        await api.post('/production/targets', {
+          productId: p.id,
+          date: selectedDate,
+          target: 0,
+          actual: 0,
+          carriedOver: shortRes.shortage,
+          shortage: shortRes.shortage,
+        });
+        createdCount++;
+      }
+      showToast(`Initialized ${createdCount} bread targets`, 'success');
+      fetchTargets();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to initialize targets', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div>
       <div className={styles.filters}>
         <Input label="Target Date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-        <Button onClick={openAdd}>+ Set Target</Button>
+        <div className={styles.filterActions}>
+          <Button variant="ghost" onClick={handleInitializeBreads} loading={saving}>Initialize Breads</Button>
+          <Button onClick={openAdd}>+ Set Target</Button>
+        </div>
       </div>
 
       {loading ? (

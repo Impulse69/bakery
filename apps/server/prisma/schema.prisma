@@ -117,6 +117,7 @@ model Customer {
   email         String?  @unique
   address       String?
   notes         String?
+  isActive      Boolean  @default(true)
   creditBalance Int      @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -142,6 +143,7 @@ model Product {
   variants        ProductVariant[]
   salesOrderItems SalesOrderItem[]
   dailyTargets    DailyProductionTarget[]
+  productionBatches ProductionBatch[]
 
   @@map("products")
 }
@@ -246,7 +248,6 @@ model SalesOrder {
   status        SalesOrderStatus @default(draft)
   subtotal      Int              @default(0)
   taxTotal      Int              @default(0)
-  discountTotal Int              @default(0)
   total         Int              @default(0)
   amountPaid    Int              @default(0)
   balanceDue    Int              @default(0)
@@ -275,7 +276,6 @@ model SalesOrderItem {
   quantity           Int
   unitPrice          Int
   unitWholesalePrice Int    @default(0)
-  discount           Int    @default(0)
   tax                Int    @default(0)
   total              Int
 

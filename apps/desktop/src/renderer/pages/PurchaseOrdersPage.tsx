@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { PurchaseOrder, PurchaseOrderStatus, Supplier, InventoryItem } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge, FormSection } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
@@ -88,6 +89,7 @@ export function PurchaseOrdersPage() {
   // Detail modal
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [statusChanging, setStatusChanging] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -149,13 +151,21 @@ export function PurchaseOrdersPage() {
     return sum + qty * cost;
   }, 0);
 
-  const openNewModal = () => {
+  const openNewModal = useCallback(() => {
     setSupplierId('');
     setExpectedDate('');
     setPoNotes('');
     setLineItems([{ ...EMPTY_LINE }]);
     setShowNewModal(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openNewModal();
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams, openNewModal]);
 
   const handleCreate = async () => {
     if (!supplierId) {

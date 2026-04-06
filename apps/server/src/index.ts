@@ -4,6 +4,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setIO } from './lib/socket.js';
+import { startSyncService } from './services/syncService.js';
 import { authMiddleware } from './middleware/auth.js';
 import { paginationMiddleware } from './middleware/pagination.js';
 import { globalErrorHandler } from './middleware/errorHandler.js';
@@ -65,5 +66,6 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Bread Faculty API running on port ${PORT}`);
+  startSyncService();
 });
 

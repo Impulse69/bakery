@@ -18,9 +18,14 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // ── Clear Existing Data ──────────────────────────────────────────────────
-  await prisma.product.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.location.deleteMany();
+  // Clear dependent records first
+  await prisma.dailyProductionTarget.deleteMany({});
+  await prisma.productionBatch.deleteMany({});
+  await prisma.salesOrderItem.deleteMany({});
+  await prisma.productVariant.deleteMany({});
+  await prisma.product.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.location.deleteMany({});
   console.log('✓ Database cleared');
 
   // ── Location ──────────────────────────────────────────────────────────────
@@ -73,21 +78,22 @@ async function main() {
 
   // ── Products ──────────────────────────────────────────────────────────────
   const products = [
-    { name: 'Sugar Bread', sku: 'BRD-SGR-01', category: 'Bread', price: 3000 },
-    { name: 'Tea Bread', sku: 'BRD-TEA-01', category: 'Bread', price: 2500 },
-    { name: 'Butter Bread', sku: 'BRD-BTR-01', category: 'Bread', price: 3500 },
-    { name: 'Wheat Bread', sku: 'BRD-WHT-01', category: 'Bread', price: 4000 },
-    { name: 'Cocoa Bread', sku: 'BRD-CCO-01', category: 'Bread', price: 4000 },
+    { name: 'Sugar Bread', sku: 'BRD-SGR-01', category: 'Bread', price: 1000, wholesalePrice: 950 },
+    { name: 'Tea Bread', sku: 'BRD-TEA-01', category: 'Bread', price: 800, wholesalePrice: 750 },
+    { name: 'Butter Bread', sku: 'BRD-BTR-01', category: 'Bread', price: 1200, wholesalePrice: 1100 },
+    { name: 'Wheat Bread', sku: 'BRD-WHT-01', category: 'Bread', price: 1500, wholesalePrice: 1400 },
+    { name: 'Cocoa Bread', sku: 'BRD-CCO-01', category: 'Bread', price: 1500, wholesalePrice: 1400 },
   ];
 
   for (const p of products) {
-    await prisma.product.upsert({
-      where: { sku: p.sku },
-      update: { price: p.price },
-      create: { ...p, isAvailable: true },
+    await prisma.product.create({
+      data: { 
+        ...p, 
+        isAvailable: true 
+      },
     });
   }
-  console.log(`✓ Products: ${products.length} created`);
+  console.log(`✓ Successfully seeded exactly ${products.length} bread types`);
 
   console.log('\n✅ Seeding complete!');
   console.log('\nLogin credentials:');

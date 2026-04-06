@@ -149,7 +149,7 @@ router.post(
 
       // Compute totals from items
       const computedItems = items.map((item) => {
-        const lineTotal = item.quantity * item.unitPrice - item.discount + item.tax;
+        const lineTotal = item.quantity * item.unitPrice + item.tax;
         const product = productMap.get(item.productId);
         return { 
           ...item, 
@@ -160,8 +160,7 @@ router.post(
 
       const subtotal = computedItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
       const taxTotal = computedItems.reduce((s, i) => s + i.tax, 0);
-      const discountTotal = computedItems.reduce((s, i) => s + i.discount, 0);
-      const total = subtotal - discountTotal + taxTotal;
+      const total = subtotal + taxTotal;
 
       // Create with placeholder orderNumber
       const created = await tx.salesOrder.create({
@@ -172,7 +171,6 @@ router.post(
           processedBy: req.user!.id,
           subtotal,
           taxTotal,
-          discountTotal,
           total,
           balanceDue: total,
           notes,

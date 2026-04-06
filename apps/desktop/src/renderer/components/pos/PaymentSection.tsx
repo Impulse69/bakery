@@ -19,8 +19,9 @@ interface PaymentSectionProps {
   onAmountTenderedChange: (amount: number) => void;
   grandTotal: number;
   onCompleteSale: () => void;
+  onGenerateInvoice: () => void;
+  onPrintLast: () => void;
   onSaveDraft: () => void;
-  onPrintReceipt: () => void;
   loading: boolean;
   cartEmpty: boolean;
   hasLastOrder: boolean;
@@ -36,8 +37,9 @@ export function PaymentSection({
   onAmountTenderedChange,
   grandTotal,
   onCompleteSale,
+  onGenerateInvoice,
+  onPrintLast,
   onSaveDraft,
-  onPrintReceipt,
   loading,
   cartEmpty,
   hasLastOrder,
@@ -94,18 +96,29 @@ export function PaymentSection({
         </Button>
         <Button
           variant="secondary"
-          onClick={onSaveDraft}
-          disabled={cartEmpty || loading}
+          onClick={onGenerateInvoice}
+          disabled={cartEmpty || !selectedCustomerId || loading}
         >
-          Save as Draft
+          Bill Customer (Invoice)
         </Button>
-        <Button
-          variant="ghost" 
-          disabled={!hasLastOrder} 
-          onClick={onPrintReceipt}
-        >
-          Print Receipt
-        </Button>
+        <div className={styles.smallActions}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onSaveDraft}
+            disabled={cartEmpty || loading}
+          >
+            Save Draft
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost" 
+            disabled={!hasLastOrder} 
+            onClick={onPrintLast}
+          >
+            Re-print
+          </Button>
+        </div>
       </div>
     </div>
   );

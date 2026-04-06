@@ -1,68 +1,73 @@
-# Bakery Management System
+# Bakery Management System - Gemini Assistant Directives
 
-A comprehensive monorepo for managing bakery operations, featuring a Windows desktop application for in-shop use, a web dashboard for remote monitoring, and a central on-premise server.
+This document provides foundational mandates, architectural context, and workflow standards for the Gemini CLI assistant when working in this repository. 
 
-## Project Overview
+## 1. Project Overview & Architecture
 
-- **Architecture:** Monorepo using **Turborepo** to manage multiple applications and shared packages.
-- **Applications:**
-  - **Desktop (`apps/desktop`):** Electron + React (Vite) application used by shop staff for POS, inventory, and production management.
-  - **Server (`apps/server`):** Node.js + Express API server with **Prisma ORM** (PostgreSQL) and Socket.io for real-time updates.
-  - **Web (`apps/web`):** Next.js dashboard for remote access by the owner.
-- **Shared Packages:**
-  - **Types (`packages/types`):** Shared TypeScript interfaces and types.
-  - **UI (`packages/ui`):** Shared React components using CSS Modules.
-  - **Utils (`packages/utils`):** Shared business logic, formatting, and helper functions.
+The Bakery Management System is a monorepo containing a Windows desktop application for in-shop use, a web dashboard for remote monitoring, and a central on-premise server.
 
-## Key Technologies
+**Monorepo Workspaces (`turbo.json` managed):**
+- **`@bakery/desktop`** (`apps/desktop`): Electron + React (Vite, TypeScript). In-shop POS, inventory, production, and reports.
+- **`@bakery/server`** (`apps/server`): Node.js + Express API + Socket.io. Single source of truth backed by PostgreSQL (Prisma ORM). Exposed remotely via Cloudflare Tunnel.
+- **`@bakery/web`** (`apps/web`): Next.js (TypeScript). Read-only owner dashboard with live WebSocket updates.
+- **`@bakery/types`** (`packages/types`): Shared TypeScript interfaces across all apps.
+- **`@bakery/ui`** (`packages/ui`): Shared React components using CSS Modules. Consumed directly via source (`src/index.ts`) without a build step.
+- **`@bakery/utils`** (`packages/utils`): Shared business logic, permissions, and formatting.
 
-- **Frontend:** React, Next.js, Electron, Framer Motion, CSS Modules.
+## 2. Key Technologies & Design Decisions
+
+- **Frontend:** React, Next.js, Electron, Framer Motion, CSS Modules (`bui-` prefix design tokens in `packages/ui/src/styles/variables.css`).
 - **Backend:** Node.js, Express, Prisma, PostgreSQL, Socket.io.
-- **Tooling:** Turborepo, Vite, TypeScript, Cloudflare Tunnel (for remote access).
+- **Styling Encapsulation:** Always use CSS Modules for component-level styling.
+- **Real-time:** The system relies on Socket.io for live updates between the server and all clients.
+- **Database Rules:**
+  - All database changes must be handled via Prisma migrations in `apps/server/prisma/schema.prisma`.
+  - Important mappings: `PaymentMethod` enum (cash, momo, card, credit); `StockAdjustment` maps to `StockMovement` table via `@@map()`.
+- **Desktop UI Considerations:** 
+  - Login page features a full-screen background (`login-bg.png`) with a dark overlay and logo (`logo.png`).
+  - POS product cards use a two-tier image system (`ProductGrid.tsx`): precise product name matching first, falling back to category icons.
 
-## Building and Running
+## 3. Build & Development Commands
 
-### Prerequisites
+From the monorepo root:
+```bash
+npm run dev            # Start all workspaces in parallel (persistent dev mode)
+npm run build          # Build all workspaces
+npm run lint           # Lint across the monorepo
+npm run clean          # Remove build artifacts and caches (fixes turbo cache issues)
+```
 
-- Node.js (v18+)
-- PostgreSQL (running locally for the server)
+Targeting specific workspaces (e.g., server or desktop):
+```bash
+npx turbo run build --filter=@bakery/server
+npx turbo run dev --filter=@bakery/desktop
+```
 
-### Getting Started
+## 4. Database Commands (Prisma)
 
-1.  **Install Dependencies:**
-    ```bash
-    npm install
-    ```
+**Crucial:** All Prisma commands must be executed from within the `apps/server` directory.
 
-2.  **Database Setup:**
-    Navigate to `apps/server` and run:
-    ```bash
-    npm run db:migrate
-    npm run db:seed
-    ```
+```bash
+cd apps/server
+npx prisma migrate dev      # Create and apply pending migrations
+npx prisma generate         # Regenerate Prisma client after schema changes
+npx prisma studio           # Open web GUI for database management
+npm run db:seed             # Seed initial database data
+```
+Required environment variables in `apps/server/.env`: `DATABASE_URL`, `DIRECT_URL`, `JWT_SECRET`, `PORT`.
 
-3.  **Run Development Mode:**
-    From the root directory:
-    ```bash
-    npm run dev
-    ```
-    This will start the desktop app, server, and web dashboard in parallel using Turbo.
+## 5. Gemini Workflow Standards
 
-### Key Commands
+As a Gemini CLI agent, you must strictly adhere to the following workflow principles:
 
-- `npm run build`: Build all applications.
-- `npm run lint`: Run linting across the monorepo.
-- `npm run clean`: Remove build artifacts and caches.
+- **Strategic Orchestration:** Use subagents (e.g., `generalist`, `codebase_investigator`) for broad research, parallel analysis, or bulk edits to preserve your main context window.
+- **Plan Mode for Complexity:** Use the `enter_plan_mode` tool for any non-trivial tasks, architectural decisions, or multi-file refactors. Do not dive into execution without a verified strategy.
+- **Empirical Verification:** Never mark a task complete or state that it is fixed without empirical proof. Run tests, check logs, or write reproduction scripts to validate correctness.
+- **Simplicity & Elegance:** Prefer the simplest solution that minimally impacts the codebase. Avoid over-engineering, but pause to ensure the solution aligns cleanly with the existing architecture.
+- **Self-Correction:** If a plan fails or errors occur, stop and reassess the strategy. Do not forcefully retry the same failing approach. Update `tasks/todo.md` and `tasks/lessons.md` to track progress and prevent recurring mistakes.
+- **Monorepo Discipline:** Place shared logic in the appropriate `packages/` workspace rather than duplicating code across apps. Ensure type safety using `@bakery/types`.
 
-## Development Conventions
+## 6. Troubleshooting
 
-- **Monorepo Structure:** Always prefer adding shared logic to the appropriate package in `packages/` instead of duplicating it across apps.
-- **Type Safety:** Use the `@bakery/types` package for all shared data structures.
-- **Styling:** Use **CSS Modules** for component-level styling to ensure encapsulation.
-- **Real-time:** Use the shared Socket.io configuration for live updates between the server and clients.
-- **Database:** All database changes must be handled via Prisma migrations in `apps/server/prisma/schema.prisma`.
-
-## Troubleshooting
-
-- **Merge Conflicts:** Be cautious of merge markers in large TSX files, especially in `apps/desktop/src/renderer/pages/`.
-- **Turbo Cache:** If you encounter unexpected behavior after dependency changes, try `npm run clean` followed by `npm install`.
+- **Merge Conflicts:** Pay extra attention to merge markers in large TSX files, particularly within `apps/desktop/src/renderer/pages/`.
+- **Caching Issues:** If dependency changes aren't reflecting, run `npm run clean` and then `npm install` to clear Turborepo caches.

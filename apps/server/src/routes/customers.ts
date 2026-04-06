@@ -13,6 +13,7 @@ const createCustomerSchema = z.object({
   email: z.string().email().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  isActive: z.boolean().optional(),
   creditBalance: z.number().int().optional(),
 });
 
@@ -25,14 +26,17 @@ router.get(
     const { skip, take } = req.pagination;
     const search = req.query.search as string | undefined;
 
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' as const } },
-            { phone: { contains: search } },
-          ],
-        }
-      : {};
+    const where = {
+      isActive: true,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' as const } },
+              { phone: { contains: search } },
+            ],
+          }
+        : {}),
+    };
 
     const [customers, total] = await Promise.all([
       prisma.customer.findMany({ where, skip, take, orderBy: { name: 'asc' } }),
@@ -87,6 +91,7 @@ router.get(
         salesOrders: {
           orderBy: { createdAt: 'desc' },
           take: 20,
+          include: { payments: true },
         },
       },
     });
@@ -115,6 +120,19 @@ router.patch(
     const customer = await prisma.customer.update({
       where: { id: getParam(req, 'id') },
       data,
+    });
+    res.json(customer);
+  }),
+);
+
+// DELETE /api/customers/:id (Soft delete)
+router.delete(
+  '/:id',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const customer = await prisma.customer.update({
+      where: { id: getParam(req, 'id') },
+      data: { isActive: false },
     });
     res.json(customer);
   }),

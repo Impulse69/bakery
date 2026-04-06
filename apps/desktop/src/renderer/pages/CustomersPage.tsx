@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Customer, SalesOrder } from '@bakery/types';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import type { Customer, SalesOrder, Payment } from '@bakery/types';
 import {
   DataTable, Pagination, Button, Modal, Input, SearchInput, Card, OrderStatusBadge,
 } from '@bakery/ui';
@@ -44,6 +45,24 @@ const orderColumns: DataTableColumn<SalesOrder>[] = [
   },
 ];
 
+const paymentColumns: DataTableColumn<Payment>[] = [
+  {
+    key: 'date',
+    label: 'Date',
+    render: (row) => new Date(row.date).toLocaleDateString(),
+  },
+  {
+    key: 'method',
+    label: 'Method',
+    render: (row) => row.method.toUpperCase(),
+  },
+  {
+    key: 'amount',
+    label: 'Amount',
+    render: (row) => formatCurrency(row.amount),
+  },
+];
+
 const EMPTY_FORM = { name: '', phone: '', email: '', address: '', notes: '' };
 
 interface CustomerStats {
@@ -73,8 +92,19 @@ export function CustomersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedStats, setSelectedCustomerStats] = useState<CustomerStats | null>(null);
+  const [detailTab, setDetailTab] = useState<'overview' | 'orders' | 'payments'>('overview');
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openAddModal();
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -140,8 +170,22 @@ export function CustomersPage() {
       ]);
       setSelectedCustomer(full);
       setSelectedCustomerStats(stats);
+      setDetailTab('overview');
     } catch (err: any) {
       showToast(err.message || 'Failed to load customer details', 'error');
+    }
+  };
+
+  const handleDeactivate = async () => {
+    if (!selectedCustomer) return;
+    if (!confirm(`Are you sure you want to deactivate ${selectedCustomer.name}?`)) return;
+    try {
+      await api.delete(`/customers/${selectedCustomer.id}`);
+      showToast('Customer deactivated', 'success');
+      setSelectedCustomer(null);
+      fetchCustomers();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to deactivate customer', 'error');
     }
   };
 
@@ -201,8 +245,8 @@ export function CustomersPage() {
           columns={[
             { key: 'name', label: 'Customer' },
             { key: 'phone', label: 'Phone' },
-            { key: 'totalOrders', label: 'Orders', render: (row) => row.totalOrders.toLocaleString() },
-            { key: 'totalSpent', label: 'Total Revenue', render: (row) => formatCurrency(row.totalSpent) },
+            { key: 'totalOrders', label: 'Orders', render: (row: any) => (row.totalOrders || 0).toLocaleString() },
+            { key: 'totalSpent', label: 'Total Revenue', render: (row: any) => formatCurrency(row.totalSpent || 0) },
           ]}
           data={leaderboard}
           loading={loading}
@@ -234,7 +278,38 @@ export function CustomersPage() {
       >
         {selectedCustomer && (
           <div className={styles.detailContainer}>
-            <div className={styles.detailGrid}>
+            <div className={styles.modalHeaderActions}>
+              <Button size="sm" onClick={() => navigate(`/pos?customerId=${selectedCustomer.id}`)}>
+                Create Sales Order
+              </Button>
+              <Button size="sm" variant="danger" onClick={handleDeactivate}>
+                Deactivate
+              </Button>
+            </div>
+            <div className={styles.detailTabs}>
+              <button
+                className={`${styles.tab} ${detailTab === 'overview' ? styles.tabActive : ''}`}
+                onClick={() => setDetailTab('overview')}
+              >
+                Overview
+              </button>
+              <button
+                className={`${styles.tab} ${detailTab === 'orders' ? styles.tabActive : ''}`}
+                onClick={() => setDetailTab('orders')}
+              >
+                Order History
+              </button>
+              <button
+                className={`${styles.tab} ${detailTab === 'payments' ? styles.tabActive : ''}`}
+                onClick={() => setDetailTab('payments')}
+              >
+                Payment History
+              </button>
+            </div>
+
+            {detailTab === 'overview' && (
+              <>
+                <div className={styles.detailGrid}>
               <Card className={styles.infoCard}>
                 <div className={styles.detailLabel}>Contact Information</div>
                 <div className={styles.infoRow}><span>Phone:</span> <strong>{selectedCustomer.phone || '—'}</strong></div>
@@ -272,13 +347,28 @@ export function CustomersPage() {
                 </div>
               </div>
             )}
+              </>
+            )}
 
-            <h3 className={styles.ordersHeading}>Recent Orders</h3>
-            <DataTable
-              columns={orderColumns}
-              data={selectedCustomer.salesOrders ?? []}
-              emptyMessage="No orders yet"
-            />
+            {detailTab === 'orders' && (
+              <div className={styles.ordersContainer}>
+                <DataTable
+                  columns={orderColumns}
+                  data={selectedCustomer.salesOrders ?? []}
+                  emptyMessage="No orders yet"
+                />
+              </div>
+            )}
+
+            {detailTab === 'payments' && (
+              <div className={styles.ordersContainer}>
+                <DataTable
+                  columns={paymentColumns}
+                  data={(selectedCustomer.salesOrders ?? []).flatMap(o => o.payments ?? [])}
+                  emptyMessage="No payments yet"
+                />
+              </div>
+            )}
           </div>
         )}
       </Modal>

@@ -7,8 +7,6 @@ interface CartPanelProps {
   onUpdateQuantity: (index: number, delta: number) => void;
   onSetQuantity: (index: number, quantity: number) => void;
   onRemoveItem: (index: number) => void;
-  discountPct: number;
-  onDiscountPctChange: (pct: number) => void;
 }
 
 export function CartPanel({
@@ -16,16 +14,10 @@ export function CartPanel({
   onUpdateQuantity,
   onSetQuantity,
   onRemoveItem,
-  discountPct,
-  onDiscountPctChange,
 }: CartPanelProps) {
   const subtotal = items.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxTotal = items.reduce((s, item) => s + item.tax * item.quantity, 0);
-  const discountAmount = Math.round(subtotal * discountPct / 100);
-  const grandTotal = Math.max(0, subtotal + taxTotal - discountAmount);
-
-  const incrementDiscount = () => onDiscountPctChange(Math.min(100, discountPct + 1));
-  const decrementDiscount = () => onDiscountPctChange(Math.max(0, discountPct - 1));
+  const grandTotal = Math.max(0, subtotal + taxTotal);
 
   return (
     <div className={styles.panel}>
@@ -86,47 +78,6 @@ export function CartPanel({
             <span>{formatCurrency(taxTotal)}</span>
           </div>
         )}
-        <div className={styles.totalRow}>
-          <span>Discount</span>
-          <div className={styles.discountControl}>
-            <button
-              className={styles.discountBtn}
-              onClick={decrementDiscount}
-              disabled={discountPct <= 0}
-            >
-              −
-            </button>
-            <div className={styles.discountInputWrapper}>
-              <input
-                type="number"
-                className={styles.discountInput}
-                value={discountPct === 0 ? '' : discountPct}
-                placeholder="0"
-                onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val)) {
-                    onDiscountPctChange(Math.max(0, Math.min(100, val)));
-                  } else if (e.target.value === '') {
-                    onDiscountPctChange(0);
-                  }
-                }}
-                min="0"
-                max="100"
-              />
-              <span className={styles.percentSymbol}>%</span>
-            </div>
-            <button
-              className={styles.discountBtn}
-              onClick={incrementDiscount}
-              disabled={discountPct >= 100}
-            >
-              +
-            </button>
-            {discountAmount > 0 && (
-              <span className={styles.discountAmount}>−{formatCurrency(discountAmount)}</span>
-            )}
-          </div>
-        </div>
         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
           <span>Total</span>
           <span>{formatCurrency(grandTotal)}</span>

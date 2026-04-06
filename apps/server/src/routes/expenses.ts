@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { getParam } from '../lib/params.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
 
@@ -91,7 +92,7 @@ router.patch(
   '/:id',
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const id = getParam(req, 'id');
     const data = updateExpenseSchema.parse(req.body);
 
     const updateData: Record<string, unknown> = { ...data };
@@ -112,7 +113,7 @@ router.delete(
   '/:id',
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
-    const { id } = req.params;
+    const id = getParam(req, 'id');
     await prisma.expense.delete({ where: { id } });
     res.json({ success: true });
   }),

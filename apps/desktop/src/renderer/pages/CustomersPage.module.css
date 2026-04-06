@@ -50,3 +50,145 @@
   font-weight: 600;
   margin-bottom: 0.75rem;
 }
+
+/* ─── Page Tabs ─── */
+.subheading {
+  color: var(--bui-text-secondary);
+  font-size: var(--bui-text-sm);
+  margin-top: 0.25rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--bui-border);
+  margin-bottom: 1rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: var(--bui-text-sm);
+  font-weight: 500;
+  color: var(--bui-text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab:hover {
+  color: var(--bui-text-primary);
+}
+
+.tabActive {
+  color: var(--bui-primary);
+  border-bottom-color: var(--bui-primary);
+}
+
+/* ─── Detail Modal ─── */
+.detailContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modalHeaderActions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--bui-border);
+}
+
+.detailTabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--bui-border);
+}
+
+.infoCard,
+.statsCard {
+  padding: 1rem;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  font-size: var(--bui-text-sm);
+}
+
+.infoRow span {
+  color: var(--bui-text-secondary);
+}
+
+/* ─── Buying Stats ─── */
+.streakBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+  font-size: var(--bui-text-sm);
+}
+
+.streakIcon {
+  font-size: 1.25rem;
+}
+
+.periodicGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.periodBox {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--bui-text-sm);
+}
+
+.periodBox span {
+  color: var(--bui-text-secondary);
+  font-size: var(--bui-text-xs, 0.75rem);
+}
+
+.periodBox strong {
+  font-weight: 600;
+}
+
+/* ─── Reorder Section ─── */
+.reorderSection {
+  margin-top: 0.5rem;
+}
+
+.sectionTitle {
+  font-size: var(--bui-text-sm);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.topProducts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.productPill {
+  background: var(--bui-bg-muted, #f1f5f9);
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: var(--bui-text-xs, 0.75rem);
+  font-weight: 500;
+}
+
+.productPill span {
+  color: var(--bui-text-secondary);
+  font-weight: 400;
+}
+
+/* ─── Orders / Payments Tab ─── */
+.ordersContainer {
+  margin-top: 0.5rem;
+}

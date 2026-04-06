@@ -32,7 +32,6 @@ export type SalesOrderItem = {
   variantId?: string;
   quantity: number;
   unitPrice: number;
-  discount: number;
   tax: number;
   total: number;
   product?: Product;

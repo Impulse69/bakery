@@ -1,9 +1,12 @@
-import { NavLink } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { can } from '@bakery/utils';
-import type { UserRole } from '@bakery/types';
+import type { UserRole, Customer } from '@bakery/types';
 import { useAuth } from '../store/AuthContext';
 import styles from './Sidebar.module.css';
 import logo from '../assets/logo.png';
+import { Modal, Input, Button, SearchInput } from '@bakery/ui';
+import { api } from '../lib/api';
 
 interface MenuItem {
   path: string;
@@ -13,6 +16,9 @@ interface MenuItem {
 }
 
 // ── Icons ──────────────────────────────────────
+const IconPlus = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
+const IconCaretRight = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
+
 const IconLayout = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>;
 const IconPOS = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>;
 const IconOrders = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 12h6"/><path d="M9 16h6"/><path d="M9 8h6"/></svg>;
@@ -54,61 +60,194 @@ const IconHamburger = () => (
 
 export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const visibleItems = MENU_ITEMS.filter((item) => can(role, item.permission));
+  
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const createMenuRef = useRef<HTMLDivElement>(null);
+
+  // Customer selection modal state
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (createMenuRef.current && !createMenuRef.current.contains(event.target as Node)) {
+        setCreateMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [createMenuRef]);
+
+  useEffect(() => {
+    if (showCustomerModal) {
+      api.get<{ data: Customer[] }>('/customers?limit=50')
+        .then(res => setCustomers(res.data))
+        .catch(console.error);
+    }
+  }, [showCustomerModal]);
+
+  const filteredCustomers = customers.filter(c => 
+    c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+    (c.phone && c.phone.includes(customerSearch))
+  );
+
+  const handleCreateSalesOrder = () => {
+    setCreateMenuOpen(false);
+    setShowCustomerModal(true);
+  };
+
+  const handleSelectCustomer = (customerId: string) => {
+    setShowCustomerModal(false);
+    navigate(`/pos?customerId=${customerId}`);
+  };
+
+  const handleContinueWithoutCustomer = () => {
+    setShowCustomerModal(false);
+    navigate('/pos');
+  };
 
   return (
-    <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
-      {/* Brand */}
-      <div className={styles.brand}>
-        <button
-          type="button"
-          className={styles.collapseBtn}
-          onClick={onToggleCollapse}
-          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          <IconHamburger />
-        </button>
-        <div className={`${styles.brandText} ${collapsed ? styles.hiddenText : ''}`}>
-          <span className={styles.brandName}>Bread Faculty</span>
-          <span className={styles.brandSub}>PREMIUM BAKERY MANAGEMENT</span>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav className={styles.nav}>
-        {visibleItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            end={item.path === '/'}
-            title={collapsed ? item.label : undefined}
-            aria-label={collapsed ? item.label : undefined}
-            className={({ isActive }) =>
-              `${styles.link} ${isActive ? styles.active : ''}`
-            }
+    <>
+      <aside className={`${styles.sidebar} ${collapsed ? styles.sidebarCollapsed : ''}`}>
+        {/* Brand */}
+        <div className={styles.brand}>
+          <button
+            type="button"
+            className={styles.collapseBtn}
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <span className={styles.icon}>{item.icon}</span>
-            <span className={`${styles.label} ${collapsed ? styles.hiddenText : ''}`}>{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* Footer user card */}
-      {user && (
-        <div className={styles.userCard}>
-          <div className={styles.userAvatarWrap}>
-            <img src={logo} alt={user.name} className={styles.userAvatar} />
-          </div>
-          <div className={`${styles.userMeta} ${collapsed ? styles.hiddenText : ''}`}>
-            <span className={styles.userName}>{user.name}</span>
-            <span className={styles.userPlan}>
-              {user.role === 'admin' ? 'Premium Plan' : `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`}
-            </span>
-            <span className={styles.userStatus}>Status: Active Member</span>
+            <IconHamburger />
+          </button>
+          <div className={`${styles.brandText} ${collapsed ? styles.hiddenText : ''}`}>
+            <span className={styles.brandName}>Bread Faculty</span>
+            <span className={styles.brandSub}>PREMIUM BAKERY MANAGEMENT</span>
           </div>
         </div>
-      )}
-    </aside>
+
+        {/* Global Create Actions */}
+        <div className={styles.createArea} ref={createMenuRef}>
+          <button 
+            className={styles.createBtn}
+            onClick={() => setCreateMenuOpen(!createMenuOpen)}
+            title="Create new"
+          >
+            <div className={styles.createBtnIcon}><IconPlus /></div>
+            <span className={`${styles.createBtnText} ${collapsed ? styles.hiddenText : ''}`}>Create new</span>
+            <span className={`${styles.createBtnCaret} ${collapsed ? styles.hiddenText : ''}`}><IconCaretRight /></span>
+          </button>
+          
+          {createMenuOpen && (
+            <div className={`${styles.createMenu} ${collapsed ? styles.createMenuCollapsed : ''}`}>
+              <div className={styles.createMenuHeader}>Create new</div>
+              <div className={styles.createMenuGroup}>
+                <button onClick={handleCreateSalesOrder} className={styles.createMenuItem}>
+                  <IconPOS /> Sales order
+                </button>
+                <button onClick={() => { setCreateMenuOpen(false); navigate('/customers?action=new'); }} className={styles.createMenuItem}>
+                  <IconUsers /> Customer
+                </button>
+                <button onClick={() => { setCreateMenuOpen(false); navigate('/products?action=new'); }} className={styles.createMenuItem}>
+                  <IconProducts /> Product
+                </button>
+                <button onClick={() => { setCreateMenuOpen(false); navigate('/inventory?action=new'); }} className={styles.createMenuItem}>
+                  <IconBox /> Adjustment
+                </button>
+                <button onClick={() => { setCreateMenuOpen(false); navigate('/purchase-orders?action=new'); }} className={styles.createMenuItem}>
+                  <IconOrders /> Purchase order
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Nav */}
+        <nav className={styles.nav}>
+          {visibleItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === '/'}
+              title={collapsed ? item.label : undefined}
+              aria-label={collapsed ? item.label : undefined}
+              className={({ isActive }) =>
+                `${styles.link} ${isActive ? styles.active : ''}`
+              }
+            >
+              <span className={styles.icon}>{item.icon}</span>
+              <span className={`${styles.label} ${collapsed ? styles.hiddenText : ''}`}>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Footer user card */}
+        {user && (
+          <div className={styles.userCard}>
+            <div className={styles.userAvatarWrap}>
+              <img src={logo} alt={user.name} className={styles.userAvatar} />
+            </div>
+            <div className={`${styles.userMeta} ${collapsed ? styles.hiddenText : ''}`}>
+              <span className={styles.userName}>{user.name}</span>
+              <span className={styles.userPlan}>
+                {user.role === 'admin' ? 'Premium Plan' : `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`}
+              </span>
+              <span className={styles.userStatus}>Status: Active Member</span>
+            </div>
+          </div>
+        )}
+      </aside>
+
+      {/* Select Customer Modal */}
+      <Modal isOpen={showCustomerModal} onClose={() => setShowCustomerModal(false)} title="Select Customer" size="md">
+        <div className={styles.customerModalContent}>
+          <div className={styles.customerSearchWrap}>
+            <SearchInput
+              value={customerSearch}
+              onChange={setCustomerSearch}
+              placeholder="Search by name or phone..."
+            />
+          </div>
+          
+          <button 
+            className={styles.addCustomerShortcut}
+            onClick={() => { setShowCustomerModal(false); navigate('/customers?action=new'); }}
+          >
+            <div className={styles.shortcutAvatar}>+</div>
+            <div className={styles.shortcutText}>
+              <strong>Add new customer</strong>
+              <span>Create a new customer profile and continue to sales terminal.</span>
+            </div>
+          </button>
+
+          <div className={styles.customerList}>
+            {filteredCustomers.length === 0 ? (
+              <div className={styles.noCustomers}>No customers found matching that search.</div>
+            ) : (
+              filteredCustomers.map(c => (
+                <button key={c.id} className={styles.customerListItem} onClick={() => handleSelectCustomer(c.id)}>
+                  <div className={styles.listAvatar}>{c.name.charAt(0).toUpperCase()}</div>
+                  <div className={styles.listInfo}>
+                    <span className={styles.listName}>{c.name}</span>
+                    <span className={styles.listPhone}>{c.phone || c.email || 'No contact info'}</span>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className={styles.customerModalFooter}>
+            <Button variant="ghost" onClick={handleContinueWithoutCustomer}>Continue without customer</Button>
+            <Button variant="ghost" onClick={() => setShowCustomerModal(false)}>Cancel</Button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 }
+

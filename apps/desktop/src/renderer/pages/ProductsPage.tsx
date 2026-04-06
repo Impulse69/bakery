@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { Product } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
@@ -54,6 +55,7 @@ export function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -77,11 +79,19 @@ export function ProductsPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const openAddModal = () => {
+  const openAddModal = useCallback(() => {
     setEditingProduct(null);
     setForm(EMPTY_FORM);
     setShowModal(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      openAddModal();
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams, openAddModal]);
 
   const openEditModal = async (product: Product) => {
     try {

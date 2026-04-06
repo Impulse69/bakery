@@ -47,14 +47,14 @@ interface RecentOrder {
 
 // ── Icons ──────────────────────────────────────
 const IconSales = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#e07b3c' }}>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" />
     <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.56-7.43H5.12" />
   </svg>
 );
 
 const IconOrders = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#2563eb' }}>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
     <path d="M7 2v20" />
     <path d="M21 15V2v0a5 5 0 0 0-5 5v8c0 1.1.9 2 2 2h1a2 2 0 0 0 2-2z" />
@@ -63,7 +63,7 @@ const IconOrders = () => (
 );
 
 const IconExpenses = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#dc2626' }}>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
     <path d="M3 5v14a2 2 0 0 0 2 2h16v-5" />
     <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
@@ -71,7 +71,7 @@ const IconExpenses = () => (
 );
 
 const IconCashIn = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#16a34a' }}>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="6" width="20" height="12" rx="2"/>
     <circle cx="12" cy="12" r="2"/>
     <path d="M6 12h.01M18 12h.01"/>
@@ -79,7 +79,7 @@ const IconCashIn = () => (
 );
 
 const IconProfit = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#fbd5b5' }}>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
   </svg>
 );
@@ -192,55 +192,45 @@ export function DashboardPage() {
       {(canSeeSales || canSeeExpenses) && (
         <div className={styles.statsRow}>
           {canSeeSales && (
-            <div className={styles.statCard}>
+            <div className={`${styles.statCard} ${styles.cardCash}`}>
               <div className={styles.statTop}>
-                <div className={`${styles.statIcon} ${styles.statIconOrange}`}><IconSales /></div>
+                <div className={styles.statIcon}><IconCashIn /></div>
               </div>
-              <p className={styles.statLabel}>Today's Sales</p>
+              <p className={styles.statLabel}>Total Cash-ins</p>
               <p className={styles.statValue}>{loading ? '—' : formatCurrency(revenue)}</p>
             </div>
           )}
 
-          {canSeeSales && (
-            <div className={styles.statCard}>
+          {canSeeExpenses && (
+            <div className={`${styles.statCard} ${styles.cardProfit}`}>
               <div className={styles.statTop}>
-                <div className={`${styles.statIcon} ${styles.statIconBlue}`}><IconOrders /></div>
-                {orderCount > 0 && (
-                  <span className={styles.statBadge} style={{ color: '#2563eb' }}>+{orderCount} Today</span>
-                )}
+                <div className={styles.statIcon}><IconProfit /></div>
               </div>
-              <p className={styles.statLabel}>Today's Orders</p>
-              <p className={styles.statValue}>{loading ? '—' : orderCount}</p>
+              <p className={styles.statLabel}>Marginal Profit</p>
+              <p className={styles.statValue}>{loading ? '—' : formatCurrency(marginalProfit)}</p>
             </div>
           )}
 
           {canSeeExpenses && (
-            <div className={styles.statCard}>
+            <div className={`${styles.statCard} ${styles.cardExpenses}`}>
               <div className={styles.statTop}>
-                <div className={`${styles.statIcon} ${styles.statIconRed}`}><IconExpenses /></div>
+                <div className={styles.statIcon}><IconExpenses /></div>
               </div>
               <p className={styles.statLabel}>Today's Expenses</p>
               <p className={styles.statValue}>{loading ? '—' : formatCurrency(expenses)}</p>
             </div>
           )}
 
-          {canSeeExpenses && (
-            <div className={styles.statCard}>
+          {canSeeSales && (
+            <div className={`${styles.statCard} ${styles.cardOrders}`}>
               <div className={styles.statTop}>
-                <div className={`${styles.statIcon} ${styles.statIconGreen}`}><IconProfit /></div>
+                <div className={styles.statIcon}><IconOrders /></div>
+                {orderCount > 0 && (
+                  <span className={styles.statBadge}>+{orderCount} Today</span>
+                )}
               </div>
-              <p className={styles.statLabel}>Marginal Profit</p>
-              <p className={styles.statValue} style={{ color: '#16a34a' }}>{loading ? '—' : formatCurrency(marginalProfit)}</p>
-            </div>
-          )}
-
-          {canSeeExpenses && (
-            <div className={`${styles.statCard} ${styles.statCardDark}`}>
-              <div className={styles.statTop}>
-                <div className={`${styles.statIcon} ${styles.statIconDarkInner}`}><IconCashIn /></div>
-              </div>
-              <p className={styles.statLabelDark}>Total Cash-ins</p>
-              <p className={styles.statValueDark}>{loading ? '—' : formatCurrency(revenue)}</p>
+              <p className={styles.statLabel}>Today's Orders</p>
+              <p className={styles.statValue}>{loading ? '—' : orderCount}</p>
             </div>
           )}
         </div>

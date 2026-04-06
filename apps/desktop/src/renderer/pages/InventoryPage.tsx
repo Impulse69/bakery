@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { InventoryItem, StockAdjustment } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, StockBadge, Badge } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
@@ -76,6 +77,7 @@ export function InventoryPage() {
   const [adjustQty, setAdjustQty] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [adjusting, setAdjusting] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -111,10 +113,21 @@ export function InventoryPage() {
     }
   }, [detailTab, selectedItem]);
 
-  const openAddModal = () => {
+  const openAddModal = useCallback(() => {
     setForm(EMPTY_FORM);
     setShowAddModal(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      // The user wants to create an adjustment or item. 
+      // Inventory doesn't have a global "create adjustment" without an item selected,
+      // but they can create a new inventory item.
+      openAddModal();
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams, openAddModal]);
 
   const handleAdd = async () => {
     if (!form.name.trim() || !form.unit) {

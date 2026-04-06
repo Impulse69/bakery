@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
 import { Sidebar } from './Sidebar';
@@ -8,6 +8,20 @@ import logo from '../assets/logo.png';
 export function AppLayout() {
   const { user, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   if (!user) return null;
 
@@ -28,6 +42,11 @@ export function AppLayout() {
         <header className={styles.topbar}>
           {/* Right side */}
           <div className={styles.topbarRight}>
+            <div className={`${styles.statusBadge} ${isOnline ? styles.online : styles.offline}`}>
+              <span className={styles.statusDot}></span>
+              {isOnline ? 'Online' : 'Offline'}
+            </div>
+            
             <button className={styles.iconBtn} title="Notifications">
               <span>🔔</span>
             </button>
