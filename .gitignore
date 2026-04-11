@@ -14,3 +14,14 @@ tasks/
 out/
 *.log
 *.tsbuildinfo
+
+# Build artifacts & Releases
+release/
+release-builds/
+build_assets/
+*.iss
+EULA.txt
+
+# Local Environment
+.env*
+!.env.example

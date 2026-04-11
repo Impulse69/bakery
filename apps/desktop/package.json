@@ -1,13 +1,36 @@
 {
   "name": "@bakery/desktop",
-  "version": "0.1.0",
+  "version": "0.1.5",
+  "description": "Bread Faculty POS Desktop App",
+  "author": "Bread Faculty",
   "private": true,
   "main": "./dist/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "build:win": "electron-vite build && electron-builder --win",
     "lint": "tsc --noEmit",
     "clean": "rm -rf dist out"
+  },
+  "build": {
+    "appId": "com.breadfaculty.pos",
+    "productName": "Bread Faculty POS",
+    "electronVersion": "41.1.0",
+    "directories": {
+      "output": "out"
+    },
+    "win": {
+      "target": "nsis",
+      "publish": {
+        "provider": "github",
+        "owner": "impulse69",
+        "repo": "bakery"
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   },
   "dependencies": {
     "@bakery/types": "*",
@@ -15,6 +38,7 @@
     "@bakery/utils": "*",
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
+    "electron-updater": "^6.3.9",
     "framer-motion": "^12.38.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -27,6 +51,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.7.0",

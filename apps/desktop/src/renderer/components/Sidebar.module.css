@@ -6,9 +6,9 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  overflow: hidden;
   font-family: var(--bui-font-family-sans);
   transition: width 0.2s ease;
+  z-index: 50; /* Ensure it stays above content if needed */
 }
 
 .sidebarCollapsed {
@@ -98,6 +98,7 @@
   padding: 0.625rem 0.625rem;
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   gap: 1px;
 }
 
@@ -277,23 +278,16 @@
 
 .createMenu {
   position: absolute;
-  top: 3.5rem;
-  left: 0.625rem;
-  width: calc(100% - 1.25rem);
+  top: 0.75rem;
+  left: 100%;
+  margin-left: 0.5rem;
+  width: 220px;
   background: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-  z-index: 100;
-  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.05);
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-}
-
-.createMenuCollapsed {
-  left: 100%;
-  width: 200px;
-  margin-left: 10px;
-  top: 0;
 }
 
 .createMenuHeader {

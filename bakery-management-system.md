@@ -12,7 +12,7 @@ This is a **two-surface system** built on a single shared codebase. The Windows 
 [ Windows Desktop App ]  <-->  [ On-Premise Server ]  <-->  [ Web Dashboard ]
   Electron + React               Node.js + PostgreSQL          Next.js (React)
   Used by staff in-shop          Runs on local server           Accessed via browser
-                                 Exposed via Cloudflare Tunnel  from anywhere
+                                 Exposed via Ngrok Tunnel  from anywhere
 ```
 
 The on-premise server is the single source of truth. The web dashboard accesses it remotely via a **Cloudflare Tunnel** — no cloud database subscription, no port forwarding, no VPN required.

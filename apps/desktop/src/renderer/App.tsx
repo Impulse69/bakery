@@ -15,28 +15,32 @@ import { CustomersPage } from './pages/CustomersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { InventoryCountsPage } from './pages/InventoryCountsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
+import { AutoUpdater } from './components/AutoUpdater';
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/pos" element={<POSPage />} />
-          <Route path="/sales-orders" element={<SalesOrdersPage />} />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/inventory" element={<InventoryPage />} />
-          <Route path="/production" element={<ProductionPage />} />
-          <Route path="/suppliers" element={<SuppliersPage />} />
-          <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/reports" element={<ReportsPage />} />
-          <Route path="/inventory-counts" element={<InventoryCountsPage />} />
-          <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+    <>
+      <AutoUpdater />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/pos" element={<POSPage />} />
+            <Route path="/sales-orders" element={<SalesOrdersPage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
+            <Route path="/production" element={<ProductionPage />} />
+            <Route path="/suppliers" element={<SuppliersPage />} />
+            <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/inventory-counts" element={<InventoryCountsPage />} />
+            <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }

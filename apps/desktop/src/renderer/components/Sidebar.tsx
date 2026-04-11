@@ -132,10 +132,15 @@ export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
         </div>
 
         {/* Global Create Actions */}
-        <div className={styles.createArea} ref={createMenuRef}>
+        <div 
+          className={styles.createArea} 
+          ref={createMenuRef}
+          onMouseEnter={() => { if (collapsed) setCreateMenuOpen(true); }}
+          onMouseLeave={() => { if (collapsed) setCreateMenuOpen(false); }}
+        >
           <button 
             className={styles.createBtn}
-            onClick={() => setCreateMenuOpen(!createMenuOpen)}
+            onClick={() => { if (!collapsed) setCreateMenuOpen(!createMenuOpen); }}
             title="Create new"
           >
             <div className={styles.createBtnIcon}><IconPlus /></div>
@@ -144,7 +149,7 @@ export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
           </button>
           
           {createMenuOpen && (
-            <div className={`${styles.createMenu} ${collapsed ? styles.createMenuCollapsed : ''}`}>
+            <div className={styles.createMenu}>
               <div className={styles.createMenuHeader}>Create new</div>
               <div className={styles.createMenuGroup}>
                 <button onClick={handleCreateSalesOrder} className={styles.createMenuItem}>

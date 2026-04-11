@@ -12,7 +12,9 @@
     "db:push": "echo 'Use db:migrate instead of db:push to avoid data loss' && exit 1",
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "service:install": "node scripts/install-service.js",
+    "service:uninstall": "node scripts/uninstall-service.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -27,6 +29,7 @@
     "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "node-windows": "^1.0.0-beta.8",
     "pg": "^8.20.0",
     "socket.io": "^4.8.3",
     "zod": "^4.3.6"

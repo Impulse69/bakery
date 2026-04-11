@@ -5,6 +5,13 @@ import { getSocket } from '../lib/socket';
 import { useAuth } from '../store/AuthContext';
 import styles from './DashboardPage.module.css';
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 function getDashboardTitle(role: string | undefined): string {
   if (role === 'admin') return 'Executive Dashboard';
   if (role === 'cashier') return 'Sales Dashboard';
@@ -183,8 +190,8 @@ export function DashboardPage() {
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.heading}>{getDashboardTitle(user?.role)}</h1>
-          <p className={styles.subheading}>{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <h1 className={styles.pageTitle}>{getGreeting()}, {user?.name?.toLowerCase() ?? 'admin'}</h1>
+          <p className={styles.pageQuote}><em>Pro tip: Dropshipping doesn't involve dropping products before shipping.</em></p>
         </div>
       </div>
 

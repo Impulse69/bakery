@@ -12,6 +12,8 @@
   gap: 0.75rem;
   overflow-y: auto;
   flex: 1;
+  padding: 4px;
+  margin: -4px;
 }
 
 .card {
@@ -28,12 +30,15 @@
   text-align: left;
   font-family: inherit;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 1;
 }
 
 .card:hover {
   border-color: var(--bui-primary);
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
   transform: translateY(-2px);
+  z-index: 10;
 }
 
 .iconWrapper {

@@ -8,3 +8,13 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface Window {
+  electronAPI: {
+    onUpdateAvailable: (callback: (info: any) => void) => void;
+    onUpdateProgress: (callback: (progress: any) => void) => void;
+    onUpdateDownloaded: (callback: (info: any) => void) => void;
+    onUpdateError: (callback: (error: string) => void) => void;
+    restartApp: () => void;
+  };
+}
