@@ -27,7 +27,7 @@ export function POSPage() {
   const [customerId, setCustomerId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountTendered, setAmountTendered] = useState(0);
-  const [discountPct, setDiscountPct] = useState(0);
+
   const [loading, setLoading] = useState(false);
   
   // Persisted last order for re-printing
@@ -111,8 +111,7 @@ export function POSPage() {
 
   const subtotal = cart.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxTotal = cart.reduce((s, item) => s + item.tax * item.quantity, 0);
-  const discountAmount = Math.round(subtotal * discountPct / 100);
-  const grandTotal = Math.max(0, subtotal + taxTotal - discountAmount);
+  const grandTotal = subtotal + taxTotal;
 
   const createOrder = useCallback(async () => {
     const items = cart.map((item) => ({
@@ -120,7 +119,6 @@ export function POSPage() {
       variantId: item.variant?.id,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      discount: Math.round(item.quantity * item.unitPrice * discountPct / 100),
       tax: item.tax,
     }));
 
@@ -131,11 +129,10 @@ export function POSPage() {
     });
 
     return order;
-  }, [cart, customerId, discountPct]);
+  }, [cart, customerId]);
 
   const resetCart = () => {
     setCart([]);
-    setDiscountPct(0);
     setAmountTendered(0);
     setCustomerId('');
   };

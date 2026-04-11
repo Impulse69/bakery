@@ -212,11 +212,6 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
             <span>Tax</span><span>{formatCurrency(order.taxTotal)}</span>
           </div>
         )}
-        {order.discountTotal > 0 && (
-          <div className={styles.totalRow}>
-            <span>Discount</span><span>−{formatCurrency(order.discountTotal)}</span>
-          </div>
-        )}
         <div className={`${styles.totalRow} ${styles.grandTotal}`}>
           <span>TOTAL</span><span>{formatCurrency(order.total)}</span>
         </div>

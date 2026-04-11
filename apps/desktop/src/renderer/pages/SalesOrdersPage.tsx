@@ -5,7 +5,6 @@ import { DataTable, Pagination, OrderStatusBadge, Button } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
-import { getSocket } from '../lib/socket';
 import { OrderDetailModal } from '../components/OrderDetailModal';
 import styles from './SalesOrdersPage.module.css';
 
@@ -83,13 +82,6 @@ export function SalesOrdersPage() {
 
   useEffect(() => {
     fetchOrders();
-    const socket = getSocket();
-    socket.on('sale:created', fetchOrders);
-    socket.on('sale:updated', fetchOrders);
-    return () => {
-      socket.off('sale:created', fetchOrders);
-      socket.off('sale:updated', fetchOrders);
-    };
   }, [fetchOrders]);
 
   const handleTabChange = (value: SalesOrderStatus | '') => {

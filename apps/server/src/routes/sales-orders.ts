@@ -23,7 +23,6 @@ const createOrderItemSchema = z.object({
   variantId: z.string().optional(),
   quantity: z.number().int().min(1),
   unitPrice: z.number().int().min(0),
-  discount: z.number().int().min(0).optional().default(0),
   tax: z.number().int().min(0).optional().default(0),
 });
 
@@ -149,19 +148,18 @@ router.post(
 
       // Compute totals from items
       const computedItems = items.map((item) => {
-        const lineTotal = item.quantity * item.unitPrice + item.tax - (item.discount || 0);
+        const lineTotal = item.quantity * item.unitPrice + item.tax;
         const product = productMap.get(item.productId);
         return { 
           ...item, 
-          total: Math.max(0, lineTotal),
+          total: lineTotal,
           unitWholesalePrice: product?.wholesalePrice ?? 0,
         };
       });
 
       const subtotal = computedItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
       const taxTotal = computedItems.reduce((s, i) => s + i.tax, 0);
-      const discountTotal = computedItems.reduce((s, i) => s + (i.discount || 0), 0);
-      const total = Math.max(0, subtotal + taxTotal - discountTotal);
+      const total = subtotal + taxTotal;
 
       // Create with placeholder orderNumber
       const created = await tx.salesOrder.create({

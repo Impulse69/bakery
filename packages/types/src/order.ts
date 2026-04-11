@@ -14,7 +14,6 @@ export type SalesOrder = Timestamps & {
   status: SalesOrderStatus;
   subtotal: number;
   taxTotal: number;
-  discountTotal: number;
   total: number;
   amountPaid: number;
   balanceDue: number;
