@@ -149,18 +149,19 @@ router.post(
 
       // Compute totals from items
       const computedItems = items.map((item) => {
-        const lineTotal = item.quantity * item.unitPrice + item.tax;
+        const lineTotal = item.quantity * item.unitPrice + item.tax - (item.discount || 0);
         const product = productMap.get(item.productId);
         return { 
           ...item, 
-          total: lineTotal,
+          total: Math.max(0, lineTotal),
           unitWholesalePrice: product?.wholesalePrice ?? 0,
         };
       });
 
       const subtotal = computedItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
       const taxTotal = computedItems.reduce((s, i) => s + i.tax, 0);
-      const total = subtotal + taxTotal;
+      const discountTotal = computedItems.reduce((s, i) => s + (i.discount || 0), 0);
+      const total = Math.max(0, subtotal + taxTotal - discountTotal);
 
       // Create with placeholder orderNumber
       const created = await tx.salesOrder.create({

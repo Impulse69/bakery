@@ -176,7 +176,11 @@ export function DashboardPage() {
   useEffect(() => {
     const socket = getSocket();
     socket.on('sale:created', fetchData);
-    return () => { socket.off('sale:created', fetchData); };
+    socket.on('sale:updated', fetchData);
+    return () => { 
+      socket.off('sale:created', fetchData);
+      socket.off('sale:updated', fetchData);
+    };
   }, [fetchData]);
 
   const revenue = report?.totalRevenue ?? 0;
