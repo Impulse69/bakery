@@ -102,6 +102,34 @@
   justify-content: flex-start;
 }
 
+.soldOut {
+  opacity: 0.55;
+  background: #f1f5f9;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.soldOut:hover {
+  border-color: var(--bui-border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transform: none;
+}
+
+.soldOutBadge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);

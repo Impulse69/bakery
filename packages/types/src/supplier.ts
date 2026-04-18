@@ -35,10 +35,11 @@ export type PurchaseOrder = {
 export type PurchaseOrderLineItem = {
   id: string;
   purchaseOrderId: string;
-  inventoryItemId: string;
+  productId: string;
   quantityOrdered: number;
   quantityReceived: number;
   unit: string;
   unitCost: number;
   lineTotal: number;
+  product?: { id: string; name: string };
 };

@@ -9,6 +9,7 @@ export type Product = Timestamps & {
   description?: string;
   imageUrl?: string;
   isAvailable: boolean;
+  stockQuantity: number;
   variants?: ProductVariant[];
 };
 

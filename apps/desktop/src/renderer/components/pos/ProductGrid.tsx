@@ -53,7 +53,10 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
     );
   }, [products, search]);
 
+  const isSoldOut = (p: Product) => p.isAvailable === false || (p.stockQuantity ?? 0) <= 0;
+
   const handleClick = (product: Product) => {
+    if (isSoldOut(product)) return;
     const activeVariants = product.variants?.filter((v) => v.isActive);
     if (activeVariants && activeVariants.length > 0) {
       setVariantProduct(product);
@@ -77,26 +80,31 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
         placeholder="Search products..."
       />
       <div className={styles.grid}>
-        {filtered.map((product) => (
-          <button
-            key={product.id}
-            className={styles.card}
-            onClick={() => handleClick(product)}
-          >
-            <div className={styles.iconWrapper}>
-              <img 
-                src={PRODUCT_IMAGES[product.name] || CATEGORY_ICONS[product.category] || otherIcon} 
-                alt={product.name} 
-                className={styles.categoryIcon}
-              />
-            </div>
-            <div className={styles.cardContent}>
-              <span className={styles.name}>{product.name}</span>
-              <span className={styles.category}>{product.category}</span>
-              <span className={styles.price}>{formatCurrency(product.price)}</span>
-            </div>
-          </button>
-        ))}
+        {filtered.map((product) => {
+          const soldOut = isSoldOut(product);
+          return (
+            <button
+              key={product.id}
+              className={`${styles.card} ${soldOut ? styles.soldOut : ''}`}
+              onClick={() => handleClick(product)}
+              disabled={soldOut}
+            >
+              {soldOut && <span className={styles.soldOutBadge}>Sold Out</span>}
+              <div className={styles.iconWrapper}>
+                <img
+                  src={PRODUCT_IMAGES[product.name] || CATEGORY_ICONS[product.category] || otherIcon}
+                  alt={product.name}
+                  className={styles.categoryIcon}
+                />
+              </div>
+              <div className={styles.cardContent}>
+                <span className={styles.name}>{product.name}</span>
+                <span className={styles.category}>{product.category}</span>
+                <span className={styles.price}>{formatCurrency(product.price)}</span>
+              </div>
+            </button>
+          );
+        })}
         {filtered.length === 0 && (
           <p className={styles.empty}>No products found</p>
         )}

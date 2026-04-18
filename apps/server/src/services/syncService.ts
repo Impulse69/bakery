@@ -14,17 +14,13 @@ const SYNC_ORDER: SyncConfig[] = [
   { table: 'customer', timeColumn: 'updatedAt' },
   { table: 'product', timeColumn: 'updatedAt' },
   { table: 'productVariant', timeColumn: 'updatedAt' },
-  { table: 'inventoryItem', timeColumn: 'updatedAt' },
   { table: 'supplier', timeColumn: 'updatedAt' },
   { table: 'documentTemplate', timeColumn: 'updatedAt' },
-  
+
   // Transactional Data
   { table: 'expense', timeColumn: 'createdAt' },
-  { table: 'stockAdjustment', timeColumn: 'createdAt' },
-  
-  { table: 'inventoryCount', timeColumn: 'createdAt' },
-  { table: 'inventoryCountItem', timeColumn: null, parent: 'inventoryCount', parentTimeCol: 'createdAt' },
-  
+  { table: 'productStockAdjustment', timeColumn: 'createdAt' },
+
   { table: 'productionBatch', timeColumn: 'startedAt' },
   { table: 'dailyProductionTarget', timeColumn: 'updatedAt' },
   

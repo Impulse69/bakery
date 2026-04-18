@@ -18,7 +18,6 @@ import productionRoutes from './routes/production.js';
 import supplierRoutes from './routes/suppliers.js';
 import purchaseOrderRoutes from './routes/purchase-orders.js';
 import expenseRoutes from './routes/expenses.js';
-import inventoryCountRoutes from './routes/inventory-counts.js';
 import reportRoutes from './routes/reports.js';
 
 const app = express();
@@ -49,7 +48,6 @@ app.use('/api/production', authMiddleware, productionRoutes);
 app.use('/api/suppliers', authMiddleware, supplierRoutes);
 app.use('/api/purchase-orders', authMiddleware, purchaseOrderRoutes);
 app.use('/api/expenses', authMiddleware, expenseRoutes);
-app.use('/api/inventory-counts', authMiddleware, inventoryCountRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
 
 // Error handler (must be last)

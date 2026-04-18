@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { PurchaseOrder, PurchaseOrderStatus, Supplier, InventoryItem } from '@bakery/types';
+import type { PurchaseOrder, PurchaseOrderStatus, Supplier, Product } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge, FormSection } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
@@ -24,13 +24,13 @@ const STATUS_VARIANT: Record<string, 'neutral' | 'info' | 'success' | 'danger'> 
 };
 
 interface LineItem {
-  inventoryItemId: string;
+  productId: string;
   quantityOrdered: string;
   unit: string;
   unitCostDisplay: string;
 }
 
-const EMPTY_LINE: LineItem = { inventoryItemId: '', quantityOrdered: '', unit: '', unitCostDisplay: '' };
+const EMPTY_LINE: LineItem = { productId: '', quantityOrdered: '', unit: '', unitCostDisplay: '' };
 
 const columns: DataTableColumn<PurchaseOrder>[] = [
   { key: 'poNumber', label: 'PO #', sortable: true },
@@ -76,7 +76,7 @@ export function PurchaseOrdersPage() {
 
   // Dropdowns
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
 
   // New PO modal
   const [showNewModal, setShowNewModal] = useState(false);
@@ -117,11 +117,11 @@ export function PurchaseOrdersPage() {
   // Fetch dropdowns once
   useEffect(() => {
     api.get<{ data: Supplier[] }>('/suppliers?limit=100').then((r) => setSuppliers(r.data)).catch(() => {});
-    api.get<{ data: InventoryItem[] }>('/inventory?limit=100').then((r) => setInventoryItems(r.data)).catch(() => {});
+    api.get<{ data: Product[] }>('/products?limit=200').then((r) => setProducts(r.data)).catch(() => {});
   }, []);
 
   const supplierOptions: SelectOption[] = suppliers.map((s) => ({ value: s.id, label: s.name }));
-  const itemOptions: SelectOption[] = inventoryItems.map((i) => ({ value: i.id, label: `${i.name} (${i.unit})` }));
+  const itemOptions: SelectOption[] = products.map((p) => ({ value: p.id, label: p.name }));
 
   const handleTabChange = (value: PurchaseOrderStatus | '') => {
     setStatusFilter(value);
@@ -133,11 +133,6 @@ export function PurchaseOrdersPage() {
     setLineItems((items) => items.map((li, i) => {
       if (i !== index) return li;
       const updated = { ...li, [field]: value };
-      // Auto-fill unit from inventory item
-      if (field === 'inventoryItemId') {
-        const item = inventoryItems.find((inv) => inv.id === value);
-        if (item) updated.unit = item.unit;
-      }
       return updated;
     }));
   };
@@ -172,7 +167,7 @@ export function PurchaseOrdersPage() {
       showToast('Supplier is required', 'error');
       return;
     }
-    const validItems = lineItems.filter((li) => li.inventoryItemId && Number(li.quantityOrdered) > 0);
+    const validItems = lineItems.filter((li) => li.productId && Number(li.quantityOrdered) > 0);
     if (validItems.length === 0) {
       showToast('At least one line item is required', 'error');
       return;
@@ -184,7 +179,7 @@ export function PurchaseOrdersPage() {
         expectedDeliveryDate: expectedDate ? new Date(expectedDate).toISOString() : undefined,
         notes: poNotes || undefined,
         items: validItems.map((li) => ({
-          inventoryItemId: li.inventoryItemId,
+          productId: li.productId,
           quantityOrdered: Number(li.quantityOrdered),
           unit: li.unit,
           unitCost: Math.round(Number(li.unitCostDisplay) * 100),
@@ -281,9 +276,9 @@ export function PurchaseOrdersPage() {
                 <Select
                   label={i === 0 ? 'Item' : undefined}
                   options={itemOptions}
-                  value={li.inventoryItemId}
-                  onChange={(e) => updateLineItem(i, 'inventoryItemId', e.target.value)}
-                  placeholder="Select item"
+                  value={li.productId}
+                  onChange={(e) => updateLineItem(i, 'productId', e.target.value)}
+                  placeholder="Select product"
                 />
                 <Input
                   label={i === 0 ? 'Qty' : undefined}
@@ -390,7 +385,7 @@ export function PurchaseOrdersPage() {
                 <tbody>
                   {selectedOrder.items.map((item) => (
                     <tr key={item.id}>
-                      <td>{item.inventoryItemId}</td>
+                      <td>{item.product?.name ?? item.productId}</td>
                       <td>{item.quantityOrdered}</td>
                       <td>{item.quantityReceived}</td>
                       <td>{item.unit}</td>

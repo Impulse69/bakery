@@ -13,7 +13,6 @@ import { PurchaseOrdersPage } from './pages/PurchaseOrdersPage';
 import { ExpensesPage } from './pages/ExpensesPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { InventoryCountsPage } from './pages/InventoryCountsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { AutoUpdater } from './components/AutoUpdater';
 
@@ -36,7 +35,6 @@ export function App() {
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/inventory-counts" element={<InventoryCountsPage />} />
             <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
           </Route>
         </Route>

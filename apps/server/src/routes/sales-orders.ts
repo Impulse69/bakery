@@ -5,6 +5,7 @@ import { getIO } from '../lib/socket.js';
 import { getParam } from '../lib/params.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { syncProductAvailability } from '../services/products.js';
 import type { SalesOrderStatus } from '@prisma/client';
 
 const router = Router();
@@ -182,17 +183,11 @@ router.post(
 
       // Decrement stock for each product and implement Sold Out logic
       for (const item of computedItems) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
-        if (product) {
-          const newStock = product.stockQuantity - item.quantity;
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { 
-              stockQuantity: newStock,
-              isAvailable: newStock > 0 
-            }
-          });
-        }
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { decrement: item.quantity } },
+        });
+        await syncProductAvailability(tx, item.productId);
       }
 
       // Update with formatted orderNumber

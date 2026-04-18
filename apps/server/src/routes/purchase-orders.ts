@@ -5,6 +5,7 @@ import { getIO } from '../lib/socket.js';
 import { getParam } from '../lib/params.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { syncProductAvailability } from '../services/products.js';
 import type { PurchaseOrderStatus } from '@prisma/client';
 
 const router = Router();
@@ -138,6 +139,8 @@ router.patch(
             where: { id: item.id },
             data: { quantityReceived: item.quantityOrdered },
           });
+
+          await syncProductAvailability(tx, item.productId);
         }
       }
 

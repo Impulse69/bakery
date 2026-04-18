@@ -22,13 +22,6 @@ enum PaymentMethod {
   credit
 }
 
-enum StockAdjustmentType {
-  purchase
-  production
-  waste
-  correction
-}
-
 enum ProductionBatchStatus {
   in_progress
   completed
@@ -60,12 +53,6 @@ enum ExpenseCategory {
   other
 }
 
-enum InventoryCountStatus {
-  in_progress
-  completed
-  cancelled
-}
-
 enum DocumentTemplateType {
   invoice
   receipt
@@ -87,11 +74,9 @@ model User {
   updatedAt    DateTime @updatedAt
 
   salesOrders       SalesOrder[]
-  stockAdjustments  StockAdjustment[]
   productionBatches ProductionBatch[]
   purchaseOrders    PurchaseOrder[]
   expenses          Expense[]
-  inventoryCounts   InventoryCount[]
 
   @@map("users")
 }
@@ -105,7 +90,6 @@ model Location {
   updatedAt DateTime @updatedAt
 
   salesOrders     SalesOrder[]
-  inventoryCounts InventoryCount[]
 
   @@map("locations")
 }
@@ -148,7 +132,7 @@ model Product {
   dailyTargets       DailyProductionTarget[]
   productionBatches  ProductionBatch[]
   purchaseOrderItems PurchaseOrderLineItem[]
-  stockAdjustments   StockAdjustment[]
+  stockAdjustments   ProductStockAdjustment[]
 
   @@map("products")
 }
@@ -172,37 +156,17 @@ model ProductVariant {
   @@map("product_variants")
 }
 
-model InventoryItem {
-  id                String   @id @default(cuid())
-  name              String
-  unit              String
-  quantityOnHand    Float    @default(0)
-  lowStockThreshold Float    @default(0)
-  reorderQuantity   Float    @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+model ProductStockAdjustment {
+  id             String   @id @default(cuid())
+  productId      String
+  quantityChange Float
+  reason         String
+  createdAt      DateTime @default(now())
 
-  inventoryCountItems InventoryCountItem[]
-
-  @@map("inventory_items")
-}
-
-model StockAdjustment {
-  id              String              @id @default(cuid())
-  productId       String
-  quantityChange  Float
-  adjustmentType  StockAdjustmentType
-  referenceId     String?
-  notes           String?
-  createdBy       String
-  createdAt       DateTime            @default(now())
-
-  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [createdBy], references: [id])
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
-  @@index([referenceId])
-  @@map("stock_movements")
+  @@map("product_stock_adjustments")
 }
 
 model ProductionBatch {
@@ -379,37 +343,6 @@ model Expense {
   user User @relation(fields: [recordedBy], references: [id])
 
   @@map("expenses")
-}
-
-model InventoryCount {
-  id          String               @id @default(cuid())
-  locationId  String
-  status      InventoryCountStatus @default(in_progress)
-  createdBy   String
-  createdAt   DateTime             @default(now())
-  completedAt DateTime?
-
-  location Location             @relation(fields: [locationId], references: [id])
-  user     User                 @relation(fields: [createdBy], references: [id])
-  items    InventoryCountItem[]
-
-  @@index([locationId])
-  @@map("inventory_counts")
-}
-
-model InventoryCountItem {
-  id               String @id @default(cuid())
-  inventoryCountId String
-  inventoryItemId  String
-  expectedQuantity Float
-  actualQuantity   Float?
-  discrepancy      Float?
-
-  inventoryCount InventoryCount @relation(fields: [inventoryCountId], references: [id], onDelete: Cascade)
-  inventoryItem  InventoryItem  @relation(fields: [inventoryItemId], references: [id])
-
-  @@unique([inventoryCountId, inventoryItemId])
-  @@map("inventory_count_items")
 }
 
 model DocumentTemplate {

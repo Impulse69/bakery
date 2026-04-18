@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { InventoryItem, StockAdjustment } from '@bakery/types';
-import { Button, Input, Select, DataTable, StatCard, Badge } from '@bakery/ui';
+import type { Product, ProductStockAdjustment } from '@bakery/types';
+import { Button, Input, Select, DataTable, StatCard } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
@@ -24,13 +24,6 @@ interface SalesProduct {
   totalRevenue: number;
 }
 
-const ADJUSTMENT_VARIANT: Record<string, 'success' | 'info' | 'danger' | 'warning'> = {
-  purchase: 'success',
-  production: 'info',
-  waste: 'danger',
-  correction: 'warning',
-};
-
 function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
@@ -41,20 +34,11 @@ function get30DaysAgo(): string {
   return d.toISOString().split('T')[0];
 }
 
-const stockColumns: DataTableColumn<StockAdjustment>[] = [
+const stockColumns: DataTableColumn<ProductStockAdjustment>[] = [
   {
     key: 'createdAt',
     label: 'Date',
     render: (row) => new Date(row.createdAt).toLocaleString(),
-  },
-  {
-    key: 'adjustmentType',
-    label: 'Type',
-    render: (row) => (
-      <Badge variant={ADJUSTMENT_VARIANT[row.adjustmentType] ?? 'neutral'}>
-        {row.adjustmentType.charAt(0).toUpperCase() + row.adjustmentType.slice(1)}
-      </Badge>
-    ),
   },
   {
     key: 'quantityChange',
@@ -65,7 +49,7 @@ const stockColumns: DataTableColumn<StockAdjustment>[] = [
       </span>
     ),
   },
-  { key: 'notes', label: 'Notes', render: (row) => row.notes || '—' },
+  { key: 'reason', label: 'Reason', render: (row) => row.reason || '—' },
 ];
 
 const salesColumns: DataTableColumn<SalesProduct>[] = [
@@ -100,11 +84,11 @@ export function ReportsPage() {
   const [dailyLoading, setDailyLoading] = useState(false);
 
   // Stock tab
-  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [stockItemId, setStockItemId] = useState('');
   const [stockFrom, setStockFrom] = useState(get30DaysAgo());
   const [stockTo, setStockTo] = useState(getToday());
-  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
+  const [adjustments, setAdjustments] = useState<ProductStockAdjustment[]>([]);
   const [stockLoading, setStockLoading] = useState(false);
 
   // Sales tab
@@ -113,10 +97,10 @@ export function ReportsPage() {
   const [salesData, setSalesData] = useState<SalesProduct[]>([]);
   const [salesLoading, setSalesLoading] = useState(false);
 
-  // Load inventory items for stock picker
+  // Load products for stock picker
   useEffect(() => {
-    api.get<{ data: InventoryItem[] }>('/inventory?limit=100')
-      .then((r) => setInventoryItems(r.data))
+    api.get<{ data: Product[] }>('/products?limit=100')
+      .then((r) => setProducts(r.data))
       .catch(() => {});
   }, []);
 
@@ -141,15 +125,15 @@ export function ReportsPage() {
 
   const fetchStockReport = async () => {
     if (!stockItemId) {
-      showToast('Select an inventory item', 'error');
+      showToast('Select a product', 'error');
       return;
     }
     setStockLoading(true);
     try {
-      let params = `/reports/stock-adjustment?itemId=${stockItemId}`;
+      let params = `/reports/stock-adjustment?productId=${stockItemId}`;
       if (stockFrom) params += `&from=${new Date(stockFrom).toISOString()}`;
       if (stockTo) params += `&to=${new Date(stockTo + 'T23:59:59').toISOString()}`;
-      const data = await api.get<StockAdjustment[]>(params);
+      const data = await api.get<ProductStockAdjustment[]>(params);
       setAdjustments(data);
     } catch (err: any) {
       showToast(err.message || 'Failed to load stock data', 'error');
@@ -173,9 +157,9 @@ export function ReportsPage() {
     }
   };
 
-  const itemOptions: SelectOption[] = inventoryItems.map((i) => ({
-    value: i.id,
-    label: `${i.name} (${i.unit})`,
+  const itemOptions: SelectOption[] = products.map((p) => ({
+    value: p.id,
+    label: p.name,
   }));
 
   return (
@@ -244,11 +228,11 @@ export function ReportsPage() {
         <div>
           <div className={styles.filters}>
             <Select
-              label="Inventory Item"
+              label="Product"
               options={itemOptions}
               value={stockItemId}
               onChange={(e) => setStockItemId(e.target.value)}
-              placeholder="Select item"
+              placeholder="Select product"
             />
             <Input
               label="From"

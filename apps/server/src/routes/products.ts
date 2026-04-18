@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { getParam } from '../lib/params.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { syncProductAvailability } from '../services/products.js';
 
 const router = Router();
 
@@ -30,13 +31,12 @@ router.get(
     const { skip, take } = req.pagination;
     const [products, total] = await Promise.all([
       prisma.product.findMany({
-        where: { isAvailable: true },
         include: { variants: { where: { isActive: true } } },
         skip,
         take,
         orderBy: { name: 'asc' },
       }),
-      prisma.product.count({ where: { isAvailable: true } }),
+      prisma.product.count(),
     ]);
     res.json({ data: products, total, page: req.pagination.page, limit: req.pagination.limit });
   }),
@@ -105,20 +105,18 @@ router.post(
       const product = await tx.product.findUnique({ where: { id: productId } });
       if (!product) throw new AppError(404, 'Product not found');
 
-      await tx.stockAdjustment.create({
-        data: {
-          productId,
-          quantityChange,
-          adjustmentType: 'correction',
-          notes: reason,
-          createdBy: req.user!.id,
-        },
+      await tx.productStockAdjustment.create({
+        data: { productId, quantityChange, reason },
       });
 
-      return tx.product.update({
+      const updated = await tx.product.update({
         where: { id: productId },
         data: { stockQuantity: { increment: quantityChange } },
       });
+
+      await syncProductAvailability(tx, productId);
+
+      return updated;
     });
 
     res.json(result);

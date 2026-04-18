@@ -5,6 +5,7 @@ import { getIO } from '../lib/socket.js';
 import { getParam } from '../lib/params.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { syncProductAvailability } from '../services/products.js';
 
 const router = Router();
 
@@ -190,6 +191,7 @@ router.patch(
             where: { id: item.productId },
             data: { stockQuantity: { increment: item.actual } }
           });
+          await syncProductAvailability(tx, item.productId);
         }
 
         results.push(updatedTarget);
@@ -420,6 +422,7 @@ router.patch(
           stockQuantity: { increment: batch.quantityProduced }
         }
       });
+      await syncProductAvailability(tx, batch.productId);
 
       return b;
     });

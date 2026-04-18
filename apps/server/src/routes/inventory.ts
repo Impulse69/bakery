@@ -5,73 +5,37 @@ import { getParam } from '../lib/params.js';
 import { getIO } from '../lib/socket.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
-import { checkLowStockAndAlert } from '../services/alertService.js';
+import { syncProductAvailability } from '../services/products.js';
 
 const router = Router();
-
-const createItemSchema = z.object({
-  name: z.string().min(1),
-  unit: z.string().min(1),
-  quantityOnHand: z.number().optional(),
-  lowStockThreshold: z.number().optional(),
-  reorderQuantity: z.number().optional(),
-});
-
-const updateItemSchema = createItemSchema.partial();
 
 const adjustSchema = z.object({
   quantityChange: z.number(),
   reason: z.string().min(1),
 });
 
-// GET /api/inventory
+// GET /api/inventory  — paginated product list with stock
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     const { skip, take } = req.pagination;
-    const [items, total] = await Promise.all([
-      prisma.inventoryItem.findMany({ skip, take, orderBy: { name: 'asc' } }),
-      prisma.inventoryItem.count(),
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({ skip, take, orderBy: { name: 'asc' } }),
+      prisma.product.count(),
     ]);
-    res.json({ data: items, total, page: req.pagination.page, limit: req.pagination.limit });
+    res.json({ data: products, total, page: req.pagination.page, limit: req.pagination.limit });
   }),
 );
 
-// GET /api/inventory/low-stock
+// GET /api/inventory/sold-out
 router.get(
-  '/low-stock',
+  '/sold-out',
   asyncHandler(async (_req, res) => {
-    const items = await prisma.$queryRaw`
-      SELECT * FROM inventory_items
-      WHERE "quantityOnHand" <= "lowStockThreshold"
-      ORDER BY "quantityOnHand" ASC
-    `;
-    res.json(items);
-  }),
-);
-
-// POST /api/inventory
-router.post(
-  '/',
-  requireRole('admin'),
-  asyncHandler(async (req, res) => {
-    const data = createItemSchema.parse(req.body);
-    const item = await prisma.inventoryItem.create({ data });
-    res.status(201).json(item);
-  }),
-);
-
-// PATCH /api/inventory/:id
-router.patch(
-  '/:id',
-  requireRole('admin'),
-  asyncHandler(async (req, res) => {
-    const data = updateItemSchema.parse(req.body);
-    const item = await prisma.inventoryItem.update({
-      where: { id: getParam(req, 'id') },
-      data,
+    const products = await prisma.product.findMany({
+      where: { stockQuantity: { lte: 0 } },
+      orderBy: { name: 'asc' },
     });
-    res.json(item);
+    res.json(products);
   }),
 );
 
@@ -81,22 +45,27 @@ router.post(
   requireRole('admin'),
   asyncHandler(async (req, res) => {
     const { quantityChange, reason } = adjustSchema.parse(req.body);
-    const itemId = getParam(req, 'id');
+    const productId = getParam(req, 'id');
 
     const result = await prisma.$transaction(async (tx) => {
-      const item = await tx.inventoryItem.findUnique({ where: { id: itemId } });
-      if (!item) throw new AppError(404, 'Inventory item not found');
+      const product = await tx.product.findUnique({ where: { id: productId } });
+      if (!product) throw new AppError(404, 'Product not found');
 
-      return tx.inventoryItem.update({
-        where: { id: itemId },
-        data: { quantityOnHand: { increment: quantityChange } },
+      await tx.productStockAdjustment.create({
+        data: { productId, quantityChange, reason },
       });
+
+      const updated = await tx.product.update({
+        where: { id: productId },
+        data: { stockQuantity: { increment: quantityChange } },
+      });
+
+      await syncProductAvailability(tx, productId);
+
+      return updated;
     });
 
-    getIO().emit('stock:updated', { itemId, quantityOnHand: result.quantityOnHand });
-    
-    // Check for low stock and send SMS alert asynchronously
-    checkLowStockAndAlert(itemId).catch(err => console.error('Low stock alert error:', err));
+    getIO().emit('inventory:update', { productId, stockQuantity: result.stockQuantity });
 
     res.json(result);
   }),

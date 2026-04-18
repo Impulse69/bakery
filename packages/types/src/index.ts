@@ -3,12 +3,11 @@ export type { ApiResponse, PaginatedResponse, LoginRequest, LoginResponse } from
 export type { User, AuthPayload } from './user';
 export type { Product, ProductVariant } from './product';
 export type { Customer } from './customer';
-export type { InventoryItem, StockAdjustment, StockAdjustmentType } from './inventory';
+export type { ProductStockAdjustment } from './inventory';
 export type { ProductionBatch, ProductionBatchStatus, DailyProductionTarget } from './production';
 export type { SalesOrder, SalesOrderItem, SalesOrderStatus, Payment } from './order';
 export type { Supplier, PurchaseOrder, PurchaseOrderLineItem, PurchaseOrderStatus } from './supplier';
 export type { Expense, ExpenseCategory } from './expense';
-export type { InventoryCount, InventoryCountItem, InventoryCountStatus } from './inventory-count';
 export type { DocumentTemplate, DocumentTemplateType } from './document';
 export type { DailySalesSummary, DailyProfitLoss, DailySummary } from './report';
 export type { WsEvents } from './ws-events';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { Product, StockAdjustment } from '@bakery/types';
+import type { Product, ProductStockAdjustment } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Badge } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { api } from '../lib/api';
@@ -24,13 +24,6 @@ const columns: DataTableColumn<Product>[] = [
   },
 ];
 
-const ADJUSTMENT_TYPE_MAP: Record<string, { variant: 'success' | 'info' | 'danger' | 'warning'; label: string }> = {
-  purchase: { variant: 'success', label: 'Purchase' },
-  production: { variant: 'info', label: 'Production' },
-  waste: { variant: 'danger', label: 'Waste' },
-  correction: { variant: 'warning', label: 'Correction' },
-};
-
 export function InventoryPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -43,7 +36,7 @@ export function InventoryPage() {
   // Detail modal
   const [selectedItem, setSelectedItem] = useState<Product | null>(null);
   const [detailTab, setDetailTab] = useState<'details' | 'history'>('details');
-  const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
+  const [adjustments, setAdjustments] = useState<ProductStockAdjustment[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   // Adjust stock
@@ -78,7 +71,7 @@ export function InventoryPage() {
     if (detailTab === 'history' && selectedItem) {
       setHistoryLoading(true);
       api
-        .get<StockAdjustment[]>(`/reports/stock-adjustment?productId=${selectedItem.id}`)
+        .get<ProductStockAdjustment[]>(`/reports/stock-adjustment?productId=${selectedItem.id}`)
         .then(setAdjustments)
         .catch(() => setAdjustments([]))
         .finally(() => setHistoryLoading(false));
@@ -241,27 +234,20 @@ export function InventoryPage() {
                     <thead>
                       <tr>
                         <th>Date</th>
-                        <th>Type</th>
                         <th>Quantity</th>
-                        <th>Notes</th>
+                        <th>Reason</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {adjustments.map((adj) => {
-                        const typeInfo = ADJUSTMENT_TYPE_MAP[adj.adjustmentType] ?? { variant: 'neutral' as const, label: adj.adjustmentType };
-                        return (
-                          <tr key={adj.id}>
-                            <td>{new Date(adj.createdAt).toLocaleString()}</td>
-                            <td>
-                              <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>
-                            </td>
-                            <td style={{ fontWeight: 600 }}>
-                              {adj.quantityChange > 0 ? '+' : ''}{adj.quantityChange}
-                            </td>
-                            <td>{adj.notes || '—'}</td>
-                          </tr>
-                        );
-                      })}
+                      {adjustments.map((adj) => (
+                        <tr key={adj.id}>
+                          <td>{new Date(adj.createdAt).toLocaleString()}</td>
+                          <td style={{ fontWeight: 600 }}>
+                            {adj.quantityChange > 0 ? '+' : ''}{adj.quantityChange}
+                          </td>
+                          <td>{adj.reason || '—'}</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                   </div>

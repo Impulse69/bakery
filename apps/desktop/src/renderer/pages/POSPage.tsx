@@ -147,7 +147,8 @@ export function POSPage() {
         method: paymentMethod,
       });
 
-      setPersistedLastOrder({ order, type: 'receipt' });
+      const fullOrder = await api.get<SalesOrder>(`/sales-orders/${order.id}`);
+      setPersistedLastOrder({ order: fullOrder, type: 'invoice' });
       setShowPreview(true);
       showToast(`Sale completed! Order ${order.orderNumber}`);
       resetCart();
@@ -163,7 +164,8 @@ export function POSPage() {
     setLoading(true);
     try {
       const order = await createOrder();
-      setPersistedLastOrder({ order, type: 'invoice' });
+      const fullOrder = await api.get<SalesOrder>(`/sales-orders/${order.id}`);
+      setPersistedLastOrder({ order: fullOrder, type: 'invoice' });
       setShowPreview(true);
       showToast(`Invoice generated for ${order.orderNumber}`);
       resetCart();
@@ -213,6 +215,7 @@ export function POSPage() {
           customers={customers}
           selectedCustomerId={customerId}
           onCustomerChange={setCustomerId}
+          onCustomersChange={setCustomers}
           paymentMethod={paymentMethod}
           onPaymentMethodChange={setPaymentMethod}
           amountTendered={amountTendered}

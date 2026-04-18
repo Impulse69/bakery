@@ -166,9 +166,8 @@ router.get(
       where.createdAt = dateFilter;
     }
 
-    const movements = await prisma.stockAdjustment.findMany({
+    const movements = await prisma.productStockAdjustment.findMany({
       where,
-      include: { user: { select: { id: true, name: true } } },
       orderBy: { createdAt: 'desc' },
     });
 

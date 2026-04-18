@@ -1,7 +1,10 @@
-import { Select, SearchableSelect, Input, Button } from '@bakery/ui';
+import { Select, Input, Button } from '@bakery/ui';
 import type { SelectOption } from '@bakery/ui';
 import type { Customer, PaymentMethod } from '@bakery/types';
 import { formatCurrency } from '@bakery/utils';
+import { CustomerCombobox } from '../customer/CustomerCombobox';
+import { api } from '../../lib/api';
+import { useToast } from '../Toast';
 import styles from './PaymentSection.module.css';
 
 const PAYMENT_METHODS: SelectOption[] = [
@@ -13,6 +16,7 @@ interface PaymentSectionProps {
   customers: Customer[];
   selectedCustomerId: string;
   onCustomerChange: (id: string) => void;
+  onCustomersChange?: (customers: Customer[]) => void;
   paymentMethod: PaymentMethod;
   onPaymentMethodChange: (method: PaymentMethod) => void;
   amountTendered: number;
@@ -31,6 +35,7 @@ export function PaymentSection({
   customers,
   selectedCustomerId,
   onCustomerChange,
+  onCustomersChange,
   paymentMethod,
   onPaymentMethodChange,
   amountTendered,
@@ -44,20 +49,27 @@ export function PaymentSection({
   cartEmpty,
   hasLastOrder,
 }: PaymentSectionProps) {
-  const customerOptions: SelectOption[] = [
-    { value: '', label: 'Walk-in Customer' },
-    ...customers.map((c) => ({ value: c.id, label: c.name })),
-  ];
-
+  const { showToast } = useToast();
   const change = paymentMethod === 'cash' ? amountTendered - grandTotal : 0;
+
+  const handleAddNewCustomer = async (name: string) => {
+    try {
+      const created = await api.post<Customer>('/customers', { name });
+      onCustomersChange?.([...customers, created]);
+      onCustomerChange(created.id);
+      showToast(`Customer "${created.name}" created`);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to create customer', 'error');
+    }
+  };
 
   return (
     <div className={styles.section}>
-      <SearchableSelect
-        label="Customer"
-        options={customerOptions}
-        value={selectedCustomerId}
-        onChange={onCustomerChange}
+      <CustomerCombobox
+        customers={customers}
+        selectedCustomerId={selectedCustomerId}
+        onSelect={(c) => onCustomerChange(c?.id ?? '')}
+        onAddNew={handleAddNewCustomer}
       />
 
       <Select
@@ -112,8 +124,8 @@ export function PaymentSection({
           </Button>
           <Button
             size="sm"
-            variant="ghost" 
-            disabled={!hasLastOrder} 
+            variant="ghost"
+            disabled={!hasLastOrder}
             onClick={onPrintLast}
           >
             Re-print
