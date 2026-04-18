@@ -15,6 +15,315 @@ const createBatchSchema = z.object({
   notes: z.string().optional(),
 });
 
+const dailyRunInitializeSchema = z.array(z.object({
+  productId: z.string(),
+  target: z.number().int().min(0),
+  carriedOver: z.number().int().min(0),
+}));
+
+const dailyRunCompleteSchema = z.array(z.object({
+  productId: z.string(),
+  actual: z.number().int().min(0),
+}));
+
+const createTargetSchema = z.object({
+  productId: z.string(),
+  date: z.string(), // ISO date string
+  target: z.number().int().min(0),
+  actual: z.number().int().min(0).optional().default(0),
+  carriedOver: z.number().int().min(0).optional().default(0),
+  shortage: z.number().int().min(0).optional().default(0),
+});
+
+const updateTargetSchema = z.object({
+  target: z.number().int().min(0).optional(),
+  actual: z.number().int().min(0).optional(),
+  carriedOver: z.number().int().min(0).optional(),
+  shortage: z.number().int().min(0).optional(),
+});
+
+// --- DAILY RUN ROUTES (Static first) ---
+
+// GET /api/production/daily-run
+router.get(
+  '/daily-run',
+  asyncHandler(async (req, res) => {
+    const dateStr = req.query.date as string;
+    if (!dateStr) throw new AppError(400, 'date is required');
+
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    // 1. Check if targets exist for this date
+    const targets = await prisma.dailyProductionTarget.findMany({
+      where: {
+        targetDate: { gte: targetDate, lt: nextDay }
+      },
+      include: { product: true }
+    });
+
+    if (targets.length > 0) {
+      res.json({ status: targets[0].status, targets });
+      return;
+    }
+
+    // 2. If not, generate suggestions for all bread products
+    const breadProducts = await prisma.product.findMany({
+      where: {
+        category: { contains: 'bread', mode: 'insensitive' }
+      }
+    });
+
+    const suggestions = await Promise.all(breadProducts.map(async (product) => {
+      const lastTarget = await prisma.dailyProductionTarget.findFirst({
+        where: {
+          productId: product.id,
+          targetDate: { lt: targetDate }
+        },
+        orderBy: { targetDate: 'desc' }
+      });
+
+      return {
+        productId: product.id,
+        product,
+        carriedOverShortage: lastTarget?.shortage || 0,
+      };
+    }));
+
+    res.json({ status: 'not_started', suggestions });
+  })
+);
+
+// POST /api/production/daily-run
+router.post(
+  '/daily-run',
+  requireRole('admin', 'owner', 'baker'),
+  asyncHandler(async (req, res) => {
+    const dateStr = req.query.date as string;
+    if (!dateStr) throw new AppError(400, 'date is required');
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const data = dailyRunInitializeSchema.parse(req.body);
+
+    const created = await prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const item of data) {
+        const t = await tx.dailyProductionTarget.create({
+          data: {
+            targetDate,
+            productId: item.productId,
+            targetQty: item.target,
+            carriedOverShortage: item.carriedOver,
+            status: 'in_progress',
+          },
+          include: { product: true }
+        });
+        results.push(t);
+      }
+      return results;
+    });
+
+    res.status(201).json(created);
+  })
+);
+
+// PATCH /api/production/daily-run/complete
+router.patch(
+  '/daily-run/complete',
+  requireRole('admin', 'owner', 'baker'),
+  asyncHandler(async (req, res) => {
+    const dateStr = req.query.date as string;
+    if (!dateStr) throw new AppError(400, 'date is required');
+    const targetDate = new Date(dateStr);
+    targetDate.setHours(0, 0, 0, 0);
+    const nextDay = new Date(targetDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const data = dailyRunCompleteSchema.parse(req.body);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const results = [];
+      for (const item of data) {
+        const target = await tx.dailyProductionTarget.findFirst({
+          where: { productId: item.productId, targetDate: { gte: targetDate, lt: nextDay } }
+        });
+
+        if (!target) continue;
+
+        const shortage = Math.max(0, (target.targetQty + target.carriedOverShortage) - item.actual);
+
+        const updatedTarget = await tx.dailyProductionTarget.update({
+          where: { id: target.id },
+          data: {
+            actualQty: item.actual,
+            shortage,
+            status: 'completed'
+          },
+          include: { product: true }
+        });
+
+        if (item.actual > 0) {
+          // Create production batch
+          const createdBatch = await tx.productionBatch.create({
+            data: {
+              productId: item.productId,
+              batchNumber: 'TEMP',
+              quantityProduced: item.actual,
+              quantityUnit: 'units',
+              status: 'completed',
+              producedBy: req.user!.id,
+              completedAt: new Date()
+            }
+          });
+
+          await tx.productionBatch.update({
+            where: { id: createdBatch.id },
+            data: { batchNumber: `PB-${String(createdBatch.batchSequence).padStart(4, '0')}` }
+          });
+
+          // Increment stock
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stockQuantity: { increment: item.actual } }
+          });
+        }
+
+        results.push(updatedTarget);
+      }
+      return results;
+    });
+
+    // We emit empty so client can just fetch anything needed.
+    getIO().emit('products:stock-updated', []);
+    getIO().emit('production:updated', {});
+
+    res.json(updated);
+  })
+);
+
+// --- OTHER TARGET ROUTES ---
+
+// GET /api/production/targets/previous-shortage
+router.get(
+  '/targets/previous-shortage',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const productId = req.query.productId as string;
+    const dateStr = req.query.date as string;
+    if (!productId || !dateStr) throw new AppError(400, 'productId and date are required');
+
+    const day = new Date(dateStr);
+    day.setHours(0, 0, 0, 0);
+
+    const prev = await prisma.dailyProductionTarget.findFirst({
+      where: {
+        productId,
+        targetDate: { lt: day },
+      },
+      orderBy: { targetDate: 'desc' },
+    });
+
+    res.json({ shortage: prev?.shortage || 0 });
+  }),
+);
+
+// GET /api/production/targets
+router.get(
+  '/targets',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const { skip, take } = req.pagination;
+    const dateStr = req.query.date as string;
+
+    const where: Record<string, unknown> = {};
+    if (dateStr) {
+      const day = new Date(dateStr);
+      day.setHours(0, 0, 0, 0);
+      where.targetDate = day;
+    }
+
+    const [targets, total] = await Promise.all([
+      prisma.dailyProductionTarget.findMany({
+        where,
+        include: { product: true },
+        skip,
+        take,
+        orderBy: { targetDate: 'desc' },
+      }),
+      prisma.dailyProductionTarget.count({ where }),
+    ]);
+    res.json({ data: targets, total, page: req.pagination.page, limit: req.pagination.limit });
+  }),
+);
+
+// POST /api/production/targets
+router.post(
+  '/targets',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const { productId, date, target, actual, carriedOver, shortage } = createTargetSchema.parse(req.body);
+
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+
+    const created = await prisma.dailyProductionTarget.upsert({
+      where: {
+        targetDate_productId: {
+          targetDate: day,
+          productId,
+        },
+      },
+      update: {
+        targetQty: target,
+        actualQty: actual,
+        carriedOverShortage: carriedOver,
+        shortage,
+      },
+      create: {
+        targetDate: day,
+        productId,
+        targetQty: target,
+        actualQty: actual,
+        carriedOverShortage: carriedOver,
+        shortage,
+      },
+      include: { product: true },
+    });
+
+    res.status(201).json(created);
+  }),
+);
+
+// PUT /api/production/targets/:id
+router.put(
+  '/targets/:id',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const id = getParam(req, 'id');
+    const data = updateTargetSchema.parse(req.body);
+
+    const updateData: any = {};
+    if (data.target !== undefined) updateData.targetQty = data.target;
+    if (data.actual !== undefined) updateData.actualQty = data.actual;
+    if (data.carriedOver !== undefined) updateData.carriedOverShortage = data.carriedOver;
+    if (data.shortage !== undefined) updateData.shortage = data.shortage;
+
+    const updated = await prisma.dailyProductionTarget.update({
+      where: { id },
+      data: updateData,
+      include: { product: true },
+    });
+
+    res.json(updated);
+  }),
+);
+
+// --- BATCH ROUTES (Dynamic last) ---
+
 // GET /api/production
 router.get(
   '/',
@@ -91,140 +400,42 @@ router.patch(
   '/:id/complete',
   requireRole('admin', 'baker'),
   asyncHandler(async (req, res) => {
-    const batch = await prisma.productionBatch.findUnique({ where: { id: getParam(req, 'id') } });
+    const batchId = getParam(req, 'id');
+    const batch = await prisma.productionBatch.findUnique({ where: { id: batchId } });
+
     if (!batch) throw new AppError(404, 'Production batch not found');
     if (batch.status !== 'in_progress') throw new AppError(400, 'Batch is not in progress');
 
-    const updated = await prisma.productionBatch.update({
-      where: { id: getParam(req, 'id') },
-      data: { status: 'completed', completedAt: new Date() },
+    const updated = await prisma.$transaction(async (tx) => {
+      // 1. Mark batch as completed
+      const b = await tx.productionBatch.update({
+        where: { id: batchId },
+        data: { status: 'completed', completedAt: new Date() },
+      });
+
+      // 2. Increment the product stock
+      await tx.product.update({
+        where: { id: batch.productId },
+        data: {
+          stockQuantity: { increment: batch.quantityProduced }
+        }
+      });
+
+      return b;
     });
 
     getIO().emit('production:updated', { batchId: updated.id, status: 'completed' });
+
+    // Emit stock update for the product
+    const updatedProduct = await prisma.product.findUnique({
+      where: { id: batch.productId },
+      select: { id: true, stockQuantity: true }
+    });
+    if (updatedProduct) {
+      getIO().emit('products:stock-updated', [updatedProduct]);
+    }
+
     res.json(updated);
-  }),
-);
-
-// GET /api/production/targets/previous-shortage?productId=...&date=...
-router.get(
-  '/targets/previous-shortage',
-  requireRole('admin', 'owner'),
-  asyncHandler(async (req, res) => {
-    const productId = req.query.productId as string;
-    const dateStr = req.query.date as string;
-
-    if (!productId || !dateStr) {
-      throw new AppError(400, 'productId and date are required');
-    }
-
-    const targetDate = new Date(dateStr);
-    targetDate.setHours(0, 0, 0, 0);
-
-    const prevDate = new Date(targetDate);
-    prevDate.setDate(prevDate.getDate() - 1);
-
-    const prevTarget = await prisma.dailyProductionTarget.findFirst({
-      where: {
-        productId,
-        targetDate: {
-          gte: prevDate,
-          lt: targetDate,
-        },
-      },
-    });
-
-    res.json({ shortage: prevTarget?.shortage ?? 0 });
-  }),
-);
-
-const createTargetSchema = z.object({
-  productId: z.string(),
-  date: z.string(), // ISO date string
-  target: z.number().int().min(0),
-  actual: z.number().int().min(0).optional().default(0),
-  carriedOver: z.number().int().min(0).optional().default(0),
-  shortage: z.number().int().min(0).optional().default(0),
-});
-
-const updateTargetSchema = z.object({
-  target: z.number().int().min(0).optional(),
-  actual: z.number().int().min(0).optional(),
-  carriedOver: z.number().int().min(0).optional(),
-  shortage: z.number().int().min(0).optional(),
-});
-
-// GET /api/production/targets
-router.get(
-  '/targets',
-  asyncHandler(async (req, res) => {
-    const { skip, take } = req.pagination;
-    const date = req.query.date as string | undefined;
-
-    const where: Record<string, unknown> = {};
-    if (date) {
-      const day = new Date(date);
-      day.setHours(0, 0, 0, 0);
-      const nextDay = new Date(day);
-      nextDay.setDate(nextDay.getDate() + 1);
-      where.targetDate = { gte: day, lt: nextDay };
-    }
-
-    const [targets, total] = await Promise.all([
-      prisma.dailyProductionTarget.findMany({
-        where,
-        include: { product: true },
-        skip,
-        take,
-        orderBy: { targetDate: 'desc' },
-      }),
-      prisma.dailyProductionTarget.count({ where }),
-    ]);
-    res.json({ data: targets, total, page: req.pagination.page, limit: req.pagination.limit });
-  }),
-);
-
-// POST /api/production/targets
-router.post(
-  '/targets',
-  requireRole('admin', 'owner'),
-  asyncHandler(async (req, res) => {
-    const data = createTargetSchema.parse(req.body);
-    const targetDate = new Date(data.date);
-    targetDate.setHours(0, 0, 0, 0);
-
-    const target = await prisma.dailyProductionTarget.create({
-      data: {
-        productId: data.productId,
-        targetDate,
-        targetQty: data.target,
-        actualQty: data.actual,
-        carriedOverShortage: data.carriedOver,
-        shortage: data.shortage,
-      },
-      include: { product: true },
-    });
-    res.status(201).json(target);
-  }),
-);
-
-// PUT /api/production/targets/:id
-router.put(
-  '/targets/:id',
-  requireRole('admin', 'owner'),
-  asyncHandler(async (req, res) => {
-    const data = updateTargetSchema.parse(req.body);
-    const updateData: Record<string, any> = {};
-    if (data.target !== undefined) updateData.targetQty = data.target;
-    if (data.actual !== undefined) updateData.actualQty = data.actual;
-    if (data.carriedOver !== undefined) updateData.carriedOverShortage = data.carriedOver;
-    if (data.shortage !== undefined) updateData.shortage = data.shortage;
-
-    const target = await prisma.dailyProductionTarget.update({
-      where: { id: getParam(req, 'id') },
-      data: updateData,
-      include: { product: true },
-    });
-    res.json(target);
   }),
 );
 

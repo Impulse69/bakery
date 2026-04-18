@@ -1,0 +1,65 @@
+<h2>Customer Search & Selection</h2>
+<p class="subtitle">How would you like to handle selecting and creating customers within the Purchase Order flow?</p>
+
+<div class="options">
+  <div class="option" data-choice="combobox" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Searchable Combobox</h3>
+      <p>A single dropdown where you can type to filter customers. If not found, a "+ Add New Customer" button appears at the bottom of the list.</p>
+      <div class="mockup" style="margin-top: 10px;">
+        <div class="mockup-header">New Purchase Order</div>
+        <div class="mockup-body">
+          <div class="label">Customer</div>
+          <div class="mock-input" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>John Do|</span>
+            <span>▼</span>
+          </div>
+          <div style="border: 1px solid #ddd; border-radius: 4px; background: white; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            <div style="padding: 8px; border-bottom: 1px solid #eee;">John Doe (024 123 4567)</div>
+            <div style="padding: 8px; border-bottom: 1px solid #eee;">Johnny Appleseed</div>
+            <div style="padding: 8px; background: #f0f7ff; color: #0066cc; font-weight: 500; cursor: pointer; display: flex; align-items: center;">
+              <span style="margin-right: 8px; font-size: 1.2em;">+</span> Create "John Do" as New Customer
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="split" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Split Control (Input + Button)</h3>
+      <p>A standard searchable select for existing customers, with a dedicated "+" button next to it that opens a "Quick Add" modal.</p>
+      <div class="mockup" style="margin-top: 10px;">
+        <div class="mockup-header">New Purchase Order</div>
+        <div class="mockup-body">
+          <div class="label">Customer</div>
+          <div style="display: flex; gap: 8px;">
+            <div class="mock-input" style="flex: 1; display: flex; justify-content: space-between; align-items: center;">
+              <span>Select customer...</span>
+              <span>▼</span>
+            </div>
+            <button class="mock-button" style="width: 40px; padding: 0; font-size: 1.5rem;">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="search-popover" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Search Popover / Overlay</h3>
+      <p>A more prominent search interface that opens an overlay. Great for large customer lists with more details (phone, email, etc.) shown during selection.</p>
+      <div class="mockup" style="margin-top: 10px;">
+        <div class="mockup-header">New Purchase Order</div>
+        <div class="mockup-body">
+          <div class="label">Customer</div>
+          <div class="mock-input" style="color: #666;">Click to search customers...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

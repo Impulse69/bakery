@@ -280,45 +280,59 @@ function DailyRunTab() {
           <div className={styles.targetGrid}>
             <div className={dailyRun.status === 'not_started' ? styles.gridHeader : styles.actualsHeader}>
               <span>Product</span>
-              {dailyRun.status === 'not_started' && <span>Carried Over</span>}
-              {dailyRun.status === 'not_started' ? <span>Target to Bake</span> : <span>Target</span>}
-              {dailyRun.status !== 'not_started' && <span>Actual Produced</span>}
+              {dailyRun.status === 'not_started' && <span style={{ textAlign: 'center' }}>Carried Over</span>}
+              {dailyRun.status === 'not_started' && <span style={{ textAlign: 'center' }}>Today's Target</span>}
+              {dailyRun.status === 'not_started' && <span style={{ textAlign: 'center' }}>Total Goal</span>}
+              
+              {dailyRun.status !== 'not_started' && <span style={{ textAlign: 'center' }}>Total Target</span>}
+              {dailyRun.status !== 'not_started' && <span style={{ textAlign: 'center' }}>Actual Produced</span>}
             </div>
 
-            {dailyRun.items.map(item => (
-              <div key={item.productId} className={dailyRun.status === 'not_started' ? styles.gridRow : styles.actualsRow}>
-                <span className={styles.productName}>{item.product?.name}</span>
-                
-                {dailyRun.status === 'not_started' && (
-                  <span className={styles.carriedOver}>{item.carriedOverShortage > 0 ? `+${item.carriedOverShortage}` : '—'}</span>
-                )}
+            {dailyRun.items.map(item => {
+              const totalGoal = (item.carriedOverShortage || item.carriedOverShortage || 0) + (edits[item.productId] || 0);
+              const totalTarget = (item.targetQty || 0) + (item.carriedOverShortage || 0);
 
-                {dailyRun.status === 'not_started' ? (
-                  <div className={styles.targetInput}>
-                    <Input 
-                      type="number" 
-                      value={edits[item.productId]} 
-                      onChange={e => handleEditChange(item.productId, e.target.value)}
-                      className={styles.inlineInput}
-                    />
-                  </div>
-                ) : (
-                  <span className={styles.targetNum}>{item.targetQty}</span>
-                )}
+              return (
+                <div key={item.productId} className={dailyRun.status === 'not_started' ? styles.gridRow : styles.actualsRow}>
+                  <span className={styles.productName}>{item.product?.name}</span>
+                  
+                  {dailyRun.status === 'not_started' && (
+                    <span className={styles.carriedOver}>{item.carriedOverShortage > 0 ? `+${item.carriedOverShortage}` : '—'}</span>
+                  )}
 
-                {dailyRun.status !== 'not_started' && (
-                  <div className={styles.targetInput}>
-                    <Input 
-                      type="number" 
-                      value={edits[item.productId]} 
-                      onChange={e => handleEditChange(item.productId, e.target.value)}
-                      className={styles.inlineInput}
-                      disabled={dailyRun.status === 'completed'}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+                  {dailyRun.status === 'not_started' && (
+                    <div className={styles.targetInput}>
+                      <Input 
+                        type="number" 
+                        value={edits[item.productId]} 
+                        onChange={e => handleEditChange(item.productId, e.target.value)}
+                        className={styles.inlineInput}
+                      />
+                    </div>
+                  )}
+
+                  {dailyRun.status === 'not_started' && (
+                    <span className={styles.totalToBake}>{totalGoal > 0 ? totalGoal : '—'}</span>
+                  )}
+
+                  {dailyRun.status !== 'not_started' && (
+                    <span className={styles.targetNum} style={{ textAlign: 'center' }}>{totalTarget}</span>
+                  )}
+
+                  {dailyRun.status !== 'not_started' && (
+                    <div className={styles.targetInput}>
+                      <Input 
+                        type="number" 
+                        value={edits[item.productId]} 
+                        onChange={e => handleEditChange(item.productId, e.target.value)}
+                        className={styles.inlineInput}
+                        disabled={dailyRun.status === 'completed'}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className={styles.modalActions} style={{ padding: '1rem 1.5rem', background: '#fcfcfd' }}>
@@ -338,7 +352,7 @@ function DailyRunTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export function ProductionPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'batches' | 'targets'>('batches');
+  const [activeTab, setActiveTab] = useState<'batches' | 'targets'>('targets');
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   return (
@@ -362,7 +376,7 @@ export function ProductionPage() {
             className={`${styles.tab} ${activeTab === 'targets' ? styles.tabActive : ''}`}
             onClick={() => setActiveTab('targets')}
           >
-            Daily Targets
+            Daily Run
           </button>
         )}
       </div>

@@ -17,14 +17,14 @@ const VALID_TRANSITIONS: Record<PurchaseOrderStatus, PurchaseOrderStatus[]> = {
 };
 
 const lineItemSchema = z.object({
-  inventoryItemId: z.string(),
+  productId: z.string(),
   quantityOrdered: z.number().positive(),
   unit: z.string().min(1),
   unitCost: z.number().int().min(0),
 });
 
 const createPOSchema = z.object({
-  supplierId: z.string(),
+  customerId: z.string().optional(),
   expectedDeliveryDate: z.string().datetime().optional(),
   notes: z.string().optional(),
   items: z.array(lineItemSchema).min(1),
@@ -46,7 +46,7 @@ router.get(
     const [orders, total] = await Promise.all([
       prisma.purchaseOrder.findMany({
         where,
-        include: { supplier: true, _count: { select: { items: true } } },
+        include: { customer: true, _count: { select: { items: true } } },
         skip,
         take,
         orderBy: { createdAt: 'desc' },
@@ -60,16 +60,21 @@ router.get(
 // POST /api/purchase-orders
 router.post(
   '/',
-  requireRole('admin'),
+  requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
-    const { supplierId, expectedDeliveryDate, notes, items } = createPOSchema.parse(req.body);
+    const { customerId, expectedDeliveryDate, notes, items } = createPOSchema.parse(req.body);
 
     const po = await prisma.$transaction(async (tx) => {
-      const supplier = await tx.supplier.findUnique({ where: { id: supplierId } });
-      if (!supplier) throw new AppError(404, 'Supplier not found');
+      if (customerId) {
+        const customer = await tx.customer.findUnique({ where: { id: customerId } });
+        if (!customer) throw new AppError(404, 'Customer not found');
+      }
 
       const computedItems = items.map((item) => ({
-        ...item,
+        productId: item.productId,
+        quantityOrdered: item.quantityOrdered,
+        unit: item.unit,
+        unitCost: item.unitCost,
         lineTotal: Math.round(item.quantityOrdered * item.unitCost),
       }));
       const totalAmount = computedItems.reduce((s, i) => s + i.lineTotal, 0);
@@ -77,14 +82,15 @@ router.post(
       const created = await tx.purchaseOrder.create({
         data: {
           poNumber: 'TEMP',
-          supplierId,
+          customerId: customerId || null,
           totalAmount,
           expectedDeliveryDate: expectedDeliveryDate ? new Date(expectedDeliveryDate) : null,
           notes,
           createdBy: req.user!.id,
-          items: { create: computedItems },
+          items: {
+            create: computedItems
+          },
         },
-        include: { items: true },
       });
 
       return tx.purchaseOrder.update({
@@ -92,7 +98,7 @@ router.post(
         data: {
           poNumber: `PO-${String(created.poSequence).padStart(4, '0')}`,
         },
-        include: { items: true, supplier: true },
+        include: { items: { include: { product: true } }, customer: true },
       });
     });
 
@@ -103,12 +109,13 @@ router.post(
 // PATCH /api/purchase-orders/:id/status
 router.patch(
   '/:id/status',
-  requireRole('admin'),
+  requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
     const { status: newStatus } = statusSchema.parse(req.body);
 
+    const poId = getParam(req, 'id');
     const po = await prisma.purchaseOrder.findUnique({
-      where: { id: getParam(req, 'id') },
+      where: { id: poId },
       include: { items: true },
     });
     if (!po) throw new AppError(404, 'Purchase order not found');
@@ -119,23 +126,12 @@ router.patch(
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      // On received: add stock for each line item
+      // On received: add stock for each line item (Products)
       if (newStatus === 'received') {
         for (const item of po.items) {
-          await tx.stockAdjustment.create({
-            data: {
-              inventoryItemId: item.inventoryItemId,
-              quantityChange: item.quantityOrdered,
-              adjustmentType: 'purchase',
-              referenceId: po.id,
-              notes: `PO ${po.poNumber} received`,
-              createdBy: req.user!.id,
-            },
-          });
-
-          await tx.inventoryItem.update({
-            where: { id: item.inventoryItemId },
-            data: { quantityOnHand: { increment: item.quantityOrdered } },
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stockQuantity: { increment: item.quantityOrdered } },
           });
 
           await tx.purchaseOrderLineItem.update({
@@ -151,12 +147,12 @@ router.patch(
           status: newStatus,
           receivedDate: newStatus === 'received' ? new Date() : undefined,
         },
-        include: { items: true, supplier: true },
+        include: { items: { include: { product: true } }, customer: true },
       });
     });
 
     if (newStatus === 'received') {
-      getIO().emit('stock:updated', { reason: 'purchase', poId: po.id });
+      getIO().emit('products:stock-updated', []);
     }
 
     res.json(updated);
