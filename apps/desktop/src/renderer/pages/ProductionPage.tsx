@@ -174,142 +174,76 @@ function BatchesTab() {
   );
 }
 
-// ─── Daily Targets Tab ────────────────────────────────────────────────────────
-function DailyTargetsTab() {
+// ─── Daily Run Tab ────────────────────────────────────────────────────────
+function DailyRunTab() {
   const { showToast } = useToast();
-  const [targets, setTargets] = useState<DailyTarget[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(getToday());
-  const [showModal, setShowModal] = useState(false);
-  const [editTarget, setEditTarget] = useState<DailyTarget | null>(null);
+  const [dailyRun, setDailyRun] = useState<{ status: string, items: any[] } | null>(null);
+  const [edits, setEdits] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
 
-  const [form, setForm] = useState({ productId: '', target: '', actual: '', carriedOver: '', shortage: '' });
-
-  const fetchTargets = useCallback(async () => {
+  const fetchDailyRun = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<{ data: DailyTarget[]; total: number }>(`/production/targets?date=${selectedDate}&limit=50`);
-      setTargets(res.data);
+      const res = await api.get<any>(`/production/daily-run?date=${selectedDate}`);
+      
+      let items = [];
+      const newEdits: Record<string, number> = {};
+
+      if (res.status === 'not_started') {
+        items = res.suggestions;
+        items.forEach((i: any) => newEdits[i.productId] = 0);
+      } else {
+        items = res.targets;
+        items.forEach((i: any) => newEdits[i.productId] = res.status === 'in_progress' ? 0 : i.actualQty);
+      }
+      
+      setDailyRun({ status: res.status, items });
+      setEdits(newEdits);
     } catch {
-      setTargets([]);
+      setDailyRun(null);
     } finally {
       setLoading(false);
     }
   }, [selectedDate]);
 
-  useEffect(() => { fetchTargets(); }, [fetchTargets]);
-  useEffect(() => {
-    api.get<{ data: Product[] }>('/products?limit=100').then((res) => setProducts(res.data)).catch(() => {});
-  }, []);
+  useEffect(() => { fetchDailyRun(); }, [fetchDailyRun]);
 
-  const openAdd = () => {
-    setEditTarget(null);
-    setForm({ productId: '', target: '', actual: '', carriedOver: '', shortage: '' });
-    setShowModal(true);
+  const handleEditChange = (productId: string, val: string) => {
+    setEdits(prev => ({ ...prev, [productId]: Number(val) }));
   };
 
-  const handleLoadShortage = async () => {
-    if (!form.productId) {
-      showToast('Select a product first', 'error');
-      return;
-    }
-    try {
-      const res = await api.get<{ shortage: number }>(
-        `/production/targets/previous-shortage?productId=${form.productId}&date=${selectedDate}`
-      );
-      setForm((prev) => ({ ...prev, carriedOver: String(res.shortage) }));
-      showToast(`Loaded shortage: ${res.shortage} units`);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to load shortage', 'error');
-    }
-  };
-
-  const openEdit = (t: DailyTarget) => {
-    setEditTarget(t);
-    setForm({ 
-      productId: t.productId, 
-      target: String(t.targetQty), 
-      actual: String(t.actualQty), 
-      carriedOver: String(t.carriedOverShortage), 
-      shortage: String(t.shortage) 
-    });
-    setShowModal(true);
-  };
-
-  const handleSave = async () => {
-    if (!form.productId || !form.target) { showToast('Product and target are required', 'error'); return; }
+  const handleStartProduction = async () => {
     setSaving(true);
     try {
-      const targetVal = Number(form.target);
-      const actualVal = Number(form.actual || 0);
-      const shortageVal = Math.max(0, targetVal - actualVal);
-
-      const payload = {
-        productId: form.productId,
-        date: selectedDate,
-        target: targetVal,
-        actual: actualVal,
-        carriedOver: Number(form.carriedOver || 0),
-        shortage: shortageVal,
-      };
-      if (editTarget) {
-        await api.put(`/production/targets/${editTarget.id}`, { target: payload.target, actual: payload.actual, carriedOver: payload.carriedOver, shortage: payload.shortage });
-        showToast('Target updated', 'success');
-      } else {
-        await api.post('/production/targets', payload);
-        showToast('Target set', 'success');
-      }
-      setShowModal(false);
-      fetchTargets();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to save target', 'error');
-    } finally { setSaving(false); }
+      const payload = dailyRun!.items.map(i => ({
+        productId: i.productId,
+        target: edits[i.productId] || 0,
+        carriedOver: i.carriedOverShortage || 0,
+      }));
+      await api.post(`/production/daily-run?date=${selectedDate}`, payload);
+      showToast('Production started for the day', 'success');
+      fetchDailyRun();
+    } catch (e: any) {
+      showToast(e.message || 'Failed to start', 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [field]: e.target.value }));
-
-  const productOptions: SelectOption[] = products.map((p) => ({ value: p.id, label: p.name }));
-
-  // Auto-calculate shortage when actual & target are filled
-  const computedShortage = form.target && form.actual ? Math.max(0, Number(form.target) - Number(form.actual)) : 0;
-
-  const handleInitializeBreads = async () => {
-    const breadProducts = products.filter(p => p.category.toLowerCase().includes('bread'));
-    if (breadProducts.length === 0) {
-      showToast('No bread products found in system', 'error');
-      return;
-    }
-
+  const handleCompleteProduction = async () => {
     setSaving(true);
     try {
-      let createdCount = 0;
-      for (const p of breadProducts) {
-        // Skip if target already exists for this product and date
-        const exists = targets.some(t => t.productId === p.id);
-        if (exists) continue;
-
-        // Fetch previous shortage
-        const shortRes = await api.get<{ shortage: number }>(
-          `/production/targets/previous-shortage?productId=${p.id}&date=${selectedDate}`
-        );
-
-        await api.post('/production/targets', {
-          productId: p.id,
-          date: selectedDate,
-          target: 0,
-          actual: 0,
-          carriedOver: shortRes.shortage,
-          shortage: shortRes.shortage,
-        });
-        createdCount++;
-      }
-      showToast(`Initialized ${createdCount} bread targets`, 'success');
-      fetchTargets();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to initialize targets', 'error');
+      const payload = dailyRun!.items.map(i => ({
+        productId: i.productId,
+        actual: edits[i.productId] || 0,
+      }));
+      await api.patch(`/production/daily-run/complete?date=${selectedDate}`, payload);
+      showToast('Production marked as completed', 'success');
+      fetchDailyRun();
+    } catch (e: any) {
+      showToast(e.message || 'Failed to complete', 'error');
     } finally {
       setSaving(false);
     }
@@ -319,100 +253,84 @@ function DailyTargetsTab() {
     <div>
       <div className={styles.filters}>
         <Input label="Target Date" type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-        <div className={styles.filterActions}>
-          <Button variant="ghost" onClick={handleInitializeBreads} loading={saving}>Initialize Breads</Button>
-          <Button onClick={openAdd}>+ Set Target</Button>
-        </div>
       </div>
 
       {loading ? (
-        <div className={styles.emptyState}>Loading targets…</div>
-      ) : targets.length === 0 ? (
+        <div className={styles.emptyState}>Loading daily run data…</div>
+      ) : !dailyRun ? (
+        <div className={styles.emptyState}>Failed to load production data.</div>
+      ) : dailyRun.items.length === 0 ? (
         <div className={styles.emptyState}>
-          No targets set for {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}.
-          <br /><span style={{ color: 'var(--color-primary)' }}>Click "Set Target" to begin.</span>
+          No breads found in the system to process.
         </div>
       ) : (
-        <div className={styles.targetsGrid}>
-          {/* Header */}
-          <div className={styles.targetsHeader}>
-            <span>Product</span>
-            <span style={{ textAlign: 'right' }}>Target</span>
-            <span style={{ textAlign: 'right' }}>Actual</span>
-            <span style={{ textAlign: 'right' }}>Shortage</span>
-            <span style={{ textAlign: 'right' }}>Carry-Over</span>
-            <span style={{ textAlign: 'right' }}>Completion</span>
-            <span></span>
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h2 className={styles.cardTitle}>Daily Run: {new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</h2>
+              <p className={styles.cardHelp}>
+                {dailyRun.status === 'not_started' && 'Enter your target quantities for the day, then push them to processing.'}
+                {dailyRun.status === 'in_progress' && 'Production is in progress. Enter actual produced amounts to mark completion.'}
+                {dailyRun.status === 'completed' && 'Production has been completed for this date.'}
+              </p>
+            </div>
+            <Badge variant={STATUS_VARIANT[dailyRun.status] ?? 'neutral'}>{STATUS_LABEL[dailyRun.status] ?? 'Not Started'}</Badge>
           </div>
 
-          {targets.map((t) => {
-            const pct = t.targetQty > 0 ? Math.min(100, Math.round((t.actualQty / t.targetQty) * 100)) : 0;
-            const met = pct >= 100;
-            const statusColor = met ? '#16a34a' : pct >= 60 ? '#d97706' : '#dc2626';
-
-            return (
-              <div key={t.id} className={styles.targetRow}>
-                <div className={styles.targetProduct}>
-                  <span className={styles.targetProductName}>{t.product?.name ?? '—'}</span>
-                  {t.carriedOverShortage > 0 && (
-                    <span className={styles.carryoverBadge}>+{t.carriedOverShortage} carried</span>
-                  )}
-                </div>
-                <span className={styles.targetNum}>{t.targetQty.toLocaleString()}</span>
-                <span className={styles.targetNum}>{t.actualQty.toLocaleString()}</span>
-                <span className={styles.targetNum} style={{ color: t.shortage > 0 ? '#dc2626' : '#16a34a' }}>
-                  {t.shortage > 0 ? `-${t.shortage}` : '✓'}
-                </span>
-                <span className={styles.targetNum}>{t.carriedOverShortage > 0 ? t.carriedOverShortage.toLocaleString() : '—'}</span>
-                <div className={styles.targetProgress}>
-                  <div className={styles.progressBar}>
-                    <div className={styles.progressFill} style={{ width: `${pct}%`, background: statusColor }} />
-                  </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: statusColor }}>{pct}%</span>
-                </div>
-                <Button size="sm" variant="ghost" onClick={() => openEdit(t)}>Edit</Button>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editTarget ? 'Update Target' : 'Set Daily Target'} size="sm">
-        <div className={styles.form}>
-          {!editTarget && (
-            <Select label="Product" options={productOptions} value={form.productId} onChange={setField('productId')} placeholder="Select product" />
-          )}
-          {editTarget && (
-            <div className={styles.editProductLabel}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</span>
-              <span style={{ fontWeight: 700 }}>{editTarget.product?.name}</span>
+          <div className={styles.targetGrid}>
+            <div className={dailyRun.status === 'not_started' ? styles.gridHeader : styles.actualsHeader}>
+              <span>Product</span>
+              {dailyRun.status === 'not_started' && <span>Carried Over</span>}
+              {dailyRun.status === 'not_started' ? <span>Target to Bake</span> : <span>Target</span>}
+              {dailyRun.status !== 'not_started' && <span>Actual Produced</span>}
             </div>
-          )}
-          <Input label="Production Target" type="number" value={form.target} onChange={setField('target')} />
-          <Input label="Actual Produced" type="number" value={form.actual} onChange={setField('actual')} />
-          <div className={styles.inputGroup}>
-            <Input label="Carried Over" type="number" value={form.carriedOver} onChange={setField('carriedOver')} />
-            {!editTarget && (
-              <Button size="sm" variant="ghost" onClick={handleLoadShortage} className={styles.loadBtn}>Load Prev. Shortage</Button>
+
+            {dailyRun.items.map(item => (
+              <div key={item.productId} className={dailyRun.status === 'not_started' ? styles.gridRow : styles.actualsRow}>
+                <span className={styles.productName}>{item.product?.name}</span>
+                
+                {dailyRun.status === 'not_started' && (
+                  <span className={styles.carriedOver}>{item.carriedOverShortage > 0 ? `+${item.carriedOverShortage}` : '—'}</span>
+                )}
+
+                {dailyRun.status === 'not_started' ? (
+                  <div className={styles.targetInput}>
+                    <Input 
+                      type="number" 
+                      value={edits[item.productId]} 
+                      onChange={e => handleEditChange(item.productId, e.target.value)}
+                      className={styles.inlineInput}
+                    />
+                  </div>
+                ) : (
+                  <span className={styles.targetNum}>{item.targetQty}</span>
+                )}
+
+                {dailyRun.status !== 'not_started' && (
+                  <div className={styles.targetInput}>
+                    <Input 
+                      type="number" 
+                      value={edits[item.productId]} 
+                      onChange={e => handleEditChange(item.productId, e.target.value)}
+                      className={styles.inlineInput}
+                      disabled={dailyRun.status === 'completed'}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.modalActions} style={{ padding: '1rem 1.5rem', background: '#fcfcfd' }}>
+            {dailyRun.status === 'not_started' && (
+              <Button onClick={handleStartProduction} loading={saving}>Push to Processing</Button>
+            )}
+            {dailyRun.status === 'in_progress' && (
+              <Button onClick={handleCompleteProduction} loading={saving} variant="primary">Mark Completion</Button>
             )}
           </div>
-          {Number(form.target) > 0 && Number(form.actual) >= 0 && (
-            <div className={styles.shortageHint}>
-              {computedShortage > 0
-                ? <span style={{ color: '#dc2626' }}>⚠ Shortage: {computedShortage} units will carry forward</span>
-                : Number(form.actual) > 0
-                  ? <span style={{ color: '#16a34a' }}>✓ Target met — no shortfall</span>
-                  : null
-              }
-            </div>
-          )}
-
-          <div className={styles.actions}>
-            <Button variant="ghost" onClick={() => setShowModal(false)}>Cancel</Button>
-            <Button onClick={handleSave} loading={saving}>{editTarget ? 'Update' : 'Set Target'}</Button>
-          </div>
         </div>
-      </Modal>
+      )}
     </div>
   );
 }
@@ -451,7 +369,7 @@ export function ProductionPage() {
 
       <div className={styles.tabContent}>
         {activeTab === 'batches' && <BatchesTab />}
-        {activeTab === 'targets' && isAdmin && <DailyTargetsTab />}
+        {activeTab === 'targets' && isAdmin && <DailyRunTab />}
       </div>
     </div>
   );
