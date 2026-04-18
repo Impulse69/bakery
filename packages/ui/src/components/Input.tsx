@@ -6,6 +6,7 @@ export interface InputProps {
   type?: string;
   value: string | number;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFocus?: () => void;
   error?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -18,6 +19,7 @@ export function Input({
   type = 'text',
   value,
   onChange,
+  onFocus,
   error,
   placeholder,
   disabled,
@@ -37,9 +39,10 @@ export function Input({
       <input
         id={inputId}
         type={type}
-        value={value}
+        value={type === 'number' && value === 0 ? '' : value}
         onChange={onChange}
-        placeholder={placeholder}
+        onFocus={onFocus}
+        placeholder={placeholder || (type === 'number' ? '0' : undefined)}
         disabled={disabled}
         className={`${styles.input}${error ? ` ${styles.inputError}` : ''}`}
       />

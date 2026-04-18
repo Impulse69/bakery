@@ -81,7 +81,7 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
         <table className={styles.invoiceTable}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left' }}>DESCRIPTION</th>
+              <th style={{ textAlign: 'left' }}>ITEM</th>
               <th style={{ textAlign: 'center' }}>QTY</th>
               <th style={{ textAlign: 'right' }}>UNIT PRICE</th>
               <th style={{ textAlign: 'right' }}>AMOUNT</th>

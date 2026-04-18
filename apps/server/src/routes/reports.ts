@@ -150,15 +150,15 @@ router.get(
   }),
 );
 
-// GET /api/reports/stock-adjustment?itemId=&from=&to=
+// GET /api/reports/stock-adjustment?productId=&from=&to=
 router.get(
   '/stock-adjustment',
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
-    const { itemId, from, to } = req.query as Record<string, string | undefined>;
-    if (!itemId) throw new AppError(400, 'itemId is required');
+    const { productId, from, to } = req.query as Record<string, string | undefined>;
+    if (!productId) throw new AppError(400, 'productId is required');
 
-    const where: Record<string, unknown> = { inventoryItemId: itemId };
+    const where: Record<string, unknown> = { productId: productId };
     if (from || to) {
       const dateFilter: Record<string, Date> = {};
       if (from) dateFilter.gte = new Date(from);

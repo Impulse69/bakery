@@ -36,3 +36,5 @@ export type { StockBadgeProps } from './components/StockBadge';
 
 export { OrderStatusBadge } from './components/OrderStatusBadge';
 export type { OrderStatusBadgeProps } from './components/OrderStatusBadge';
+
+export * from './components/SearchableSelect';

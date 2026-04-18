@@ -1,4 +1,4 @@
-import { Select, Input, Button } from '@bakery/ui';
+import { Select, SearchableSelect, Input, Button } from '@bakery/ui';
 import type { SelectOption } from '@bakery/ui';
 import type { Customer, PaymentMethod } from '@bakery/types';
 import { formatCurrency } from '@bakery/utils';
@@ -53,11 +53,11 @@ export function PaymentSection({
 
   return (
     <div className={styles.section}>
-      <Select
+      <SearchableSelect
         label="Customer"
         options={customerOptions}
         value={selectedCustomerId}
-        onChange={(e) => onCustomerChange(e.target.value)}
+        onChange={onCustomerChange}
       />
 
       <Select

@@ -1,44 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { InventoryItem, StockAdjustment } from '@bakery/types';
-import { DataTable, Pagination, Button, Modal, Input, Select, StockBadge, Badge } from '@bakery/ui';
-import type { DataTableColumn, SelectOption } from '@bakery/ui';
+import type { Product, StockAdjustment } from '@bakery/types';
+import { DataTable, Pagination, Button, Modal, Input, Badge } from '@bakery/ui';
+import type { DataTableColumn } from '@bakery/ui';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
 import { can } from '@bakery/utils';
 import styles from './InventoryPage.module.css';
 
-const UNIT_OPTIONS: SelectOption[] = [
-  { value: 'kg', label: 'kg' },
-  { value: 'g', label: 'g' },
-  { value: 'l', label: 'l' },
-  { value: 'ml', label: 'ml' },
-  { value: 'unit', label: 'unit' },
-  { value: 'pack', label: 'pack' },
-];
-
-const columns: DataTableColumn<InventoryItem>[] = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'unit', label: 'Unit' },
-  { key: 'quantityOnHand', label: 'Stock', sortable: true },
+const columns: DataTableColumn<Product>[] = [
+  { key: 'name', label: 'Product Name', sortable: true },
+  { key: 'category', label: 'Category' },
+  { key: 'stockQuantity', label: 'Current Stock', sortable: true },
   {
-    key: 'lowStockThreshold',
+    key: 'isAvailable',
     label: 'Status',
     render: (row) => (
-      <StockBadge currentStock={row.quantityOnHand} reorderLevel={row.lowStockThreshold} />
+      <Badge variant={row.stockQuantity > 0 ? 'success' : 'danger'}>
+        {row.stockQuantity > 0 ? 'In Stock' : 'Sold Out'}
+      </Badge>
     ),
   },
-  { key: 'reorderQuantity', label: 'Reorder Qty' },
 ];
-
-const EMPTY_FORM = {
-  name: '',
-  unit: '',
-  quantityOnHand: '',
-  lowStockThreshold: '',
-  reorderQuantity: '',
-};
 
 const ADJUSTMENT_TYPE_MAP: Record<string, { variant: 'success' | 'info' | 'danger' | 'warning'; label: string }> = {
   purchase: { variant: 'success', label: 'Purchase' },
@@ -51,33 +35,22 @@ export function InventoryPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role ? can(user.role, 'inventory:write') : false;
-  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  // Add modal
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
-
   // Detail modal
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<Product | null>(null);
   const [detailTab, setDetailTab] = useState<'details' | 'history'>('details');
   const [adjustments, setAdjustments] = useState<StockAdjustment[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-
-  // Edit item
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [editForm, setEditForm] = useState(EMPTY_FORM);
-  const [editing, setEditing] = useState(false);
 
   // Adjust stock
   const [showAdjustForm, setShowAdjustForm] = useState(false);
   const [adjustQty, setAdjustQty] = useState('');
   const [adjustReason, setAdjustReason] = useState('');
   const [adjusting, setAdjusting] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -85,8 +58,8 @@ export function InventoryPage() {
   const fetchItems = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<{ data: InventoryItem[]; total: number }>(
-        `/inventory?page=${page}&limit=${limit}`,
+      const res = await api.get<{ data: Product[]; total: number }>(
+        `/products?page=${page}&limit=${limit}`,
       );
       setItems(res.data);
       setTotal(res.total);
@@ -101,119 +74,27 @@ export function InventoryPage() {
     fetchItems();
   }, [fetchItems]);
 
-  // Fetch history when tab switches
   useEffect(() => {
     if (detailTab === 'history' && selectedItem) {
       setHistoryLoading(true);
       api
-        .get<StockAdjustment[]>(`/reports/stock-adjustment?itemId=${selectedItem.id}`)
+        .get<StockAdjustment[]>(`/reports/stock-adjustment?productId=${selectedItem.id}`)
         .then(setAdjustments)
         .catch(() => setAdjustments([]))
         .finally(() => setHistoryLoading(false));
     }
   }, [detailTab, selectedItem]);
 
-  const openAddModal = useCallback(() => {
-    setForm(EMPTY_FORM);
-    setShowAddModal(true);
-  }, []);
-
-  useEffect(() => {
-    if (searchParams.get('action') === 'new') {
-      // The user wants to create an adjustment or item. 
-      // Inventory doesn't have a global "create adjustment" without an item selected,
-      // but they can create a new inventory item.
-      openAddModal();
-      searchParams.delete('action');
-      setSearchParams(searchParams);
-    }
-  }, [searchParams, setSearchParams, openAddModal]);
-
-  const handleAdd = async () => {
-    if (!form.name.trim() || !form.unit) {
-      showToast('Name and unit are required', 'error');
-      return;
-    }
-    setSaving(true);
-    try {
-      await api.post('/inventory', {
-        name: form.name,
-        unit: form.unit,
-        quantityOnHand: Number(form.quantityOnHand) || 0,
-        lowStockThreshold: Number(form.lowStockThreshold) || 0,
-        reorderQuantity: Number(form.reorderQuantity) || 0,
-      });
-      showToast('Item created', 'success');
-      setShowAddModal(false);
-      fetchItems();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to create item', 'error');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const openDetail = (item: InventoryItem) => {
+  const openDetail = (item: Product) => {
     setSelectedItem(item);
     setDetailTab('details');
     setShowAdjustForm(false);
-    setShowEditForm(false);
     setAdjustQty('');
     setAdjustReason('');
   };
 
-  const openEditForm = (item: InventoryItem) => {
-    setEditForm({
-      name: item.name,
-      unit: item.unit,
-      quantityOnHand: String(item.quantityOnHand),
-      lowStockThreshold: String(item.lowStockThreshold),
-      reorderQuantity: String(item.reorderQuantity),
-    });
-    setShowEditForm(true);
-    setShowAdjustForm(false);
-  };
-
-  const handleEdit = async () => {
-    if (!selectedItem) return;
-    if (!editForm.name.trim() || !editForm.unit) {
-      showToast('Name and unit are required', 'error');
-      return;
-    }
-    setEditing(true);
-    try {
-      const updated = await api.patch<InventoryItem>(`/inventory/${selectedItem.id}`, {
-        name: editForm.name.trim(),
-        unit: editForm.unit,
-        lowStockThreshold: Number(editForm.lowStockThreshold) || 0,
-        reorderQuantity: Number(editForm.reorderQuantity) || 0,
-      });
-      showToast('Item updated', 'success');
-      setSelectedItem(updated);
-      setShowEditForm(false);
-      fetchItems();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update item', 'error');
-    } finally {
-      setEditing(false);
-    }
-  };
-
   const closeDetail = () => {
     setSelectedItem(null);
-  };
-
-  const handleDelete = async () => {
-    if (!selectedItem) return;
-    if (!window.confirm(`Delete "${selectedItem.name}"? This cannot be undone.`)) return;
-    try {
-      await api.delete(`/inventory/${selectedItem.id}`);
-      showToast('Item deleted', 'success');
-      closeDetail();
-      fetchItems();
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete item', 'error');
-    }
   };
 
   const handleAdjust = async () => {
@@ -225,7 +106,7 @@ export function InventoryPage() {
     }
     setAdjusting(true);
     try {
-      const updated = await api.post<InventoryItem>(`/inventory/${selectedItem.id}/adjust`, {
+      const updated = await api.post<Product>(`/products/${selectedItem.id}/adjust-stock`, {
         quantityChange: qty,
         reason: adjustReason,
       });
@@ -242,15 +123,10 @@ export function InventoryPage() {
     }
   };
 
-  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((f) => ({ ...f, [field]: e.target.value }));
-  };
-
   return (
     <div>
       <div className={styles.header}>
-        <h1 className={styles.heading}>Inventory</h1>
-        <Button onClick={openAddModal}>Add Item</Button>
+        <h1 className={styles.heading}>Inventory Stock</h1>
       </div>
 
       <DataTable
@@ -258,37 +134,12 @@ export function InventoryPage() {
         data={items}
         loading={loading}
         onRowClick={openDetail}
-        emptyMessage="No inventory items found"
+        emptyMessage="No products found"
       />
 
       {totalPages > 1 && (
         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       )}
-
-      {/* Add Modal */}
-      <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Inventory Item" size="md">
-        <div className={styles.form}>
-          <Input label="Name" value={form.name} onChange={setField('name')} />
-          <Select
-            label="Unit"
-            options={UNIT_OPTIONS}
-            value={form.unit}
-            onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-            placeholder="Select unit"
-          />
-          <Input label="Quantity on Hand" type="number" value={form.quantityOnHand === '0' || form.quantityOnHand === '' ? '' : form.quantityOnHand} placeholder="0" onChange={setField('quantityOnHand')} />
-          <div title="When stock falls to or below this number, the item is flagged as Low stock — a signal to reorder" style={{ cursor: 'help' }}>
-            <Input label="Low Stock Threshold" type="number" value={form.lowStockThreshold === '0' || form.lowStockThreshold === '' ? '' : form.lowStockThreshold} placeholder="0" onChange={setField('lowStockThreshold')} />
-          </div>
-          <div title="Suggested quantity to order when restocking this item (used as a guide for purchase orders)" style={{ cursor: 'help' }}>
-            <Input label="Reorder Quantity" type="number" value={form.reorderQuantity === '0' || form.reorderQuantity === '' ? '' : form.reorderQuantity} placeholder="0" onChange={setField('reorderQuantity')} />
-          </div>
-          <div className={styles.actions}>
-            <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
-            <Button onClick={handleAdd} loading={saving}>Create</Button>
-          </div>
-        </div>
-      </Modal>
 
       {/* Detail Modal */}
       <Modal
@@ -305,7 +156,7 @@ export function InventoryPage() {
                 size="sm"
                 onClick={() => setDetailTab('details')}
               >
-                Details
+                Stock Details
               </Button>
               <Button
                 variant={detailTab === 'history' ? 'primary' : 'ghost'}
@@ -320,43 +171,25 @@ export function InventoryPage() {
               <>
                 <div className={styles.detailGrid}>
                   <div>
-                    <div className={styles.detailLabel}>Unit</div>
-                    <div className={styles.detailValue}>{selectedItem.unit}</div>
+                    <div className={styles.detailLabel}>Category</div>
+                    <div className={styles.detailValue}>{selectedItem.category}</div>
                   </div>
                   <div>
                     <div className={styles.detailLabel}>Current Stock</div>
-                    <div className={styles.detailValue}>{selectedItem.quantityOnHand}</div>
+                    <div className={styles.detailValue}>{selectedItem.stockQuantity}</div>
                   </div>
                   <div>
                     <div className={styles.detailLabel}>Status</div>
                     <div className={styles.detailValue}>
-                      <StockBadge
-                        currentStock={selectedItem.quantityOnHand}
-                        reorderLevel={selectedItem.lowStockThreshold}
-                      />
+                      <Badge variant={selectedItem.stockQuantity > 0 ? 'success' : 'danger'}>
+                        {selectedItem.stockQuantity > 0 ? 'In Stock' : 'Sold Out'}
+                      </Badge>
                     </div>
-                  </div>
-                  <div>
-                    <div className={styles.detailLabel} title="When stock falls to or below this number, the item is flagged as Low stock — a signal to reorder" style={{ cursor: 'help', borderBottom: '1px dotted #9ca3af', display: 'inline-block' }}>Reorder Level</div>
-                    <div className={styles.detailValue}>{selectedItem.lowStockThreshold}</div>
-                  </div>
-                  <div>
-                    <div className={styles.detailLabel} title="Suggested quantity to order when restocking this item (used as a guide for purchase orders)" style={{ cursor: 'help', borderBottom: '1px dotted #9ca3af', display: 'inline-block' }}>Reorder Qty</div>
-                    <div className={styles.detailValue}>{selectedItem.reorderQuantity}</div>
                   </div>
                 </div>
 
-                {!showAdjustForm && !showEditForm && (
+                {!showAdjustForm && isAdmin && (
                   <div className={styles.detailActions}>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => openEditForm(selectedItem)}
-                      className={styles.actionBtn}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                      Edit Item
-                    </Button>
                     <Button
                       size="sm"
                       onClick={() => setShowAdjustForm(true)}
@@ -365,38 +198,6 @@ export function InventoryPage() {
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}><path d="M12 5v14M5 12h14"/></svg>
                       Adjust Stock
                     </Button>
-                    {isAdmin && (
-                      <Button
-                        size="sm"
-                        variant="danger"
-                        onClick={handleDelete}
-                        className={styles.actionBtn}
-                      >
-                        Delete
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {showEditForm && (
-                  <div className={styles.adjustForm}>
-                    <Input label="Name" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} />
-                    <Select
-                      label="Unit"
-                      options={UNIT_OPTIONS}
-                      value={editForm.unit}
-                      onChange={(e) => setEditForm((f) => ({ ...f, unit: e.target.value }))}
-                    />
-                    <div title="When stock falls to or below this number, the item is flagged as Low stock — a signal to reorder" style={{ cursor: 'help' }}>
-                      <Input label="Low Stock Threshold" type="number" value={editForm.lowStockThreshold} onChange={(e) => setEditForm((f) => ({ ...f, lowStockThreshold: e.target.value }))} />
-                    </div>
-                    <div title="Suggested quantity to order when restocking this item (used as a guide for purchase orders)" style={{ cursor: 'help' }}>
-                      <Input label="Reorder Quantity" type="number" value={editForm.reorderQuantity} onChange={(e) => setEditForm((f) => ({ ...f, reorderQuantity: e.target.value }))} />
-                    </div>
-                    <div className={styles.actions}>
-                      <Button variant="ghost" size="sm" onClick={() => setShowEditForm(false)}>Cancel</Button>
-                      <Button size="sm" onClick={handleEdit} loading={editing}>Save Changes</Button>
-                    </div>
                   </div>
                 )}
 
@@ -413,7 +214,7 @@ export function InventoryPage() {
                       label="Reason"
                       value={adjustReason}
                       onChange={(e) => setAdjustReason(e.target.value)}
-                      placeholder="Reason for adjustment"
+                      placeholder="Reason for adjustment (e.g., waste, correction)"
                     />
                     <div className={styles.actions}>
                       <Button variant="ghost" size="sm" onClick={() => setShowAdjustForm(false)}>

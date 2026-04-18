@@ -87,16 +87,6 @@ router.post(
       const item = await tx.inventoryItem.findUnique({ where: { id: itemId } });
       if (!item) throw new AppError(404, 'Inventory item not found');
 
-      await tx.stockAdjustment.create({
-        data: {
-          inventoryItemId: itemId,
-          quantityChange,
-          adjustmentType: 'correction',
-          notes: reason,
-          createdBy: req.user!.id,
-        },
-      });
-
       return tx.inventoryItem.update({
         where: { id: itemId },
         data: { quantityOnHand: { increment: quantityChange } },

@@ -177,8 +177,23 @@ router.post(
             create: computedItems,
           },
         },
-        include: { items: true },
+        include: { items: { include: { product: true } } },
       });
+
+      // Decrement stock for each product and implement Sold Out logic
+      for (const item of computedItems) {
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (product) {
+          const newStock = product.stockQuantity - item.quantity;
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { 
+              stockQuantity: newStock,
+              isAvailable: newStock > 0 
+            }
+          });
+        }
+      }
 
       // Update with formatted orderNumber
       return tx.salesOrder.update({
@@ -186,7 +201,7 @@ router.post(
         data: {
           orderNumber: `SO-${String(created.orderSequence).padStart(4, '0')}`,
         },
-        include: { items: true, customer: true },
+        include: { items: { include: { product: true } }, customer: true },
       });
     });
 

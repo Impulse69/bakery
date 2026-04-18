@@ -18,6 +18,11 @@ const createProductSchema = z.object({
 
 const updateProductSchema = createProductSchema.partial();
 
+const adjustStockSchema = z.object({
+  quantityChange: z.number(),
+  reason: z.string().min(1),
+});
+
 // GET /api/products
 router.get(
   '/',
@@ -85,6 +90,38 @@ router.delete(
       data: { isAvailable: false },
     });
     res.json({ message: 'Product deactivated' });
+  }),
+);
+
+// POST /api/products/:id/adjust-stock
+router.post(
+  '/:id/adjust-stock',
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const { quantityChange, reason } = adjustStockSchema.parse(req.body);
+    const productId = getParam(req, 'id');
+
+    const result = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({ where: { id: productId } });
+      if (!product) throw new AppError(404, 'Product not found');
+
+      await tx.stockAdjustment.create({
+        data: {
+          productId,
+          quantityChange,
+          adjustmentType: 'correction',
+          notes: reason,
+          createdBy: req.user!.id,
+        },
+      });
+
+      return tx.product.update({
+        where: { id: productId },
+        data: { stockQuantity: { increment: quantityChange } },
+      });
+    });
+
+    res.json(result);
   }),
 );
 

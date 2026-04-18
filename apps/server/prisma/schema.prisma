@@ -122,7 +122,8 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  salesOrders SalesOrder[]
+  salesOrders    SalesOrder[]
+  purchaseOrders PurchaseOrder[]
 
   @@map("customers")
 }
@@ -134,16 +135,20 @@ model Product {
   category       String
   price          Int
   wholesalePrice Int      @default(0)
+  unit           String   @default("pcs")
   description    String?
   imageUrl       String?
   isAvailable    Boolean  @default(true)
+  stockQuantity  Float    @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  variants        ProductVariant[]
-  salesOrderItems SalesOrderItem[]
-  dailyTargets    DailyProductionTarget[]
-  productionBatches ProductionBatch[]
+  variants           ProductVariant[]
+  salesOrderItems    SalesOrderItem[]
+  dailyTargets       DailyProductionTarget[]
+  productionBatches  ProductionBatch[]
+  purchaseOrderItems PurchaseOrderLineItem[]
+  stockAdjustments   StockAdjustment[]
 
   @@map("products")
 }
@@ -177,8 +182,6 @@ model InventoryItem {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  stockAdjustments    StockAdjustment[]
-  purchaseOrderItems  PurchaseOrderLineItem[]
   inventoryCountItems InventoryCountItem[]
 
   @@map("inventory_items")
@@ -186,7 +189,7 @@ model InventoryItem {
 
 model StockAdjustment {
   id              String              @id @default(cuid())
-  inventoryItemId String
+  productId       String
   quantityChange  Float
   adjustmentType  StockAdjustmentType
   referenceId     String?
@@ -194,10 +197,10 @@ model StockAdjustment {
   createdBy       String
   createdAt       DateTime            @default(now())
 
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
   user          User          @relation(fields: [createdBy], references: [id])
 
-  @@index([inventoryItemId])
+  @@index([productId])
   @@index([referenceId])
   @@map("stock_movements")
 }
@@ -222,17 +225,18 @@ model ProductionBatch {
 }
 
 model DailyProductionTarget {
-  id                  String   @id @default(cuid())
-  targetDate          DateTime @db.Date // Ensures grouping by day natively
+  id                  String                @id @default(cuid())
+  targetDate          DateTime              @db.Date // Ensures grouping by day natively
   productId           String
-  targetQty           Int      @default(0)
-  carriedOverShortage Int      @default(0)
-  actualQty           Int      @default(0)
-  shortage            Int      @default(0)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  targetQty           Int                   @default(0)
+  carriedOverShortage Int                   @default(0)
+  actualQty           Int                   @default(0)
+  shortage            Int                   @default(0)
+  status              ProductionBatchStatus @default(in_progress)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
 
-  product             Product  @relation(fields: [productId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 
   @@unique([targetDate, productId])
   @@map("daily_production_targets")
@@ -315,16 +319,15 @@ model Supplier {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  purchaseOrders PurchaseOrder[]
-
   @@map("suppliers")
 }
+
 
 model PurchaseOrder {
   id                   String              @id @default(cuid())
   poSequence           Int                 @default(autoincrement()) @unique
   poNumber             String              @unique
-  supplierId           String
+  customerId           String?
   totalAmount          Int                 @default(0)
   status               PurchaseOrderStatus @default(draft)
   orderedDate          DateTime            @default(now())
@@ -334,11 +337,11 @@ model PurchaseOrder {
   notes                String?
   createdAt            DateTime            @default(now())
 
-  supplier Supplier                @relation(fields: [supplierId], references: [id])
+  customer Customer?               @relation(fields: [customerId], references: [id])
   user     User                    @relation(fields: [createdBy], references: [id])
   items    PurchaseOrderLineItem[]
 
-  @@index([supplierId])
+  @@index([customerId])
   @@index([status])
   @@map("purchase_orders")
 }
@@ -346,7 +349,7 @@ model PurchaseOrder {
 model PurchaseOrderLineItem {
   id               String @id @default(cuid())
   purchaseOrderId  String
-  inventoryItemId  String
+  productId        String
   quantityOrdered  Float
   quantityReceived Float  @default(0)
   unit             String
@@ -354,7 +357,7 @@ model PurchaseOrderLineItem {
   lineTotal        Int
 
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
 
   @@map("purchase_order_line_items")
 }

@@ -146,17 +146,6 @@ router.post(
         const discrepancy = item.actualQuantity - item.expectedQuantity;
         if (discrepancy === 0) continue;
 
-        await tx.stockAdjustment.create({
-          data: {
-            inventoryItemId: item.inventoryItemId,
-            quantityChange: discrepancy,
-            adjustmentType: 'correction',
-            referenceId: count.id,
-            notes: `Inventory count adjustment`,
-            createdBy: req.user!.id,
-          },
-        });
-
         await tx.inventoryItem.update({
           where: { id: item.inventoryItemId },
           data: { quantityOnHand: item.actualQuantity },

@@ -6,9 +6,12 @@ import {
 } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import styles from './CustomersPage.module.css';
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 const columns: DataTableColumn<Customer>[] = [
   { key: 'name', label: 'Name', sortable: true },
@@ -325,11 +328,22 @@ export function CustomersPage() {
                     <span className={styles.streakIcon}>🔥</span>
                     <span><strong>{selectedStats.weekStreak} Week</strong> Purchase Streak</span>
                   </div>
-                  <div className={styles.periodicGrid}>
-                    <div className={styles.periodBox}><span>Day</span><strong>{formatCurrency(selectedStats.periodic.daily)}</strong></div>
-                    <div className={styles.periodBox}><span>Week</span><strong>{formatCurrency(selectedStats.periodic.weekly)}</strong></div>
-                    <div className={styles.periodBox}><span>Month</span><strong>{formatCurrency(selectedStats.periodic.monthly)}</strong></div>
-                    <div className={styles.periodBox}><span>Year</span><strong>{formatCurrency(selectedStats.periodic.yearly)}</strong></div>
+                  <div style={{ height: 200, width: '100%', marginTop: '1rem' }}>
+                    <ResponsiveContainer>
+                      <BarChart
+                        data={[
+                          { period: 'Day', revenue: selectedStats.periodic.daily / 100 },
+                          { period: 'Week', revenue: selectedStats.periodic.weekly / 100 },
+                          { period: 'Month', revenue: selectedStats.periodic.monthly / 100 },
+                          { period: 'Year', revenue: selectedStats.periodic.yearly / 100 },
+                        ]}
+                      >
+                        <XAxis dataKey="period" fontSize={12} />
+                        <YAxis tickFormatter={(val) => `GH₵${val}`} fontSize={12} />
+                        <Tooltip formatter={(val: number) => `GH₵${val.toFixed(2)}`} />
+                        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </Card>
               )}
@@ -338,12 +352,25 @@ export function CustomersPage() {
             {selectedStats && selectedStats.topProducts.length > 0 && (
               <div className={styles.reorderSection}>
                 <h4 className={styles.sectionTitle}>Most Reordered Items</h4>
-                <div className={styles.topProducts}>
-                  {selectedStats.topProducts.map((p, i) => (
-                    <div key={i} className={styles.productPill}>
-                      {p.name} <span>({p.quantity})</span>
-                    </div>
-                  ))}
+                <div style={{ height: 200, width: '100%' }}>
+                  <ResponsiveContainer>
+                    <PieChart>
+                      <Pie
+                        data={selectedStats.topProducts}
+                        dataKey="quantity"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {selectedStats.topProducts.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             )}
