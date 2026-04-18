@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Customer, SalesOrder, Payment } from '@bakery/types';
 import {
-  DataTable, Pagination, Button, Modal, Input, SearchInput, Card, OrderStatusBadge,
+  DataTable, Pagination, Button, Modal, Input, SearchInput, Card, OrderStatusBadge, StatCard,
 } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
@@ -83,11 +83,19 @@ interface CustomerStats {
   topProducts: Array<{ name: string; quantity: number }>;
 }
 
+interface CustomerAnalytics {
+  summary: { activeCustomers: number; avgOrderValue: number; active30d: number; churned: number };
+  revenueShare: Array<{ name: string; revenue: number }>;
+  ordersPerMonth: Array<{ period: string; orders: number; revenue: number }>;
+  topProducts: Array<{ name: string; quantity: number }>;
+}
+
 export function CustomersPage() {
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'all' | 'leaderboard'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'leaderboard' | 'analytics'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<CustomerAnalytics | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -122,9 +130,12 @@ export function CustomersPage() {
         );
         setCustomers(res.data);
         setTotal(res.total);
-      } else {
+      } else if (activeTab === 'leaderboard') {
         const res = await api.get<any[]>('/customers/leaderboard');
         setLeaderboard(res);
+      } else {
+        const res = await api.get<CustomerAnalytics>('/customers/analytics');
+        setAnalytics(res);
       }
     } catch {
       setCustomers([]);
@@ -219,6 +230,12 @@ export function CustomersPage() {
         >
           Top Spenders
         </button>
+        <button
+          className={`${styles.tab} ${activeTab === 'analytics' ? styles.tabActive : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          Analytics
+        </button>
       </div>
 
       {activeTab === 'all' ? (
@@ -243,7 +260,7 @@ export function CustomersPage() {
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           )}
         </>
-      ) : (
+      ) : activeTab === 'leaderboard' ? (
         <DataTable
           columns={[
             { key: 'name', label: 'Customer' },
@@ -255,6 +272,69 @@ export function CustomersPage() {
           loading={loading}
           onRowClick={openDetail}
         />
+      ) : (
+        analytics && (
+          <div className={styles.analyticsGrid}>
+            <div className={styles.statsRow}>
+              <StatCard label="Active Customers" value={analytics.summary.activeCustomers} />
+              <StatCard label="Avg Order Value" value={formatCurrency(analytics.summary.avgOrderValue)} />
+              <StatCard label="Active (30d)" value={analytics.summary.active30d} />
+              <StatCard label="Churned (>30d)" value={analytics.summary.churned} />
+            </div>
+
+            <Card>
+              <div className={styles.chartTitle}>Revenue Share — Top 5 Customers</div>
+              <div style={{ height: 280, width: '100%' }}>
+                <ResponsiveContainer>
+                  <PieChart>
+                    <Pie
+                      data={analytics.revenueShare}
+                      dataKey="revenue"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                    >
+                      {analytics.revenueShare.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(val) => formatCurrency(Number(val))} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card>
+              <div className={styles.chartTitle}>Orders Per Month (last 6 months)</div>
+              <div style={{ height: 280, width: '100%' }}>
+                <ResponsiveContainer>
+                  <BarChart data={analytics.ordersPerMonth}>
+                    <XAxis dataKey="period" fontSize={12} />
+                    <YAxis fontSize={12} />
+                    <Tooltip />
+                    <Bar dataKey="orders" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card>
+              <div className={styles.chartTitle}>Top Products (by quantity sold)</div>
+              <div style={{ height: 280, width: '100%' }}>
+                <ResponsiveContainer>
+                  <BarChart data={analytics.topProducts} layout="vertical">
+                    <XAxis type="number" fontSize={12} />
+                    <YAxis type="category" dataKey="name" fontSize={12} width={120} />
+                    <Tooltip />
+                    <Bar dataKey="quantity" fill="#10b981" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        )
       )}
 
       {/* Add Modal */}
@@ -340,7 +420,7 @@ export function CustomersPage() {
                       >
                         <XAxis dataKey="period" fontSize={12} />
                         <YAxis tickFormatter={(val) => `GH₵${val}`} fontSize={12} />
-                        <Tooltip formatter={(val: number) => `GH₵${val.toFixed(2)}`} />
+                        <Tooltip formatter={(val) => `GH₵${Number(val).toFixed(2)}`} />
                         <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -362,7 +442,7 @@ export function CustomersPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={80}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       >
                         {selectedStats.topProducts.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

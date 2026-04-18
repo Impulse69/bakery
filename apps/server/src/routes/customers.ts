@@ -46,6 +46,109 @@ router.get(
   }),
 );
 
+// GET /api/customers/analytics
+router.get(
+  '/analytics',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (_req, res) => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(now.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [activeCustomers, orderStats, revenueByCustomer, recentCustomerIds, monthlyOrders, topProducts] = await Promise.all([
+      prisma.customer.count({ where: { isActive: true } }),
+      prisma.salesOrder.aggregate({
+        where: { status: { not: 'cancelled' } },
+        _sum: { total: true },
+        _count: { id: true },
+      }),
+      prisma.salesOrder.groupBy({
+        by: ['customerId'],
+        where: { status: { not: 'cancelled' }, customerId: { not: null } },
+        _sum: { total: true },
+        orderBy: { _sum: { total: 'desc' } },
+        take: 5,
+      }),
+      prisma.salesOrder.findMany({
+        where: { status: { not: 'cancelled' }, createdAt: { gte: thirtyDaysAgo }, customerId: { not: null } },
+        select: { customerId: true },
+        distinct: ['customerId'],
+      }),
+      prisma.salesOrder.findMany({
+        where: { status: { not: 'cancelled' }, createdAt: { gte: sixMonthsAgo } },
+        select: { createdAt: true, total: true },
+      }),
+      prisma.salesOrderItem.groupBy({
+        by: ['productId'],
+        where: { salesOrder: { status: { not: 'cancelled' } } },
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: 'desc' } },
+        take: 8,
+      }),
+    ]);
+
+    const topCustomerIds = revenueByCustomer.map((r) => r.customerId!).filter(Boolean);
+    const topCustomers = await prisma.customer.findMany({
+      where: { id: { in: topCustomerIds } },
+      select: { id: true, name: true },
+    });
+    const custMap = new Map(topCustomers.map((c) => [c.id, c.name]));
+    const revenueShare = revenueByCustomer.map((r) => ({
+      name: custMap.get(r.customerId!) ?? 'Unknown',
+      revenue: r._sum.total ?? 0,
+    }));
+
+    const productIds = topProducts.map((p) => p.productId);
+    const productDetails = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true, name: true },
+    });
+    const prodMap = new Map(productDetails.map((p) => [p.id, p.name]));
+    const topProductsResult = topProducts.map((p) => ({
+      name: prodMap.get(p.productId) ?? 'Unknown',
+      quantity: p._sum.quantity ?? 0,
+    }));
+
+    const monthBuckets: Record<string, { orders: number; revenue: number }> = {};
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(sixMonthsAgo);
+      d.setMonth(sixMonthsAgo.getMonth() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthBuckets[key] = { orders: 0, revenue: 0 };
+    }
+    for (const o of monthlyOrders) {
+      const key = `${o.createdAt.getFullYear()}-${String(o.createdAt.getMonth() + 1).padStart(2, '0')}`;
+      if (monthBuckets[key]) {
+        monthBuckets[key].orders += 1;
+        monthBuckets[key].revenue += o.total;
+      }
+    }
+    const ordersPerMonth = Object.entries(monthBuckets).map(([period, v]) => ({ period, ...v }));
+
+    const totalOrders = orderStats._count.id;
+    const totalRevenue = orderStats._sum.total ?? 0;
+    const avgOrderValue = totalOrders > 0 ? Math.round(totalRevenue / totalOrders) : 0;
+    const active30d = recentCustomerIds.length;
+    const churned = Math.max(0, activeCustomers - active30d);
+
+    res.json({
+      summary: {
+        activeCustomers,
+        avgOrderValue,
+        active30d,
+        churned,
+      },
+      revenueShare,
+      ordersPerMonth,
+      topProducts: topProductsResult,
+    });
+  }),
+);
+
 // GET /api/customers/leaderboard
 router.get(
   '/leaderboard',
