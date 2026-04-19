@@ -1,19 +1,274 @@
-.header {
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  PRODUCTS — Baker's Ledger, catalog view                         ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+.page {
   display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+}
+
+/* ── Hero header ─────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem 1.75rem;
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(224, 123, 60, 0.1), transparent 55%),
+    linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 10px 28px -18px rgba(19, 27, 46, 0.22);
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(19, 27, 46, 0.025) 0 1px,
+    transparent 1px 14px
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #e07b3c;
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #e07b3c;
+  box-shadow: 0 0 0 3px rgba(224, 123, 60, 0.2);
 }
 
 .heading {
-  font-size: var(--bui-text-xl);
-  font-weight: 600;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: #131b2e;
+  margin: 0.25rem 0 0;
+  line-height: 1;
 }
 
+.sub {
+  font-size: 13.5px;
+  color: rgba(19, 27, 46, 0.6);
+  margin: 0.25rem 0 0;
+}
+
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ── KPI strip ───────────────────────────────────────────────────── */
+.kpiStrip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 1rem 1.1rem;
+  background: #fffaf2;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 10%; bottom: 10%;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, #e07b3c, transparent);
+  border-radius: 999px;
+  opacity: 0.7;
+}
+
+.kpiLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.kpiValue {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #131b2e;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  margin-top: 0.25rem;
+}
+
+.kpiFoot {
+  font-size: 11.5px;
+  color: rgba(19, 27, 46, 0.5);
+  margin-top: 0.25rem;
+}
+
+/* ── Table card ──────────────────────────────────────────────────── */
+.tableCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 28px -20px rgba(19, 27, 46, 0.22);
+}
+
+.tableCard :global(table) { background: transparent; }
+
+.tableCard :global(thead) {
+  background: linear-gradient(180deg, #f9efdd, #f4e6cf);
+}
+
+.tableCard :global(thead th) {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.62) !important;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.1) !important;
+}
+
+.tableCard :global(tbody tr) {
+  transition: background 0.12s ease;
+  cursor: pointer;
+}
+
+.tableCard :global(tbody tr:hover) {
+  background: rgba(224, 123, 60, 0.05) !important;
+}
+
+.tableCard :global(tbody td) {
+  border-bottom: 1px solid rgba(19, 27, 46, 0.06) !important;
+  padding: 0.875rem 1rem !important;
+  font-size: 13.5px;
+  color: #131b2e;
+}
+
+/* ── Cell content ────────────────────────────────────────────────── */
+.productCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.productGlyph {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.85), transparent 65%),
+    linear-gradient(135deg, #f7ecdc, #efdfbe);
+  font-size: 18px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(19, 27, 46, 0.1);
+}
+
+.productText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.productName {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  color: #131b2e;
+  letter-spacing: -0.005em;
+}
+
+.productDesc {
+  font-size: 11.5px;
+  color: rgba(19, 27, 46, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.categoryChip {
+  display: inline-block;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #131b2e;
+  background: rgba(19, 27, 46, 0.06);
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 6px;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  color: rgba(19, 27, 46, 0.65);
+  letter-spacing: 0.02em;
+}
+
+.priceCell {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #131b2e;
+  letter-spacing: -0.01em;
+}
+
+/* ── Pager wrap ──────────────────────────────────────────────────── */
+.pagerWrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+}
+
+/* ── Modal form ──────────────────────────────────────────────────── */
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.875rem;
 }
 
 .actions {
@@ -21,29 +276,12 @@
   justify-content: flex-end;
   gap: 0.5rem;
   margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed rgba(19, 27, 46, 0.14);
 }
 
-.variantsHeading {
-  font-size: var(--bui-text-base);
-  font-weight: 600;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.variantList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.variantRow {
-  display: flex;
-  gap: 1rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--bui-border-color);
-  font-size: var(--bui-text-sm);
-}
-
-.variantRow span {
-  flex: 1;
+@media (max-width: 720px) {
+  .hero { flex-direction: column; align-items: flex-start; }
+  .kpiStrip { grid-template-columns: 1fr; }
+  .productDesc { display: none; }
 }

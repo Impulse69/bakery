@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Product } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge } from '@bakery/ui';
@@ -17,31 +17,14 @@ const CATEGORY_OPTIONS: SelectOption[] = [
   { value: 'other', label: 'Other' },
 ];
 
-const columns: DataTableColumn<Product>[] = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'category', label: 'Category' },
-  { key: 'sku', label: 'SKU' },
-  {
-    key: 'price',
-    label: 'Price',
-    sortable: true,
-    render: (row) => formatCurrency(row.price),
-  },
-  {
-    key: 'variants',
-    label: 'Variants',
-    render: (row) => String(row.variants?.length ?? 0),
-  },
-  {
-    key: 'isAvailable',
-    label: 'Status',
-    render: (row) => (
-      <Badge variant={row.isAvailable ? 'success' : 'danger'}>
-        {row.isAvailable ? 'Active' : 'Inactive'}
-      </Badge>
-    ),
-  },
-];
+const CATEGORY_GLYPH: Record<string, string> = {
+  Bread: '🍞',
+  Pastry: '🥐',
+  Cake: '🎂',
+  Snack: '🍪',
+  Drink: '🥤',
+  Other: '📦',
+};
 
 const EMPTY_FORM = { name: '', sku: '', category: '', priceDisplay: '', description: '' };
 
@@ -59,6 +42,52 @@ export function ProductsPage() {
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
+
+  const columns: DataTableColumn<Product>[] = useMemo(() => [
+    {
+      key: 'name',
+      label: 'Product',
+      sortable: true,
+      render: (row) => (
+        <div className={styles.productCell}>
+          <span className={styles.productGlyph} aria-hidden="true">
+            {CATEGORY_GLYPH[row.category] ?? '📦'}
+          </span>
+          <div className={styles.productText}>
+            <span className={styles.productName}>{row.name}</span>
+            {row.description && (
+              <span className={styles.productDesc}>{row.description}</span>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      render: (row) => <span className={styles.categoryChip}>{row.category}</span>,
+    },
+    {
+      key: 'sku',
+      label: 'SKU',
+      render: (row) => <span className={styles.mono}>{row.sku}</span>,
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      sortable: true,
+      render: (row) => <span className={styles.priceCell}>{formatCurrency(row.price)}</span>,
+    },
+    {
+      key: 'isAvailable',
+      label: 'Status',
+      render: (row) => (
+        <Badge variant={row.isAvailable ? 'success' : 'danger'}>
+          {row.isAvailable ? 'Active' : 'Inactive'}
+        </Badge>
+      ),
+    },
+  ], []);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -174,23 +203,56 @@ export function ProductsPage() {
     setForm((f) => ({ ...f, [field]: e.target.value }));
   };
 
+  const activeCount = products.filter((p) => p.isAvailable).length;
+  const categoryCount = new Set(products.map((p) => p.category)).size;
+
   return (
-    <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Products</h1>
-        <Button onClick={openAddModal}>Add Product</Button>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroText}>
+          <span className={styles.eyebrow}>Catalog</span>
+          <h1 className={styles.heading}>Products</h1>
+          <p className={styles.sub}>
+            Manage what's available on the terminal and the production sheet.
+          </p>
+        </div>
+        <div className={styles.heroActions}>
+          <Button onClick={openAddModal}>＋ Add Product</Button>
+        </div>
+      </header>
+
+      <div className={styles.kpiStrip}>
+        <div className={styles.kpi}>
+          <span className={styles.kpiLabel}>Total on Page</span>
+          <span className={styles.kpiValue}>{products.length}</span>
+          <span className={styles.kpiFoot}>of {total} across catalog</span>
+        </div>
+        <div className={styles.kpi}>
+          <span className={styles.kpiLabel}>Active</span>
+          <span className={styles.kpiValue}>{activeCount}</span>
+          <span className={styles.kpiFoot}>listed on POS</span>
+        </div>
+        <div className={styles.kpi}>
+          <span className={styles.kpiLabel}>Categories</span>
+          <span className={styles.kpiValue}>{categoryCount}</span>
+          <span className={styles.kpiFoot}>on this page</span>
+        </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={products}
-        loading={loading}
-        onRowClick={openEditModal}
-        emptyMessage="No products found"
-      />
+      <div className={styles.tableCard}>
+        <DataTable
+          columns={columns}
+          data={products}
+          loading={loading}
+          onRowClick={openEditModal}
+          emptyMessage="No products yet — add your first SKU to get started."
+        />
+      </div>
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <div className={styles.pagerWrap}>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
       )}
 
       <Modal
@@ -217,34 +279,6 @@ export function ProductsPage() {
             placeholder="0.00"
           />
           <Input label="Description" value={form.description} onChange={setField('description')} />
-
-          {editingProduct && editingProduct.variants && editingProduct.variants.length > 0 && (
-            <>
-              <div className={styles.variantsHeading}>
-                Variants ({editingProduct.variants.length})
-              </div>
-              <div className={styles.variantList}>
-                <div className={styles.variantRow} style={{ fontWeight: 600 }}>
-                  <span>Name</span>
-                  <span>SKU</span>
-                  <span>Price</span>
-                  <span>Status</span>
-                </div>
-                {editingProduct.variants.map((v) => (
-                  <div key={v.id} className={styles.variantRow}>
-                    <span>{v.name}</span>
-                    <span>{v.sku}</span>
-                    <span>{formatCurrency(v.price)}</span>
-                    <span>
-                      <Badge variant={v.isActive ? 'success' : 'danger'}>
-                        {v.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
 
           <div className={styles.actions}>
             {editingProduct && (
