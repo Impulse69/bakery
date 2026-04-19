@@ -21,6 +21,8 @@ try {
     restartApp: () => {
       ipcRenderer.send('app:restart');
     },
+    printPreview: () => ipcRenderer.invoke('print:preview'),
+    printSystemPreview: () => ipcRenderer.invoke('print:systemPreview'),
   });
 } catch (error) {
   console.error('Failed to expose electronAPI:', error);

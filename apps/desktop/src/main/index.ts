@@ -1,5 +1,6 @@
-import { app, BrowserWindow, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, shell } from 'electron';
 import path from 'path';
+import fs from 'fs/promises';
 import { autoUpdater } from 'electron-updater';
 
 function createWindow() {
@@ -55,4 +56,71 @@ app.on('activate', () => {
 // Handle quit and install
 ipcMain.on('app:restart', () => {
   autoUpdater.quitAndInstall();
+});
+
+// ── Print preview ──────────────────────────────────────────────
+// Electron's native print dialog on Windows does not support preview
+// ("This app doesn't support print preview"). We work around this by
+// rendering the caller window to PDF and opening it in an in-app
+// Chromium PDF viewer window, which has preview + print + save/zoom.
+ipcMain.handle('print:preview', async (event) => {
+  const callerWin = BrowserWindow.fromWebContents(event.sender);
+  if (!callerWin) throw new Error('No window found for print:preview');
+
+  const pdfData = await callerWin.webContents.printToPDF({
+    printBackground: true,
+    pageSize: 'A4',
+    margins: { marginType: 'default' },
+  });
+
+  const filename = `bread-faculty-${Date.now()}.pdf`;
+  const pdfPath = path.join(app.getPath('temp'), filename);
+  await fs.writeFile(pdfPath, pdfData);
+
+  const previewWin = new BrowserWindow({
+    width: 900,
+    height: 1000,
+    title: 'Print Preview — Bread Faculty',
+    parent: callerWin,
+    backgroundColor: '#2b2b2b',
+    autoHideMenuBar: true,
+    webPreferences: {
+      plugins: true,
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  // Chromium in Electron ships with the built-in PDF viewer extension, which
+  // renders PDF files with a preview, zoom, print, and download toolbar.
+  await previewWin.loadURL(`file://${pdfPath.replace(/\\/g, '/')}`);
+
+  // Clean up the temp file when the preview window closes.
+  previewWin.on('closed', () => {
+    fs.unlink(pdfPath).catch(() => {
+      /* ignore */
+    });
+  });
+
+  return { ok: true };
+});
+
+// Fallback: open the generated PDF with the system default viewer.
+// (Some environments disable Chromium's PDF plugin.)
+ipcMain.handle('print:systemPreview', async (event) => {
+  const callerWin = BrowserWindow.fromWebContents(event.sender);
+  if (!callerWin) throw new Error('No window found for print:systemPreview');
+
+  const pdfData = await callerWin.webContents.printToPDF({
+    printBackground: true,
+    pageSize: 'A4',
+    margins: { marginType: 'default' },
+  });
+
+  const filename = `bread-faculty-${Date.now()}.pdf`;
+  const pdfPath = path.join(app.getPath('temp'), filename);
+  await fs.writeFile(pdfPath, pdfData);
+  await shell.openPath(pdfPath);
+  return { ok: true, path: pdfPath };
 });

@@ -16,7 +16,24 @@ export function Receipt({ order, onClose, type: _type = 'invoice' }: ReceiptProp
     ? new Date(order.completedAt).toLocaleString()
     : new Date(order.createdAt).toLocaleString();
 
-  const handlePrint = () => window.print();
+  const handlePrint = async () => {
+    const api = window.electronAPI;
+    if (api?.printPreview) {
+      try {
+        await api.printPreview();
+        return;
+      } catch (err) {
+        console.warn('In-app PDF preview failed, falling back to system viewer', err);
+        try {
+          await api.printSystemPreview?.();
+          return;
+        } catch (err2) {
+          console.warn('System PDF preview failed, falling back to window.print', err2);
+        }
+      }
+    }
+    window.print();
+  };
 
   return (
     <>

@@ -16,5 +16,7 @@ interface Window {
     onUpdateDownloaded: (callback: (info: any) => void) => void;
     onUpdateError: (callback: (error: string) => void) => void;
     restartApp: () => void;
+    printPreview: () => Promise<{ ok: boolean }>;
+    printSystemPreview: () => Promise<{ ok: boolean; path: string }>;
   };
 }
