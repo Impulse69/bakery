@@ -1,21 +1,217 @@
-.header {
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  PURCHASE ORDERS — Baker's Ledger                                ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+.page {
   display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: var(--bui-font-family-sans), 'Inter', system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: stretch;
   justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.75rem 2rem;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(224, 123, 60, 0.12), transparent 55%),
+    linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 14px 36px -20px rgba(19, 27, 46, 0.28);
+  animation: rise 0.45s ease both;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(135deg, rgba(19, 27, 46, 0.025) 0 1px, transparent 1px 14px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(224, 123, 60, 0.18), transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.heroMain { display: flex; flex-direction: column; gap: 0.3rem; max-width: 60%; }
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #e07b3c;
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.55rem;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  background: #e07b3c;
+  border-radius: 999px;
 }
 
 .heading {
-  font-size: var(--bui-text-xl);
-  font-weight: 600;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.9rem, 2.4vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #131b2e;
+  line-height: 1.05;
+  margin: 0.25rem 0 0;
 }
 
-.tabs {
+.heroQuote {
+  font-size: 13.5px;
+  color: rgba(19, 27, 46, 0.55);
+  margin: 0.4rem 0 0;
+  font-style: italic;
+  max-width: 48ch;
+  line-height: 1.55;
+}
+
+.heroAside { display: flex; align-items: center; justify-content: flex-end; }
+
+.heroAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  background: #131b2e;
+  color: #fdf8f1;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+  box-shadow: 0 8px 20px -10px rgba(19, 27, 46, 0.5);
+}
+
+.heroAction:hover { background: #1e2d4a; transform: translateY(-1px); }
+
+.ledgerCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 18px -14px rgba(19, 27, 46, 0.25);
+  animation: rise 0.45s ease 0.05s both;
+}
+
+.tableCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 28px -20px rgba(19, 27, 46, 0.22);
+  animation: rise 0.5s ease 0.1s both;
+}
+
+.tableCard :global(table) { background: transparent; }
+.tableCard :global(thead) { background: linear-gradient(180deg, #f9efdd, #f4e6cf); }
+
+.tableCard :global(thead th) {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.62) !important;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.1) !important;
+}
+
+.tableCard :global(tbody tr) { transition: background 0.12s ease; cursor: pointer; }
+.tableCard :global(tbody tr:hover) { background: rgba(224, 123, 60, 0.05) !important; }
+.tableCard :global(tbody td) {
+  border-bottom: 1px solid rgba(19, 27, 46, 0.06) !important;
+  padding: 0.875rem 1rem !important;
+  font-size: 13.5px;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabsRow {
   display: flex;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid rgba(19, 27, 46, 0.12);
+  border-radius: 8px;
+  font-family: var(--bui-font-family-sans), 'Inter', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(19, 27, 46, 0.55);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tab:hover { border-color: rgba(224, 123, 60, 0.4); color: #131b2e; }
+
+.tabActive {
+  background: #131b2e;
+  color: #fdf8f1;
+  border-color: #131b2e;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 12.5px;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.num {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: #131b2e;
+}
+
+.pagerWrap { display: flex; justify-content: center; padding-top: 0.25rem; }
+
+@media (max-width: 720px) {
+  .hero { flex-direction: column; padding: 1.25rem; }
+  .heroMain { max-width: 100%; }
+}
+
+/* ── PO-specific ─────────────────────────────────────────────────── */
 .form {
   display: flex;
   flex-direction: column;
@@ -34,51 +230,84 @@
   grid-template-columns: 2fr 1fr 1fr 1fr auto;
   gap: 0.5rem;
   align-items: flex-end;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed rgba(19, 27, 46, 0.15);
+}
+
+.lineItem:last-of-type {
+  border-bottom: none;
 }
 
 .grandTotal {
   text-align: right;
-  font-size: var(--bui-text-lg);
-  font-weight: 600;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e07b3c;
+  font-variant-numeric: tabular-nums;
   margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(19, 27, 46, 0.08);
 }
 
 .detailGrid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem 1.5rem;
+  gap: 0.75rem 1.5rem;
   margin-bottom: 1.5rem;
 }
 
 .detailLabel {
-  font-size: var(--bui-text-sm);
-  color: var(--bui-text-secondary);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+  margin-bottom: 0.35rem;
 }
 
 .detailValue {
-  font-size: var(--bui-text-base);
-  font-weight: 500;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #131b2e;
 }
 
 .itemsTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--bui-text-sm);
+  font-size: 13px;
   margin-bottom: 1rem;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-.itemsTable th,
-.itemsTable td {
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--bui-border-color);
+.itemsTable thead {
+  background: linear-gradient(180deg, #f9efdd, #f4e6cf);
 }
 
 .itemsTable th {
-  font-weight: 600;
-  color: var(--bui-text-secondary);
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.62);
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.1);
+}
+
+.itemsTable td {
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.06);
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
 }
 
 .itemsTable tfoot td {
-  font-weight: 600;
+  font-weight: 700;
+  background: #fdf8f1;
 }

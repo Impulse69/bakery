@@ -33,7 +33,12 @@ interface LineItem {
 const EMPTY_LINE: LineItem = { productId: '', quantityOrdered: '', unit: '', unitCostDisplay: '' };
 
 const columns: DataTableColumn<PurchaseOrder>[] = [
-  { key: 'poNumber', label: 'PO #', sortable: true },
+  {
+    key: 'poNumber',
+    label: 'PO #',
+    sortable: true,
+    render: (row) => <span className={styles.mono}>{row.poNumber}</span>,
+  },
   {
     key: 'supplier',
     label: 'Supplier',
@@ -43,7 +48,7 @@ const columns: DataTableColumn<PurchaseOrder>[] = [
     key: 'totalAmount',
     label: 'Total',
     sortable: true,
-    render: (row) => formatCurrency(row.totalAmount),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.totalAmount)}</span>,
   },
   {
     key: 'status',
@@ -128,7 +133,6 @@ export function PurchaseOrdersPage() {
     setPage(1);
   };
 
-  // Line item management
   const updateLineItem = (index: number, field: keyof LineItem, value: string) => {
     setLineItems((items) => items.map((li, i) => {
       if (i !== index) return li;
@@ -196,8 +200,6 @@ export function PurchaseOrdersPage() {
   };
 
   const openDetail = (order: PurchaseOrder) => {
-    // The list response includes supplier but may not include full items
-    // Use the order as-is since API includes supplier and _count
     setSelectedOrder(order);
   };
 
@@ -217,35 +219,50 @@ export function PurchaseOrdersPage() {
   };
 
   return (
-    <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Purchase Orders</h1>
-        <Button onClick={openNewModal}>New Purchase Order</Button>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <span className={styles.eyebrow}>Procurement</span>
+          <h1 className={styles.heading}>Purchase Orders</h1>
+          <p className={styles.heroQuote}>
+            <em>Supplier orders from draft to delivery.</em>
+          </p>
+        </div>
+        <div className={styles.heroAside}>
+          <button className={styles.heroAction} onClick={openNewModal}>
+            <span>＋</span> New PO
+          </button>
+        </div>
+      </header>
+
+      <div className={styles.ledgerCard}>
+        <div className={styles.tabsRow}>
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              className={`${styles.tab} ${statusFilter === tab.value ? styles.tabActive : ''}`}
+              onClick={() => handleTabChange(tab.value)}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className={styles.tabs}>
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.value}
-            variant={statusFilter === tab.value ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => handleTabChange(tab.value)}
-          >
-            {tab.label}
-          </Button>
-        ))}
+      <div className={styles.tableCard}>
+        <DataTable
+          columns={columns}
+          data={orders}
+          loading={loading}
+          onRowClick={openDetail}
+          emptyMessage="No purchase orders on the books."
+        />
       </div>
-
-      <DataTable
-        columns={columns}
-        data={orders}
-        loading={loading}
-        onRowClick={openDetail}
-        emptyMessage="No purchase orders found"
-      />
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <div className={styles.pagerWrap}>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
       )}
 
       {/* New PO Modal */}

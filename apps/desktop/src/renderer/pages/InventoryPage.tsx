@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import type { Product, ProductStockAdjustment } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Badge } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
@@ -9,10 +8,23 @@ import { useAuth } from '../store/AuthContext';
 import { can } from '@bakery/utils';
 import styles from './InventoryPage.module.css';
 
+const LOW_STOCK_THRESHOLD = 10;
+
+const stockClass = (qty: number) => {
+  if (qty <= 0) return `${styles.num} ${styles.numOut}`;
+  if (qty < LOW_STOCK_THRESHOLD) return `${styles.num} ${styles.numLow}`;
+  return styles.num;
+};
+
 const columns: DataTableColumn<Product>[] = [
   { key: 'name', label: 'Product Name', sortable: true },
   { key: 'category', label: 'Category' },
-  { key: 'stockQuantity', label: 'Current Stock', sortable: true },
+  {
+    key: 'stockQuantity',
+    label: 'Current Stock',
+    sortable: true,
+    render: (row) => <span className={stockClass(row.stockQuantity)}>{row.stockQuantity}</span>,
+  },
   {
     key: 'isAvailable',
     label: 'Status',
@@ -117,21 +129,31 @@ export function InventoryPage() {
   };
 
   return (
-    <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Inventory Stock</h1>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <span className={styles.eyebrow}>Inventory Ledger</span>
+          <h1 className={styles.heading}>Stock on Hand</h1>
+          <p className={styles.heroQuote}>
+            <em>Counts, movements, and what&rsquo;s running thin.</em>
+          </p>
+        </div>
+      </header>
+
+      <div className={styles.tableCard}>
+        <DataTable
+          columns={columns}
+          data={items}
+          loading={loading}
+          onRowClick={openDetail}
+          emptyMessage="No products on the shelf."
+        />
       </div>
 
-      <DataTable
-        columns={columns}
-        data={items}
-        loading={loading}
-        onRowClick={openDetail}
-        emptyMessage="No products found"
-      />
-
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <div className={styles.pagerWrap}>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
       )}
 
       {/* Detail Modal */}
@@ -143,21 +165,19 @@ export function InventoryPage() {
       >
         {selectedItem && (
           <>
-            <div className={styles.tabs}>
-              <Button
-                variant={detailTab === 'details' ? 'primary' : 'ghost'}
-                size="sm"
+            <div className={styles.tabsRow}>
+              <button
+                className={`${styles.tab} ${detailTab === 'details' ? styles.tabActive : ''}`}
                 onClick={() => setDetailTab('details')}
               >
                 Stock Details
-              </Button>
-              <Button
-                variant={detailTab === 'history' ? 'primary' : 'ghost'}
-                size="sm"
+              </button>
+              <button
+                className={`${styles.tab} ${detailTab === 'history' ? styles.tabActive : ''}`}
                 onClick={() => setDetailTab('history')}
               >
                 Stock History
-              </Button>
+              </button>
             </div>
 
             {detailTab === 'details' && (
@@ -169,7 +189,9 @@ export function InventoryPage() {
                   </div>
                   <div>
                     <div className={styles.detailLabel}>Current Stock</div>
-                    <div className={styles.detailValue}>{selectedItem.stockQuantity}</div>
+                    <div className={styles.detailValue}>
+                      <span className={stockClass(selectedItem.stockQuantity)}>{selectedItem.stockQuantity}</span>
+                    </div>
                   </div>
                   <div>
                     <div className={styles.detailLabel}>Status</div>
@@ -230,26 +252,26 @@ export function InventoryPage() {
                   <p>No stock adjustments found</p>
                 ) : (
                   <div className={styles.tableWrapper}>
-                  <table className={styles.historyTable}>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Quantity</th>
-                        <th>Reason</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {adjustments.map((adj) => (
-                        <tr key={adj.id}>
-                          <td>{new Date(adj.createdAt).toLocaleString()}</td>
-                          <td style={{ fontWeight: 600 }}>
-                            {adj.quantityChange > 0 ? '+' : ''}{adj.quantityChange}
-                          </td>
-                          <td>{adj.reason || '—'}</td>
+                    <table className={styles.historyTable}>
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Quantity</th>
+                          <th>Reason</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {adjustments.map((adj) => (
+                          <tr key={adj.id}>
+                            <td>{new Date(adj.createdAt).toLocaleString()}</td>
+                            <td style={{ fontWeight: 700 }}>
+                              {adj.quantityChange > 0 ? '+' : ''}{adj.quantityChange}
+                            </td>
+                            <td>{adj.reason || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </>

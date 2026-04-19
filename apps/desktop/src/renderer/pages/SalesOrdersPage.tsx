@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SalesOrder, SalesOrderStatus } from '@bakery/types';
-import { DataTable, Pagination, OrderStatusBadge, Button } from '@bakery/ui';
+import { DataTable, Pagination, OrderStatusBadge } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
@@ -17,11 +17,16 @@ const STATUS_TABS: { label: string; value: SalesOrderStatus | '' }[] = [
 ];
 
 const columns: DataTableColumn<SalesOrder>[] = [
-  { key: 'orderNumber', label: 'Order #', sortable: true },
+  {
+    key: 'orderNumber',
+    label: 'Order #',
+    sortable: true,
+    render: (row) => <span className={styles.mono}>{row.orderNumber}</span>,
+  },
   {
     key: 'customer',
     label: 'Customer',
-    render: (row) => row.customer?.name || 'Walk-in',
+    render: (row) => row.customer?.name || <span className={styles.walkin}>Walk-in</span>,
   },
   {
     key: 'createdAt',
@@ -33,7 +38,7 @@ const columns: DataTableColumn<SalesOrder>[] = [
     key: 'total',
     label: 'Total',
     sortable: true,
-    render: (row) => formatCurrency(row.total),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.total)}</span>,
   },
   {
     key: 'status',
@@ -43,12 +48,12 @@ const columns: DataTableColumn<SalesOrder>[] = [
   {
     key: 'amountPaid',
     label: 'Paid',
-    render: (row) => formatCurrency(row.amountPaid),
+    render: (row) => <span className={styles.numDim}>{formatCurrency(row.amountPaid)}</span>,
   },
   {
     key: 'balanceDue',
     label: 'Balance',
-    render: (row) => formatCurrency(row.balanceDue),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.balanceDue)}</span>,
   },
 ];
 
@@ -60,6 +65,7 @@ export function SalesOrdersPage() {
   const [statusFilter, setStatusFilter] = useState<SalesOrderStatus | ''>('');
   const [loading, setLoading] = useState(true);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -73,6 +79,13 @@ export function SalesOrdersPage() {
       );
       setOrders(res.data);
       setTotal(res.total);
+      if (!statusFilter) {
+        const counts: Record<string, number> = { '': res.total };
+        res.data.forEach((o) => {
+          counts[o.status] = (counts[o.status] ?? 0) + 1;
+        });
+        setStatusCounts(counts);
+      }
     } catch {
       setOrders([]);
     } finally {
@@ -90,35 +103,54 @@ export function SalesOrdersPage() {
   };
 
   return (
-    <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Sales Orders</h1>
-        <Button onClick={() => navigate('/pos')}>New Sale</Button>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <span className={styles.eyebrow}>Sales Ledger</span>
+          <h1 className={styles.heading}>Orders &amp; Invoices</h1>
+          <p className={styles.heroQuote}>
+            <em>Every sale, every shift — the full day&rsquo;s ribbon.</em>
+          </p>
+        </div>
+        <div className={styles.heroAside}>
+          <button className={styles.heroAction} onClick={() => navigate('/pos')}>
+            <span>＋</span> New Sale
+          </button>
+        </div>
+      </header>
+
+      <div className={styles.ledgerCard}>
+        <div className={styles.tabsRow}>
+          {STATUS_TABS.map((tab) => {
+            const count = tab.value === '' ? total : (statusCounts[tab.value] ?? 0);
+            return (
+              <button
+                key={tab.value}
+                className={`${styles.tab} ${statusFilter === tab.value ? styles.tabActive : ''}`}
+                onClick={() => handleTabChange(tab.value)}
+              >
+                <span>{tab.label}</span>
+                <span className={styles.tabCount}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className={styles.tabs}>
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.value}
-            variant={statusFilter === tab.value ? 'primary' : 'ghost'}
-            size="sm"
-            onClick={() => handleTabChange(tab.value)}
-          >
-            {tab.label}
-          </Button>
-        ))}
+      <div className={styles.tableCard}>
+        <DataTable
+          columns={columns}
+          data={orders}
+          loading={loading}
+          onRowClick={(row) => setSelectedOrderId(row.id)}
+          emptyMessage="No orders on the ribbon yet."
+        />
       </div>
-
-      <DataTable
-        columns={columns}
-        data={orders}
-        loading={loading}
-        onRowClick={(row) => setSelectedOrderId(row.id)}
-        emptyMessage="No orders found"
-      />
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <div className={styles.pagerWrap}>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
       )}
 
       {selectedOrderId && (

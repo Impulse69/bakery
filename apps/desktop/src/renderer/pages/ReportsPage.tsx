@@ -44,7 +44,7 @@ const stockColumns: DataTableColumn<ProductStockAdjustment>[] = [
     key: 'quantityChange',
     label: 'Quantity',
     render: (row) => (
-      <span style={{ fontWeight: 600 }}>
+      <span style={{ fontWeight: 700 }}>
         {row.quantityChange > 0 ? '+' : ''}{row.quantityChange}
       </span>
     ),
@@ -78,12 +78,10 @@ export function ReportsPage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('daily');
 
-  // Daily tab
   const [reportDate, setReportDate] = useState(getToday());
   const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
   const [dailyLoading, setDailyLoading] = useState(false);
 
-  // Stock tab
   const [products, setProducts] = useState<Product[]>([]);
   const [stockItemId, setStockItemId] = useState('');
   const [stockFrom, setStockFrom] = useState(get30DaysAgo());
@@ -91,20 +89,17 @@ export function ReportsPage() {
   const [adjustments, setAdjustments] = useState<ProductStockAdjustment[]>([]);
   const [stockLoading, setStockLoading] = useState(false);
 
-  // Sales tab
   const [salesFrom, setSalesFrom] = useState(get30DaysAgo());
   const [salesTo, setSalesTo] = useState(getToday());
   const [salesData, setSalesData] = useState<SalesProduct[]>([]);
   const [salesLoading, setSalesLoading] = useState(false);
 
-  // Load products for stock picker
   useEffect(() => {
     api.get<{ data: Product[] }>('/products?limit=100')
       .then((r) => setProducts(r.data))
       .catch(() => {});
   }, []);
 
-  // Auto-fetch daily report on date change
   const fetchDailyReport = useCallback(async () => {
     if (!reportDate) return;
     setDailyLoading(true);
@@ -163,125 +158,147 @@ export function ReportsPage() {
   }));
 
   return (
-    <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Reports</h1>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <span className={styles.eyebrow}>Analytics</span>
+          <h1 className={styles.heading}>Reports</h1>
+          <p className={styles.heroQuote}>
+            <em>Daily totals, stock movements, product performance.</em>
+          </p>
+        </div>
+      </header>
+
+      <div className={styles.ledgerCard}>
+        <div className={styles.tabsRow}>
+          <button
+            className={`${styles.tab} ${activeTab === 'daily' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('daily')}
+          >
+            Daily Summary
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'stock' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('stock')}
+          >
+            Stock Movement
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'sales' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('sales')}
+          >
+            Sales by Product
+          </button>
+        </div>
       </div>
 
-      <div className={styles.tabs}>
-        <Button
-          variant={activeTab === 'daily' ? 'primary' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('daily')}
-        >
-          Daily Summary
-        </Button>
-        <Button
-          variant={activeTab === 'stock' ? 'primary' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('stock')}
-        >
-          Stock Movement
-        </Button>
-        <Button
-          variant={activeTab === 'sales' ? 'primary' : 'ghost'}
-          size="sm"
-          onClick={() => setActiveTab('sales')}
-        >
-          Sales by Product
-        </Button>
-      </div>
-
-      {/* Daily Summary Tab */}
       {activeTab === 'daily' && (
-        <div>
-          <div className={styles.filters}>
-            <Input
-              label="Date"
-              type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value)}
-            />
+        <>
+          <div className={styles.ledgerCard}>
+            <div className={styles.filters}>
+              <Input
+                label="Date"
+                type="date"
+                value={reportDate}
+                onChange={(e) => setReportDate(e.target.value)}
+              />
+            </div>
           </div>
           {dailyLoading ? (
             <p>Loading report...</p>
           ) : dailyReport ? (
             <div className={styles.statsGrid}>
-              <StatCard label="Total Orders" value={dailyReport.totalOrders} />
-              <StatCard label="Revenue" value={formatCurrency(dailyReport.totalRevenue)} />
-              <StatCard label="Tax Collected" value={formatCurrency(dailyReport.totalTax)} />
-              <StatCard label="Expenses" value={formatCurrency(dailyReport.totalExpenses)} />
-              <StatCard
-                label="Profit"
-                value={formatCurrency(dailyReport.profit)}
-                trend={dailyReport.profit > 0 ? 'up' : dailyReport.profit < 0 ? 'down' : 'neutral'}
-              />
+              <div className={styles.statTile}>
+                <StatCard label="Total Orders" value={dailyReport.totalOrders} />
+              </div>
+              <div className={styles.statTile}>
+                <StatCard label="Revenue" value={formatCurrency(dailyReport.totalRevenue)} />
+              </div>
+              <div className={styles.statTile}>
+                <StatCard label="Tax Collected" value={formatCurrency(dailyReport.totalTax)} />
+              </div>
+              <div className={styles.statTile}>
+                <StatCard label="Expenses" value={formatCurrency(dailyReport.totalExpenses)} />
+              </div>
+              <div className={styles.statTile}>
+                <StatCard
+                  label="Profit"
+                  value={formatCurrency(dailyReport.profit)}
+                  trend={dailyReport.profit > 0 ? 'up' : dailyReport.profit < 0 ? 'down' : 'neutral'}
+                />
+              </div>
             </div>
           ) : (
             <p>No data for this date</p>
           )}
-        </div>
+        </>
       )}
 
-      {/* Stock Movement Tab */}
       {activeTab === 'stock' && (
-        <div>
-          <div className={styles.filters}>
-            <Select
-              label="Product"
-              options={itemOptions}
-              value={stockItemId}
-              onChange={(e) => setStockItemId(e.target.value)}
-              placeholder="Select product"
-            />
-            <Input
-              label="From"
-              type="date"
-              value={stockFrom}
-              onChange={(e) => setStockFrom(e.target.value)}
-            />
-            <Input
-              label="To"
-              type="date"
-              value={stockTo}
-              onChange={(e) => setStockTo(e.target.value)}
-            />
-            <Button onClick={fetchStockReport} loading={stockLoading}>Load</Button>
+        <>
+          <div className={styles.ledgerCard}>
+            <div className={styles.filters}>
+              <Select
+                label="Product"
+                options={itemOptions}
+                value={stockItemId}
+                onChange={(e) => setStockItemId(e.target.value)}
+                placeholder="Select product"
+              />
+              <Input
+                label="From"
+                type="date"
+                value={stockFrom}
+                onChange={(e) => setStockFrom(e.target.value)}
+              />
+              <Input
+                label="To"
+                type="date"
+                value={stockTo}
+                onChange={(e) => setStockTo(e.target.value)}
+              />
+              <Button onClick={fetchStockReport} loading={stockLoading}>Load</Button>
+            </div>
           </div>
-          <DataTable
-            columns={stockColumns}
-            data={adjustments}
-            loading={stockLoading}
-            emptyMessage="No adjustments found"
-          />
-        </div>
+          <div className={styles.tableCard}>
+            <DataTable
+              columns={stockColumns}
+              data={adjustments}
+              loading={stockLoading}
+              emptyMessage="No adjustments found"
+            />
+          </div>
+        </>
       )}
 
-      {/* Sales by Product Tab */}
       {activeTab === 'sales' && (
-        <div>
-          <div className={styles.filters}>
-            <Input
-              label="From"
-              type="date"
-              value={salesFrom}
-              onChange={(e) => setSalesFrom(e.target.value)}
-            />
-            <Input
-              label="To"
-              type="date"
-              value={salesTo}
-              onChange={(e) => setSalesTo(e.target.value)}
-            />
-            <Button onClick={fetchSalesReport} loading={salesLoading}>Load</Button>
+        <>
+          <div className={styles.ledgerCard}>
+            <div className={styles.filters}>
+              <Input
+                label="From"
+                type="date"
+                value={salesFrom}
+                onChange={(e) => setSalesFrom(e.target.value)}
+              />
+              <Input
+                label="To"
+                type="date"
+                value={salesTo}
+                onChange={(e) => setSalesTo(e.target.value)}
+              />
+              <Button onClick={fetchSalesReport} loading={salesLoading}>Load</Button>
+            </div>
           </div>
-          <DataTable
-            columns={salesColumns}
-            data={salesData}
-            loading={salesLoading}
-            emptyMessage="No sales data found"
-          />
-        </div>
+          <div className={styles.tableCard}>
+            <DataTable
+              columns={salesColumns}
+              data={salesData}
+              loading={salesLoading}
+              emptyMessage="No sales data found"
+            />
+          </div>
+        </>
       )}
     </div>
   );

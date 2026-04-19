@@ -34,7 +34,12 @@ const CATEGORY_VARIANT: Record<string, 'info' | 'warning' | 'danger' | 'success'
 };
 
 const columns: DataTableColumn<Expense>[] = [
-  { key: 'expenseNumber', label: 'Expense #', sortable: true },
+  {
+    key: 'expenseNumber',
+    label: 'Expense #',
+    sortable: true,
+    render: (row) => <span className={styles.mono}>{row.expenseNumber}</span>,
+  },
   {
     key: 'category',
     label: 'Category',
@@ -49,7 +54,7 @@ const columns: DataTableColumn<Expense>[] = [
     key: 'amount',
     label: 'Amount',
     sortable: true,
-    render: (row) => formatCurrency(row.amount),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.amount)}</span>,
   },
   {
     key: 'paymentMethod',
@@ -87,7 +92,7 @@ export function ExpensesPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role ? (user.role === 'admin' || user.role === 'owner') : false;
-  const canEdit = user?.role ? can(user.role, 'expenses:write') : false; // or expenses:*
+  const canEdit = user?.role ? can(user.role, 'expenses:write') : false;
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [total, setTotal] = useState(0);
@@ -97,7 +102,6 @@ export function ExpensesPage() {
   const [dateTo, setDateTo] = useState(getToday());
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Detail/Edit Modal
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -220,34 +224,48 @@ export function ExpensesPage() {
   };
 
   return (
-    <div>
-      <div className={styles.header}>
-        <h1 className={styles.heading}>Expenses</h1>
-        <Button onClick={openAddModal}>Add Expense</Button>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <span className={styles.eyebrow}>Accounts Payable</span>
+          <h1 className={styles.heading}>Expenses</h1>
+          <p className={styles.heroQuote}>
+            <em>What went out, by category and day.</em>
+          </p>
+        </div>
+        <div className={styles.heroAside}>
+          <button className={styles.heroAction} onClick={openAddModal}>
+            <span>＋</span> Add Expense
+          </button>
+        </div>
+      </header>
+
+      <div className={styles.ledgerCard}>
+        <div className={styles.filters}>
+          <Input
+            label="From"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+          />
+          <Input
+            label="To"
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+          />
+        </div>
       </div>
 
-      <div className={styles.filters}>
-        <Input
-          label="From"
-          type="date"
-          value={dateFrom}
-          onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-        />
-        <Input
-          label="To"
-          type="date"
-          value={dateTo}
-          onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+      <div className={styles.tableCard}>
+        <DataTable
+          columns={columns}
+          data={expenses}
+          loading={loading}
+          onRowClick={openDetail}
+          emptyMessage="No expenses in this range."
         />
       </div>
-
-      <DataTable
-        columns={columns}
-        data={expenses}
-        loading={loading}
-        onRowClick={openDetail}
-        emptyMessage="No expenses found"
-      />
 
       {expenses.length > 0 && (
         <div className={styles.totalRow}>
@@ -256,13 +274,15 @@ export function ExpensesPage() {
       )}
 
       {totalPages > 1 && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        <div className={styles.pagerWrap}>
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        </div>
       )}
 
-      <Modal 
-        isOpen={showAddModal} 
-        onClose={() => { setShowAddModal(false); setIsEditing(false); }} 
-        title={isEditing ? "Edit Expense" : "Add Expense"} 
+      <Modal
+        isOpen={showAddModal}
+        onClose={() => { setShowAddModal(false); setIsEditing(false); }}
+        title={isEditing ? "Edit Expense" : "Add Expense"}
         size="md"
       >
         <div className={styles.form}>
@@ -297,9 +317,9 @@ export function ExpensesPage() {
           </div>
         </div>
       </Modal>
-      <Modal 
-        isOpen={showDetailModal} 
-        onClose={() => setShowDetailModal(false)} 
+      <Modal
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
         title={`Expense Details — ${selectedExpense?.expenseNumber}`}
         size="md"
       >
@@ -325,7 +345,7 @@ export function ExpensesPage() {
                 <span className={styles.detailValue}>{selectedExpense.paymentMethod.toUpperCase()}</span>
               </div>
             </div>
-            
+
             <div className={styles.detailItem} style={{ marginTop: '1rem' }}>
               <span className={styles.detailLabel}>Description</span>
               <p className={styles.detailValue}>{selectedExpense.description}</p>

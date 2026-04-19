@@ -1,19 +1,304 @@
-.header {
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  CUSTOMERS — Baker's Ledger                                      ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+.page {
   display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: var(--bui-font-family-sans), 'Inter', system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Hero banner ─────────────────────────────────────────────────── */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: stretch;
   justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.75rem 2rem;
+  border-radius: 20px;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(224, 123, 60, 0.12), transparent 55%),
+    linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 14px 36px -20px rgba(19, 27, 46, 0.28);
+  animation: rise 0.45s ease both;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(19, 27, 46, 0.025) 0 1px,
+    transparent 1px 14px
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(224, 123, 60, 0.18), transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.heroMain { display: flex; flex-direction: column; gap: 0.3rem; max-width: 60%; }
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #e07b3c;
+  display: inline-flex;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.55rem;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  background: #e07b3c;
+  border-radius: 999px;
 }
 
 .heading {
-  font-size: var(--bui-text-xl);
-  font-weight: 600;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.9rem, 2.4vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #131b2e;
+  line-height: 1.05;
+  margin: 0.25rem 0 0;
 }
 
-.search {
-  margin-bottom: 1rem;
-  max-width: 24rem;
+.heroQuote {
+  font-size: 13.5px;
+  color: rgba(19, 27, 46, 0.55);
+  margin: 0.4rem 0 0;
+  font-style: italic;
+  max-width: 48ch;
+  line-height: 1.55;
 }
+
+.heroAside {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.heroAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.15rem;
+  background: #131b2e;
+  color: #fdf8f1;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+  box-shadow: 0 8px 20px -10px rgba(19, 27, 46, 0.5);
+}
+
+.heroAction:hover { background: #1e2d4a; transform: translateY(-1px); }
+
+/* ── Ledger cards ────────────────────────────────────────────────── */
+.ledgerCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 18px -14px rgba(19, 27, 46, 0.25);
+  animation: rise 0.45s ease 0.05s both;
+}
+
+.tableCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 28px -20px rgba(19, 27, 46, 0.22);
+  animation: rise 0.5s ease 0.1s both;
+}
+
+.tableCard :global(table) { background: transparent; }
+
+.tableCard :global(thead) {
+  background: linear-gradient(180deg, #f9efdd, #f4e6cf);
+}
+
+.tableCard :global(thead th) {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.62) !important;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.1) !important;
+}
+
+.tableCard :global(tbody tr) {
+  transition: background 0.12s ease;
+  cursor: pointer;
+}
+
+.tableCard :global(tbody tr:hover) {
+  background: rgba(224, 123, 60, 0.05) !important;
+}
+
+.tableCard :global(tbody td) {
+  border-bottom: 1px solid rgba(19, 27, 46, 0.06) !important;
+  padding: 0.875rem 1rem !important;
+  font-size: 13.5px;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Tabs strip ──────────────────────────────────────────────────── */
+.tabsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid rgba(19, 27, 46, 0.12);
+  border-radius: 8px;
+  font-family: var(--bui-font-family-sans), 'Inter', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(19, 27, 46, 0.55);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tab:hover {
+  border-color: rgba(224, 123, 60, 0.4);
+  color: #131b2e;
+}
+
+.tabActive {
+  background: #131b2e;
+  color: #fdf8f1;
+  border-color: #131b2e;
+}
+
+.tabCount {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(19, 27, 46, 0.08);
+  color: rgba(19, 27, 46, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabActive .tabCount {
+  background: rgba(253, 248, 241, 0.18);
+  color: #fdf8f1;
+}
+
+/* ── Cell styles ─────────────────────────────────────────────────── */
+.mono {
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 12.5px;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.num {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: #131b2e;
+}
+
+.numDim {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: rgba(19, 27, 46, 0.6);
+}
+
+.walkin { font-style: italic; color: rgba(19, 27, 46, 0.5); }
+
+.pagerWrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+
+@media (max-width: 720px) {
+  .hero { flex-direction: column; padding: 1.25rem; }
+  .heroMain { max-width: 100%; }
+}
+
+/* ── Customers-specific ──────────────────────────────────────────── */
+.searchStrip {
+  margin-bottom: 0.75rem;
+  max-width: 26rem;
+}
+
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.analyticsGrid > .statsRow,
+.analyticsGrid > .fullWidth {
+  grid-column: 1 / -1;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.chartTitle {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: #131b2e;
+  letter-spacing: -0.01em;
+}
+
+.fullWidth { width: 100%; }
 
 .form {
   display: flex;
@@ -28,66 +313,6 @@
   margin-top: 1rem;
 }
 
-.detailGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.detailLabel {
-  font-size: var(--bui-text-sm);
-  color: var(--bui-text-secondary);
-}
-
-.detailValue {
-  font-size: var(--bui-text-base);
-  font-weight: 500;
-}
-
-.ordersHeading {
-  font-size: var(--bui-text-lg);
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-}
-
-/* ─── Page Tabs ─── */
-.subheading {
-  color: var(--bui-text-secondary);
-  font-size: var(--bui-text-sm);
-  margin-top: 0.25rem;
-}
-
-.tabs {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--bui-border);
-  margin-bottom: 1rem;
-}
-
-.tab {
-  padding: 0.5rem 1rem;
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-size: var(--bui-text-sm);
-  font-weight: 500;
-  color: var(--bui-text-secondary);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
-}
-
-.tab:hover {
-  color: var(--bui-text-primary);
-}
-
-.tabActive {
-  color: var(--bui-primary);
-  border-bottom-color: var(--bui-primary);
-}
-
-/* ─── Detail Modal ─── */
 .detailContainer {
   display: flex;
   flex-direction: column;
@@ -99,121 +324,76 @@
   gap: 0.5rem;
   justify-content: flex-end;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--bui-border);
+  border-bottom: 1px solid rgba(19, 27, 46, 0.08);
 }
 
 .detailTabs {
   display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--bui-border);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .infoCard,
 .statsCard {
-  padding: 1rem;
+  padding: 0;
+}
+
+.detailLabel {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+  margin-bottom: 0.5rem;
 }
 
 .infoRow {
   display: flex;
   justify-content: space-between;
   padding: 0.35rem 0;
-  font-size: var(--bui-text-sm);
+  font-size: 13px;
 }
 
 .infoRow span {
-  color: var(--bui-text-secondary);
+  color: rgba(19, 27, 46, 0.6);
 }
 
-/* ─── Buying Stats ─── */
 .streakBadge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0.5rem 0 0.75rem;
-  font-size: var(--bui-text-sm);
+  padding: 0.35rem 0.75rem;
+  margin: 0.25rem 0 0.75rem;
+  background: rgba(224, 123, 60, 0.1);
+  border: 1px solid rgba(224, 123, 60, 0.25);
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: #131b2e;
 }
 
 .streakIcon {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
 }
 
-.periodicGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.periodBox {
-  display: flex;
-  flex-direction: column;
-  font-size: var(--bui-text-sm);
-}
-
-.periodBox span {
-  color: var(--bui-text-secondary);
-  font-size: var(--bui-text-xs, 0.75rem);
-}
-
-.periodBox strong {
-  font-weight: 600;
-}
-
-/* ─── Reorder Section ─── */
 .reorderSection {
   margin-top: 0.5rem;
 }
 
 .sectionTitle {
-  font-size: var(--bui-text-sm);
-  font-weight: 600;
-  margin-bottom: 0.5rem;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+  color: #131b2e;
 }
 
-.topProducts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.productPill {
-  background: var(--bui-bg-muted, #f1f5f9);
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-size: var(--bui-text-xs, 0.75rem);
-  font-weight: 500;
-}
-
-.productPill span {
-  color: var(--bui-text-secondary);
-  font-weight: 400;
-}
-
-/* ─── Orders / Payments Tab ─── */
 .ordersContainer {
-  margin-top: 0.5rem;
-}
-
-.analyticsGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.analyticsGrid > :first-child,
-.statsRow {
-  grid-column: 1 / -1;
-}
-
-.statsRow {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.chartTitle {
-  font-weight: 600;
-  font-size: 0.95rem;
-  margin-bottom: 0.75rem;
-  color: var(--color-text-primary, #0f172a);
+  margin-top: 0.25rem;
 }

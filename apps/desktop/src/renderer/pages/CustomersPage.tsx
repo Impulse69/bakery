@@ -11,7 +11,7 @@ import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import styles from './CustomersPage.module.css';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#e07b3c', '#c85a2f', '#f4a261', '#8d5524', '#131b2e'];
 
 const columns: DataTableColumn<Customer>[] = [
   { key: 'name', label: 'Name', sortable: true },
@@ -20,7 +20,7 @@ const columns: DataTableColumn<Customer>[] = [
   {
     key: 'creditBalance',
     label: 'Credit Balance',
-    render: (row) => formatCurrency(row.creditBalance),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.creditBalance)}</span>,
   },
   {
     key: 'createdAt',
@@ -30,7 +30,7 @@ const columns: DataTableColumn<Customer>[] = [
 ];
 
 const orderColumns: DataTableColumn<SalesOrder>[] = [
-  { key: 'orderNumber', label: 'Order #' },
+  { key: 'orderNumber', label: 'Order #', render: (row) => <span className={styles.mono}>{row.orderNumber}</span> },
   {
     key: 'createdAt',
     label: 'Date',
@@ -39,7 +39,7 @@ const orderColumns: DataTableColumn<SalesOrder>[] = [
   {
     key: 'total',
     label: 'Total',
-    render: (row) => formatCurrency(row.total),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.total)}</span>,
   },
   {
     key: 'status',
@@ -62,7 +62,7 @@ const paymentColumns: DataTableColumn<Payment>[] = [
   {
     key: 'amount',
     label: 'Amount',
-    render: (row) => formatCurrency(row.amount),
+    render: (row) => <span className={styles.num}>{formatCurrency(row.amount)}</span>,
   },
 ];
 
@@ -208,39 +208,48 @@ export function CustomersPage() {
   };
 
   return (
-    <div>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.heading}>Customers</h1>
-          <p className={styles.subheading}>Manage customer relationships and track buying history.</p>
+    <div className={styles.page}>
+      <header className={styles.hero}>
+        <div className={styles.heroMain}>
+          <span className={styles.eyebrow}>Customer Ledger</span>
+          <h1 className={styles.heading}>Patrons</h1>
+          <p className={styles.heroQuote}>
+            <em>Regulars, leaders, and the people behind the numbers.</em>
+          </p>
         </div>
-        <Button onClick={openAddModal}>+ New Customer</Button>
-      </div>
+        <div className={styles.heroAside}>
+          <button className={styles.heroAction} onClick={openAddModal}>
+            <span>＋</span> Add Customer
+          </button>
+        </div>
+      </header>
 
-      <div className={styles.tabs}>
-        <button
-          className={`${styles.tab} ${activeTab === 'all' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          All Customers
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('leaderboard')}
-        >
-          Top Spenders
-        </button>
-        <button
-          className={`${styles.tab} ${activeTab === 'analytics' ? styles.tabActive : ''}`}
-          onClick={() => setActiveTab('analytics')}
-        >
-          Analytics
-        </button>
+      <div className={styles.ledgerCard}>
+        <div className={styles.tabsRow}>
+          <button
+            className={`${styles.tab} ${activeTab === 'all' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('all')}
+          >
+            All
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('leaderboard')}
+          >
+            Leaderboard
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'analytics' ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab('analytics')}
+          >
+            Analytics
+          </button>
+        </div>
       </div>
 
       {activeTab === 'all' ? (
         <>
-          <div className={styles.search}>
+          <div className={styles.searchStrip}>
             <SearchInput
               value={search}
               onChange={handleSearchChange}
@@ -248,30 +257,36 @@ export function CustomersPage() {
             />
           </div>
 
-          <DataTable
-            columns={columns}
-            data={customers}
-            loading={loading}
-            onRowClick={openDetail}
-            emptyMessage="No customers found"
-          />
+          <div className={styles.tableCard}>
+            <DataTable
+              columns={columns}
+              data={customers}
+              loading={loading}
+              onRowClick={openDetail}
+              emptyMessage="No customers on the ledger yet."
+            />
+          </div>
 
           {totalPages > 1 && (
-            <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <div className={styles.pagerWrap}>
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            </div>
           )}
         </>
       ) : activeTab === 'leaderboard' ? (
-        <DataTable
-          columns={[
-            { key: 'name', label: 'Customer' },
-            { key: 'phone', label: 'Phone' },
-            { key: 'totalOrders', label: 'Orders', render: (row: any) => (row.totalOrders || 0).toLocaleString() },
-            { key: 'totalSpent', label: 'Total Revenue', render: (row: any) => formatCurrency(row.totalSpent || 0) },
-          ]}
-          data={leaderboard}
-          loading={loading}
-          onRowClick={openDetail}
-        />
+        <div className={styles.tableCard}>
+          <DataTable
+            columns={[
+              { key: 'name', label: 'Customer' },
+              { key: 'phone', label: 'Phone' },
+              { key: 'totalOrders', label: 'Orders', render: (row: any) => <span className={styles.num}>{(row.totalOrders || 0).toLocaleString()}</span> },
+              { key: 'totalSpent', label: 'Total Revenue', render: (row: any) => <span className={styles.num}>{formatCurrency(row.totalSpent || 0)}</span> },
+            ]}
+            data={leaderboard}
+            loading={loading}
+            onRowClick={openDetail}
+          />
+        </div>
       ) : (
         analytics && (
           <div className={styles.analyticsGrid}>
@@ -282,7 +297,7 @@ export function CustomersPage() {
               <StatCard label="Churned (>30d)" value={analytics.summary.churned} />
             </div>
 
-            <Card>
+            <div className={styles.ledgerCard}>
               <div className={styles.chartTitle}>Revenue Share — Top 5 Customers</div>
               <div style={{ height: 280, width: '100%' }}>
                 <ResponsiveContainer>
@@ -304,9 +319,9 @@ export function CustomersPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </div>
 
-            <Card>
+            <div className={styles.ledgerCard}>
               <div className={styles.chartTitle}>Orders Per Month (last 6 months)</div>
               <div style={{ height: 280, width: '100%' }}>
                 <ResponsiveContainer>
@@ -314,13 +329,13 @@ export function CustomersPage() {
                     <XAxis dataKey="period" fontSize={12} />
                     <YAxis fontSize={12} />
                     <Tooltip />
-                    <Bar dataKey="orders" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="orders" fill="#e07b3c" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </div>
 
-            <Card>
+            <div className={`${styles.ledgerCard} ${styles.fullWidth}`}>
               <div className={styles.chartTitle}>Top Products (by quantity sold)</div>
               <div style={{ height: 280, width: '100%' }}>
                 <ResponsiveContainer>
@@ -328,11 +343,11 @@ export function CustomersPage() {
                     <XAxis type="number" fontSize={12} />
                     <YAxis type="category" dataKey="name" fontSize={12} width={120} />
                     <Tooltip />
-                    <Bar dataKey="quantity" fill="#10b981" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="quantity" fill="#c85a2f" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-            </Card>
+            </div>
           </div>
         )
       )}
@@ -393,87 +408,91 @@ export function CustomersPage() {
             {detailTab === 'overview' && (
               <>
                 <div className={styles.detailGrid}>
-              <Card className={styles.infoCard}>
-                <div className={styles.detailLabel}>Contact Information</div>
-                <div className={styles.infoRow}><span>Phone:</span> <strong>{selectedCustomer.phone || '—'}</strong></div>
-                <div className={styles.infoRow}><span>Email:</span> <strong>{selectedCustomer.email || '—'}</strong></div>
-                <div className={styles.infoRow}><span>Address:</span> <strong>{selectedCustomer.address || '—'}</strong></div>
-                <div className={styles.infoRow}><span>Credit:</span> <strong style={{ color: 'var(--color-danger)' }}>{formatCurrency(selectedCustomer.creditBalance)}</strong></div>
-              </Card>
+                  <Card className={styles.infoCard}>
+                    <div className={styles.detailLabel}>Contact Information</div>
+                    <div className={styles.infoRow}><span>Phone:</span> <strong>{selectedCustomer.phone || '—'}</strong></div>
+                    <div className={styles.infoRow}><span>Email:</span> <strong>{selectedCustomer.email || '—'}</strong></div>
+                    <div className={styles.infoRow}><span>Address:</span> <strong>{selectedCustomer.address || '—'}</strong></div>
+                    <div className={styles.infoRow}><span>Credit:</span> <strong style={{ color: 'var(--color-danger)' }}>{formatCurrency(selectedCustomer.creditBalance)}</strong></div>
+                  </Card>
 
-              {selectedStats && (
-                <Card className={styles.statsCard}>
-                  <div className={styles.detailLabel}>Buying Statistics</div>
-                  <div className={styles.streakBadge}>
-                    <span className={styles.streakIcon}>🔥</span>
-                    <span><strong>{selectedStats.weekStreak} Week</strong> Purchase Streak</span>
-                  </div>
-                  <div style={{ height: 200, width: '100%', marginTop: '1rem' }}>
-                    <ResponsiveContainer>
-                      <BarChart
-                        data={[
-                          { period: 'Day', revenue: selectedStats.periodic.daily / 100 },
-                          { period: 'Week', revenue: selectedStats.periodic.weekly / 100 },
-                          { period: 'Month', revenue: selectedStats.periodic.monthly / 100 },
-                          { period: 'Year', revenue: selectedStats.periodic.yearly / 100 },
-                        ]}
-                      >
-                        <XAxis dataKey="period" fontSize={12} />
-                        <YAxis tickFormatter={(val) => `GH₵${val}`} fontSize={12} />
-                        <Tooltip formatter={(val) => `GH₵${Number(val).toFixed(2)}`} />
-                        <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-              )}
-            </div>
-
-            {selectedStats && selectedStats.topProducts.length > 0 && (
-              <div className={styles.reorderSection}>
-                <h4 className={styles.sectionTitle}>Most Reordered Items</h4>
-                <div style={{ height: 200, width: '100%' }}>
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie
-                        data={selectedStats.topProducts}
-                        dataKey="quantity"
-                        nameKey="name"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                      >
-                        {selectedStats.topProducts.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {selectedStats && (
+                    <Card className={styles.statsCard}>
+                      <div className={styles.detailLabel}>Buying Statistics</div>
+                      <div className={styles.streakBadge}>
+                        <span className={styles.streakIcon}>🔥</span>
+                        <span><strong>{selectedStats.weekStreak} Week</strong> Purchase Streak</span>
+                      </div>
+                      <div style={{ height: 200, width: '100%', marginTop: '1rem' }}>
+                        <ResponsiveContainer>
+                          <BarChart
+                            data={[
+                              { period: 'Day', revenue: selectedStats.periodic.daily / 100 },
+                              { period: 'Week', revenue: selectedStats.periodic.weekly / 100 },
+                              { period: 'Month', revenue: selectedStats.periodic.monthly / 100 },
+                              { period: 'Year', revenue: selectedStats.periodic.yearly / 100 },
+                            ]}
+                          >
+                            <XAxis dataKey="period" fontSize={12} />
+                            <YAxis tickFormatter={(val) => `GH₵${val}`} fontSize={12} />
+                            <Tooltip formatter={(val) => `GH₵${Number(val).toFixed(2)}`} />
+                            <Bar dataKey="revenue" fill="#e07b3c" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </Card>
+                  )}
                 </div>
-              </div>
-            )}
+
+                {selectedStats && selectedStats.topProducts.length > 0 && (
+                  <div className={styles.reorderSection}>
+                    <h4 className={styles.sectionTitle}>Most Reordered Items</h4>
+                    <div style={{ height: 200, width: '100%' }}>
+                      <ResponsiveContainer>
+                        <PieChart>
+                          <Pie
+                            data={selectedStats.topProducts}
+                            dataKey="quantity"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={80}
+                            label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                          >
+                            {selectedStats.topProducts.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
             {detailTab === 'orders' && (
               <div className={styles.ordersContainer}>
-                <DataTable
-                  columns={orderColumns}
-                  data={selectedCustomer.salesOrders ?? []}
-                  emptyMessage="No orders yet"
-                />
+                <div className={styles.tableCard}>
+                  <DataTable
+                    columns={orderColumns}
+                    data={selectedCustomer.salesOrders ?? []}
+                    emptyMessage="No orders yet"
+                  />
+                </div>
               </div>
             )}
 
             {detailTab === 'payments' && (
               <div className={styles.ordersContainer}>
-                <DataTable
-                  columns={paymentColumns}
-                  data={(selectedCustomer.salesOrders ?? []).flatMap(o => o.payments ?? [])}
-                  emptyMessage="No payments yet"
-                />
+                <div className={styles.tableCard}>
+                  <DataTable
+                    columns={paymentColumns}
+                    data={(selectedCustomer.salesOrders ?? []).flatMap(o => o.payments ?? [])}
+                    emptyMessage="No payments yet"
+                  />
+                </div>
               </div>
             )}
           </div>
