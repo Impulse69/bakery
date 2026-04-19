@@ -62,10 +62,13 @@ export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
 function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: string; type: 'receipt' | 'invoice' }) {
   const paymentMethod = order.payments?.[0]?.method ?? 'N/A';
   const change = order.amountPaid > order.total ? order.amountPaid - order.total : 0;
+  const isReceipt = type === 'receipt';
+  const docLabel = isReceipt ? 'RECEIPT' : 'INVOICE';
+  const numberLabel = isReceipt ? 'Receipt #' : 'Invoice #';
+  void dateStr;
 
-  if (type === 'invoice') {
-    return (
-      <div className={styles.invoiceA4}>
+  return (
+    <div className={styles.invoiceA4}>
         <div className={styles.invoiceHeader}>
           <div className={styles.brandSection}>
             <h1 className={styles.brandName}>Bread Faculty</h1>
@@ -76,9 +79,9 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
             </div>
           </div>
           <div className={styles.invoiceMeta}>
-            <h2 className={styles.docTitle}>INVOICE</h2>
+            <h2 className={styles.docTitle}>{docLabel}</h2>
             <div className={styles.metaGrid}>
-              <div className={styles.metaLabel}>Invoice #</div><div className={styles.metaValue}>{order.orderNumber}</div>
+              <div className={styles.metaLabel}>{numberLabel}</div><div className={styles.metaValue}>{order.orderNumber}</div>
               <div className={styles.metaLabel}>Date</div><div className={styles.metaValue}>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
               <div className={styles.metaLabel}>Status</div><div className={styles.metaValue}><span className={styles.statusText}>{order.status.toUpperCase()}</span></div>
             </div>
@@ -121,9 +124,18 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
 
         <div className={styles.invoiceFooterSection}>
           <div className={styles.notesSection}>
-            <h3 className={styles.sectionHeading}>NOTES & INSTRUCTIONS</h3>
-            <p>Please quote the invoice number in all correspondence.</p>
-            <p>Goods sold are not returnable.</p>
+            <h3 className={styles.sectionHeading}>{isReceipt ? 'THANK YOU' : 'NOTES & INSTRUCTIONS'}</h3>
+            {isReceipt ? (
+              <>
+                <p>Thank you for your purchase — please come again.</p>
+                <p>Goods sold are not returnable.</p>
+              </>
+            ) : (
+              <>
+                <p>Please quote the invoice number in all correspondence.</p>
+                <p>Goods sold are not returnable.</p>
+              </>
+            )}
             <div className={styles.paymentInfo}>
               <strong>Payment Method:</strong> {paymentMethod.toUpperCase()}
             </div>
@@ -144,9 +156,15 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
               <span>{formatCurrency(order.total)}</span>
             </div>
             <div className={styles.amountPaidRow}>
-              <span>Amount Paid</span>
+              <span>Amount Paid ({paymentMethod.toUpperCase()})</span>
               <span>{formatCurrency(order.amountPaid)}</span>
             </div>
+            {change > 0 && (
+              <div className={styles.amountPaidRow}>
+                <span>Change</span>
+                <span>{formatCurrency(change)}</span>
+              </div>
+            )}
             {order.balanceDue > 0 && (
               <div className={styles.balanceDueRow}>
                 <span>Balance Due</span>
@@ -157,106 +175,11 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
         </div>
 
         <div className={styles.footerBranding}>
-          <p>Thank you for your business!</p>
+          <p>{isReceipt ? 'Thank you for your purchase!' : 'Thank you for your business!'}</p>
           <div className={styles.footerLine} />
           <p className={styles.copyright}>© {new Date().getFullYear()} Bread Faculty Bakery Management System</p>
         </div>
       </div>
     );
-  }
-
-  // Fallback to standard thermal receipt for POS
-  return (
-    <div className={styles.receipt}>
-      {/* Header */}
-      <div className={styles.header}>
-        <p className={styles.storeName}>Bread Faculty</p>
-        <p className={styles.storeMeta}>12 Baker Street, Accra</p>
-        <p className={styles.storeMeta}>+233 20 000 0000</p>
-      </div>
-
-      <div className={styles.divider} />
-
-      {/* Order meta */}
-      <div className={styles.meta}>
-        <div className={styles.metaRow}>
-          <span>Receipt #</span><span>{order.orderNumber}</span>
-        </div>
-        <div className={styles.metaRow}>
-          <span>Date</span><span>{dateStr}</span>
-        </div>
-        <div className={styles.metaRow}>
-          <span>Customer</span><span>{order.customer?.name ?? 'Walk-in'}</span>
-        </div>
-        <div className={styles.metaRow}>
-          <span>Cashier</span><span>Staff</span>
-        </div>
-      </div>
-
-      <div className={styles.divider} />
-
-      {/* Items */}
-      <table className={styles.items}>
-        <thead>
-          <tr>
-            <th className={styles.colDesc}>ITEM</th>
-            <th className={styles.colQty}>QTY</th>
-            <th className={styles.colPrice}>PRICE</th>
-            <th className={styles.colTotal}>TOTAL</th>
-          </tr>
-        </thead>
-        <tbody>
-          {order.items?.map((item) => (
-            <tr key={item.id}>
-              <td className={styles.colDesc}>{item.product?.name}</td>
-              <td className={styles.colQty}>{item.quantity}</td>
-              <td className={styles.colPrice}>{formatCurrency(item.unitPrice)}</td>
-              <td className={styles.colTotal}>{formatCurrency(item.total)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className={styles.divider} />
-
-      {/* Totals */}
-      <div className={styles.totals}>
-        <div className={styles.totalRow}>
-          <span>Subtotal</span><span>{formatCurrency(order.subtotal)}</span>
-        </div>
-        {order.taxTotal > 0 && (
-          <div className={styles.totalRow}>
-            <span>Tax</span><span>{formatCurrency(order.taxTotal)}</span>
-          </div>
-        )}
-        <div className={`${styles.totalRow} ${styles.grandTotal}`}>
-          <span>TOTAL</span><span>{formatCurrency(order.total)}</span>
-        </div>
-        <div className={styles.divider} />
-        <div className={styles.totalRow}>
-          <span>Payment ({paymentMethod.toUpperCase()})</span>
-          <span>{formatCurrency(order.amountPaid)}</span>
-        </div>
-        {change > 0 && (
-          <div className={styles.totalRow}>
-            <span>Change</span><span>{formatCurrency(change)}</span>
-          </div>
-        )}
-        {order.balanceDue > 0 && (
-          <div className={`${styles.totalRow} ${styles.balanceDue}`}>
-            <span>Balance Due</span><span>{formatCurrency(order.balanceDue)}</span>
-          </div>
-        )}
-      </div>
-
-      <div className={styles.divider} />
-
-      {/* Footer */}
-      <div className={styles.footer}>
-        <p>Thank you for your purchase!</p>
-        <p>Please come again.</p>
-        <p className={styles.footerSmall}>Powered by Bread Faculty POS</p>
-      </div>
-    </div>
-  );
 }
+
