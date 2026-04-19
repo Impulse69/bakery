@@ -148,7 +148,7 @@ export function POSPage() {
       });
 
       const fullOrder = await api.get<SalesOrder>(`/sales-orders/${order.id}`);
-      setPersistedLastOrder({ order: fullOrder, type: 'invoice' });
+      setPersistedLastOrder({ order: fullOrder, type: 'receipt' });
       setShowPreview(true);
       showToast(`Sale completed! Order ${order.orderNumber}`);
       resetCart();

@@ -9,9 +9,7 @@ interface ReceiptProps {
   type?: 'receipt' | 'invoice';
 }
 
-export function Receipt({ order, onClose, type: _type = 'invoice' }: ReceiptProps) {
-  const type: 'receipt' | 'invoice' = 'invoice';
-  void _type;
+export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
   const dateStr = order.completedAt
     ? new Date(order.completedAt).toLocaleString()
     : new Date(order.createdAt).toLocaleString();
