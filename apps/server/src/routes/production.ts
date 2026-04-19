@@ -72,11 +72,8 @@ router.get(
     }
 
     // 2. If not, generate suggestions for all bread products
-    const breadProducts = await prisma.product.findMany({
-      where: {
-        category: { contains: 'bread', mode: 'insensitive' }
-      }
-    });
+    const allProducts = await prisma.product.findMany();
+    const breadProducts = allProducts.filter(p => p.category?.toLowerCase().includes('bread'));
 
     const suggestions = await Promise.all(breadProducts.map(async (product) => {
       const lastTarget = await prisma.dailyProductionTarget.findFirst({
@@ -357,6 +354,8 @@ router.get(
 );
 
 // POST /api/production
+// Reserved for future ad-hoc batch tooling — no UI surface today.
+// (The Daily Run flow auto-creates ProductionBatch rows on day close.)
 router.post(
   '/',
   requireRole('admin', 'baker'),
@@ -398,6 +397,7 @@ router.post(
 );
 
 // PATCH /api/production/:id/complete
+// Reserved for future ad-hoc batch tooling — no UI surface today.
 router.patch(
   '/:id/complete',
   requireRole('admin', 'baker'),

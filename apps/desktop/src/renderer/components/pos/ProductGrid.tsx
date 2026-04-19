@@ -74,11 +74,13 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
 
   return (
     <div className={styles.container}>
-      <SearchInput
-        value={search}
-        onChange={setSearch}
-        placeholder="Search products..."
-      />
+      <div className={styles.searchWrap}>
+        <SearchInput
+          value={search}
+          onChange={setSearch}
+          placeholder="Search breads, pastries, cakes…"
+        />
+      </div>
       <div className={styles.grid}>
         {filtered.map((product) => {
           const soldOut = isSoldOut(product);

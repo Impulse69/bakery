@@ -201,7 +201,17 @@ export function POSPage() {
   return (
     <div className={styles.page}>
       <div className={styles.productArea}>
-        <h1 className={styles.heading}>POS / Sales Terminal</h1>
+        <header className={styles.terminalHeader}>
+          <div className={styles.terminalTitleGroup}>
+            <span className={styles.terminalEyebrow}>Sales Terminal</span>
+            <h1 className={styles.terminalTitle}>Ring up an order</h1>
+            <p className={styles.terminalSub}>Tap a product to add it to the ticket.</p>
+          </div>
+          <div className={styles.terminalMeta}>
+            <span>In catalog</span>
+            <strong>{products.length}</strong>
+          </div>
+        </header>
         <ProductGrid products={products} onAddToCart={addToCart} />
       </div>
       <div className={styles.cartArea}>

@@ -1,5 +1,3 @@
-import { Select, Input, Button } from '@bakery/ui';
-import type { SelectOption } from '@bakery/ui';
 import type { Customer, PaymentMethod } from '@bakery/types';
 import { formatCurrency } from '@bakery/utils';
 import { CustomerCombobox } from '../customer/CustomerCombobox';
@@ -7,9 +5,11 @@ import { api } from '../../lib/api';
 import { useToast } from '../Toast';
 import styles from './PaymentSection.module.css';
 
-const PAYMENT_METHODS: SelectOption[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'momo', label: 'Mobile Money' },
+const PAYMENT_OPTIONS: { value: PaymentMethod; label: string; hint: string }[] = [
+  { value: 'cash', label: 'Cash', hint: '₵' },
+  { value: 'momo', label: 'MoMo', hint: '📱' },
+  { value: 'card', label: 'Card', hint: '💳' },
+  { value: 'credit', label: 'Credit', hint: '⌛' },
 ];
 
 interface PaymentSectionProps {
@@ -51,6 +51,8 @@ export function PaymentSection({
 }: PaymentSectionProps) {
   const { showToast } = useToast();
   const change = paymentMethod === 'cash' ? amountTendered - grandTotal : 0;
+  const isShort = paymentMethod === 'cash' && amountTendered > 0 && amountTendered < grandTotal;
+  const isEnough = paymentMethod === 'cash' && amountTendered >= grandTotal && grandTotal > 0;
 
   const handleAddNewCustomer = async (name: string) => {
     try {
@@ -63,73 +65,121 @@ export function PaymentSection({
     }
   };
 
+  const completeDisabled =
+    cartEmpty || loading || (paymentMethod === 'cash' && amountTendered < grandTotal);
+
   return (
     <div className={styles.section}>
-      <CustomerCombobox
-        customers={customers}
-        selectedCustomerId={selectedCustomerId}
-        onSelect={(c) => onCustomerChange(c?.id ?? '')}
-        onAddNew={handleAddNewCustomer}
-      />
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>Customer</label>
+        <div className={styles.comboWrap}>
+          <CustomerCombobox
+            customers={customers}
+            selectedCustomerId={selectedCustomerId}
+            onSelect={(c) => onCustomerChange(c?.id ?? '')}
+            onAddNew={handleAddNewCustomer}
+            label=""
+            placeholder="Search or add a customer…"
+          />
+        </div>
+      </div>
 
-      <Select
-        label="Payment Method"
-        options={PAYMENT_METHODS}
-        value={paymentMethod}
-        onChange={(e) => onPaymentMethodChange(e.target.value as PaymentMethod)}
-      />
+      <div className={styles.field}>
+        <label className={styles.fieldLabel}>Payment Method</label>
+        <div className={styles.segmented} role="radiogroup" aria-label="Payment method">
+          {PAYMENT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={paymentMethod === opt.value}
+              className={`${styles.segBtn} ${paymentMethod === opt.value ? styles.segBtnActive : ''}`}
+              onClick={() => onPaymentMethodChange(opt.value)}
+            >
+              <span className={styles.segHint}>{opt.hint}</span>
+              <span className={styles.segLabel}>{opt.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {paymentMethod === 'cash' && (
-        <>
-          <Input
-            label="Amount Tendered"
-            type="number"
-            value={amountTendered === 0 ? '' : amountTendered / 100}
-            placeholder="0"
-            onChange={(e) =>
-              onAmountTenderedChange(Math.round(Number(e.target.value) * 100))
-            }
-          />
+        <div className={styles.field}>
+          <label className={styles.fieldLabel}>Amount Tendered</label>
+          <div className={styles.tenderWrap}>
+            <span className={styles.currencyPrefix}>₵</span>
+            <input
+              type="number"
+              className={styles.tenderInput}
+              value={amountTendered === 0 ? '' : amountTendered / 100}
+              placeholder="0.00"
+              onChange={(e) =>
+                onAmountTenderedChange(Math.round(Number(e.target.value) * 100))
+              }
+              step="0.01"
+              min="0"
+            />
+          </div>
           {amountTendered > 0 && (
-            <div className={styles.change}>
-              Change: {formatCurrency(Math.max(0, change))}
+            <div
+              className={`${styles.changeReadout} ${isShort ? styles.changeShort : ''} ${isEnough ? styles.changeOk : ''}`}
+            >
+              <span className={styles.changeLabel}>
+                {isShort ? 'Short by' : 'Change Due'}
+              </span>
+              <span className={styles.changeAmount}>
+                {formatCurrency(isShort ? grandTotal - amountTendered : Math.max(0, change))}
+              </span>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      <div className={styles.actions}>
-        <Button
+      <div className={styles.dock}>
+        <button
+          type="button"
+          className={styles.primaryCta}
           onClick={onCompleteSale}
-          loading={loading}
-          disabled={cartEmpty || (paymentMethod === 'cash' && amountTendered < grandTotal)}
+          disabled={completeDisabled}
         >
-          Complete Sale
-        </Button>
-        <Button
-          variant="secondary"
+          {loading ? (
+            <span className={styles.ctaSpinner} aria-hidden="true" />
+          ) : (
+            <>
+              <span className={styles.ctaLabel}>Complete Sale</span>
+              {!cartEmpty && (
+                <span className={styles.ctaAmount}>{formatCurrency(grandTotal)}</span>
+              )}
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          className={styles.secondaryCta}
           onClick={onGenerateInvoice}
           disabled={cartEmpty || !selectedCustomerId || loading}
         >
           Bill Customer (Invoice)
-        </Button>
-        <div className={styles.smallActions}>
-          <Button
-            size="sm"
-            variant="ghost"
+        </button>
+
+        <div className={styles.ghostRow}>
+          <button
+            type="button"
+            className={styles.ghostBtn}
             onClick={onSaveDraft}
             disabled={cartEmpty || loading}
           >
             Save Draft
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={!hasLastOrder}
+          </button>
+          <button
+            type="button"
+            className={styles.ghostBtn}
             onClick={onPrintLast}
+            disabled={!hasLastOrder}
           >
             Re-print
-          </Button>
+          </button>
         </div>
       </div>
     </div>
