@@ -2,14 +2,29 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Customer, SalesOrder, Payment } from '@bakery/types';
 import {
-  DataTable, Pagination, Button, Modal, Input, SearchInput, Card, OrderStatusBadge, StatCard,
+  DataTable, Pagination, Button, Modal, Input, SearchInput, OrderStatusBadge, StatCard,
 } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { CustomerReport } from '../components/customers/CustomerReport';
 import styles from './CustomersPage.module.css';
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? '')
+    .join('') || '—';
+}
+
+function formatShortDate(d: string | Date | undefined): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 
 const COLORS = ['#e07b3c', '#c85a2f', '#f4a261', '#8d5524', '#131b2e'];
 
@@ -104,6 +119,7 @@ export function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedStats, setSelectedCustomerStats] = useState<CustomerStats | null>(null);
   const [detailTab, setDetailTab] = useState<'overview' | 'orders' | 'payments'>('overview');
+  const [printing, setPrinting] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
@@ -187,6 +203,29 @@ export function CustomersPage() {
       setDetailTab('overview');
     } catch (err: any) {
       showToast(err.message || 'Failed to load customer details', 'error');
+    }
+  };
+
+  const handlePrintReport = async () => {
+    if (!selectedCustomer) return;
+    setPrinting(true);
+    // allow the portal to mount before calling print
+    await new Promise((r) => setTimeout(r, 40));
+    const apiBridge = window.electronAPI;
+    try {
+      if (apiBridge?.printPreview) {
+        await apiBridge.printPreview();
+      } else {
+        window.print();
+      }
+    } catch {
+      try {
+        await apiBridge?.printSystemPreview?.();
+      } catch {
+        window.print();
+      }
+    } finally {
+      setPrinting(false);
     }
   };
 
@@ -367,137 +406,261 @@ export function CustomersPage() {
         </div>
       </Modal>
 
-      {/* Detail Modal */}
+      {/* Detail Modal — Patron Dossier */}
       <Modal
         isOpen={!!selectedCustomer}
         onClose={() => { setSelectedCustomer(null); setSelectedCustomerStats(null); }}
-        title={selectedCustomer?.name ?? 'Customer Details'}
+        title=""
         size="lg"
       >
-        {selectedCustomer && (
-          <div className={styles.detailContainer}>
-            <div className={styles.modalHeaderActions}>
-              <Button size="sm" onClick={() => navigate(`/pos?customerId=${selectedCustomer.id}`)}>
-                Create Sales Order
-              </Button>
-              <Button size="sm" variant="danger" onClick={handleDeactivate}>
-                Deactivate
-              </Button>
-            </div>
-            <div className={styles.detailTabs}>
-              <button
-                className={`${styles.tab} ${detailTab === 'overview' ? styles.tabActive : ''}`}
-                onClick={() => setDetailTab('overview')}
-              >
-                Overview
-              </button>
-              <button
-                className={`${styles.tab} ${detailTab === 'orders' ? styles.tabActive : ''}`}
-                onClick={() => setDetailTab('orders')}
-              >
-                Order History
-              </button>
-              <button
-                className={`${styles.tab} ${detailTab === 'payments' ? styles.tabActive : ''}`}
-                onClick={() => setDetailTab('payments')}
-              >
-                Payment History
-              </button>
-            </div>
+        {selectedCustomer && (() => {
+          const orders = selectedCustomer.salesOrders ?? [];
+          const ltv = selectedStats?.totalSpent ?? orders.reduce((s, o) => s + o.total, 0);
+          const orderCount = selectedStats?.totalOrders ?? orders.length;
+          const avgOrder = orderCount > 0 ? Math.round(ltv / orderCount) : 0;
+          const topProducts = selectedStats?.topProducts?.slice(0, 5) ?? [];
+          const topMax = topProducts.reduce((m, p) => Math.max(m, p.quantity), 0) || 1;
+          const periodic = selectedStats?.periodic;
+          const periodEntries: Array<[string, number]> = periodic ? [
+            ['Today', periodic.daily],
+            ['Week', periodic.weekly],
+            ['Month', periodic.monthly],
+            ['Quarter', periodic.quarterly],
+            ['Year', periodic.yearly],
+          ] : [];
+          const periodMax = periodEntries.reduce((m, [, v]) => Math.max(m, v), 0) || 1;
+          const recentOrders = [...orders]
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 6);
 
-            {detailTab === 'overview' && (
-              <>
-                <div className={styles.detailGrid}>
-                  <Card className={styles.infoCard}>
-                    <div className={styles.detailLabel}>Contact Information</div>
-                    <div className={styles.infoRow}><span>Phone:</span> <strong>{selectedCustomer.phone || '—'}</strong></div>
-                    <div className={styles.infoRow}><span>Email:</span> <strong>{selectedCustomer.email || '—'}</strong></div>
-                    <div className={styles.infoRow}><span>Address:</span> <strong>{selectedCustomer.address || '—'}</strong></div>
-                    <div className={styles.infoRow}><span>Credit:</span> <strong style={{ color: 'var(--color-danger)' }}>{formatCurrency(selectedCustomer.creditBalance)}</strong></div>
-                  </Card>
+          return (
+            <div className={styles.dossier}>
+              {/* Portrait strip */}
+              <div className={styles.portraitStrip}>
+                <div className={styles.monogram}>{initials(selectedCustomer.name)}</div>
+                <div className={styles.portraitMain}>
+                  <div className={styles.dossierEyebrow}>
+                    <span>Patron Dossier</span>
+                    <span className={styles.eyebrowDivider} />
+                    <span className={styles.sinceText}>
+                      Since {formatShortDate(selectedCustomer.createdAt)}
+                    </span>
+                  </div>
+                  <h2 className={styles.patronName}>{selectedCustomer.name}</h2>
+                  <div className={styles.contactChips}>
+                    {selectedCustomer.phone && (
+                      <span className={styles.chip}>📞 {selectedCustomer.phone}</span>
+                    )}
+                    {selectedCustomer.email && (
+                      <span className={styles.chip}>✉ {selectedCustomer.email}</span>
+                    )}
+                    {selectedCustomer.address && (
+                      <span className={styles.chip}>⌂ {selectedCustomer.address}</span>
+                    )}
+                    {!selectedCustomer.phone && !selectedCustomer.email && !selectedCustomer.address && (
+                      <span className={styles.chipMuted}>No contact details on file</span>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.ltvPlate}>
+                  <div className={styles.ltvLabel}>Lifetime Value</div>
+                  <div className={styles.ltvFigure}>{formatCurrency(ltv)}</div>
+                  <div className={styles.ltvSub}>
+                    {orderCount} order{orderCount === 1 ? '' : 's'}
+                    {selectedStats?.weekStreak ? ` · 🔥 ${selectedStats.weekStreak}w streak` : ''}
+                  </div>
+                </div>
+              </div>
 
-                  {selectedStats && (
-                    <Card className={styles.statsCard}>
-                      <div className={styles.detailLabel}>Buying Statistics</div>
-                      <div className={styles.streakBadge}>
-                        <span className={styles.streakIcon}>🔥</span>
-                        <span><strong>{selectedStats.weekStreak} Week</strong> Purchase Streak</span>
+              {/* KPI ribbon */}
+              <div className={styles.kpiRibbon}>
+                <div className={styles.kpi}>
+                  <div className={styles.kpiLabel}>Avg Order</div>
+                  <div className={styles.kpiValue}>{formatCurrency(avgOrder)}</div>
+                </div>
+                <div className={styles.kpi}>
+                  <div className={styles.kpiLabel}>Last Seen</div>
+                  <div className={styles.kpiValue}>
+                    {selectedStats?.lastOrderDate ? formatShortDate(selectedStats.lastOrderDate) : '—'}
+                  </div>
+                </div>
+                <div className={styles.kpi}>
+                  <div className={styles.kpiLabel}>Credit</div>
+                  <div className={`${styles.kpiValue} ${selectedCustomer.creditBalance > 0 ? styles.kpiDanger : ''}`}>
+                    {formatCurrency(selectedCustomer.creditBalance)}
+                  </div>
+                </div>
+                <div className={styles.kpi}>
+                  <div className={styles.kpiLabel}>Orders</div>
+                  <div className={styles.kpiValue}>{orderCount.toLocaleString()}</div>
+                </div>
+              </div>
+
+              {/* Action bar */}
+              <div className={styles.actionBar}>
+                <div className={styles.actionTabs}>
+                  <button
+                    className={`${styles.tab} ${detailTab === 'overview' ? styles.tabActive : ''}`}
+                    onClick={() => setDetailTab('overview')}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    className={`${styles.tab} ${detailTab === 'orders' ? styles.tabActive : ''}`}
+                    onClick={() => setDetailTab('orders')}
+                  >
+                    Orders
+                    <span className={styles.tabCount}>{orders.length}</span>
+                  </button>
+                  <button
+                    className={`${styles.tab} ${detailTab === 'payments' ? styles.tabActive : ''}`}
+                    onClick={() => setDetailTab('payments')}
+                  >
+                    Payments
+                  </button>
+                </div>
+                <div className={styles.actionButtons}>
+                  <button className={styles.actionGhost} onClick={handlePrintReport}>
+                    🖨 Print Report
+                  </button>
+                  <button
+                    className={styles.actionPrimary}
+                    onClick={() => navigate(`/pos?customerId=${selectedCustomer.id}`)}
+                  >
+                    ＋ New Sale
+                  </button>
+                  <button className={styles.actionDanger} onClick={handleDeactivate}>
+                    Deactivate
+                  </button>
+                </div>
+              </div>
+
+              {/* Tab content */}
+              {detailTab === 'overview' && (
+                <div className={styles.overviewGrid}>
+                  {/* Cadence */}
+                  <section className={styles.sectionBlock}>
+                    <div className={styles.sectionHead}>
+                      <span className={styles.sectionNum}>01</span>
+                      <span className={styles.sectionTitleText}>Cadence</span>
+                      <span className={styles.sectionRule} />
+                    </div>
+                    {periodEntries.length > 0 ? (
+                      <div className={styles.cadenceList}>
+                        {periodEntries.map(([label, value]) => (
+                          <div key={label} className={styles.cadenceRow}>
+                            <span className={styles.cadenceLabel}>{label}</span>
+                            <div className={styles.cadenceTrack}>
+                              <div
+                                className={styles.cadenceFill}
+                                style={{ width: `${Math.max(2, (value / periodMax) * 100)}%` }}
+                              />
+                            </div>
+                            <span className={styles.cadenceValue}>{formatCurrency(value)}</span>
+                          </div>
+                        ))}
                       </div>
-                      <div style={{ height: 200, width: '100%', marginTop: '1rem' }}>
-                        <ResponsiveContainer>
-                          <BarChart
-                            data={[
-                              { period: 'Day', revenue: selectedStats.periodic.daily / 100 },
-                              { period: 'Week', revenue: selectedStats.periodic.weekly / 100 },
-                              { period: 'Month', revenue: selectedStats.periodic.monthly / 100 },
-                              { period: 'Year', revenue: selectedStats.periodic.yearly / 100 },
-                            ]}
-                          >
-                            <XAxis dataKey="period" fontSize={12} />
-                            <YAxis tickFormatter={(val) => `GH₵${val}`} fontSize={12} />
-                            <Tooltip formatter={(val) => `GH₵${Number(val).toFixed(2)}`} />
-                            <Bar dataKey="revenue" fill="#e07b3c" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                    ) : (
+                      <div className={styles.emptyNote}>No cadence data yet.</div>
+                    )}
+                  </section>
+
+                  {/* Favourites */}
+                  <section className={styles.sectionBlock}>
+                    <div className={styles.sectionHead}>
+                      <span className={styles.sectionNum}>02</span>
+                      <span className={styles.sectionTitleText}>Most Reordered</span>
+                      <span className={styles.sectionRule} />
+                    </div>
+                    {topProducts.length > 0 ? (
+                      <div className={styles.favList}>
+                        {topProducts.map((p, i) => (
+                          <div key={p.name} className={styles.favRow}>
+                            <span className={styles.favRank}>{String(i + 1).padStart(2, '0')}</span>
+                            <span className={styles.favName}>{p.name}</span>
+                            <div className={styles.favTrack}>
+                              <div className={styles.favFill} style={{ width: `${(p.quantity / topMax) * 100}%` }} />
+                            </div>
+                            <span className={styles.favQty}>
+                              <strong>{p.quantity}</strong>
+                              <span className={styles.favQtyUnit}>units</span>
+                            </span>
+                          </div>
+                        ))}
                       </div>
-                    </Card>
+                    ) : (
+                      <div className={styles.emptyNote}>No product history yet.</div>
+                    )}
+                  </section>
+
+                  {/* Recent orders */}
+                  <section className={`${styles.sectionBlock} ${styles.fullSpan}`}>
+                    <div className={styles.sectionHead}>
+                      <span className={styles.sectionNum}>03</span>
+                      <span className={styles.sectionTitleText}>Recent Orders</span>
+                      <span className={styles.sectionRule} />
+                    </div>
+                    {recentOrders.length > 0 ? (
+                      <div className={styles.timelineList}>
+                        {recentOrders.map((o) => (
+                          <div key={o.id} className={styles.timelineRow}>
+                            <span className={styles.timelineMono}>{o.orderNumber}</span>
+                            <span className={styles.timelineDate}>{formatShortDate(o.createdAt)}</span>
+                            <OrderStatusBadge status={o.status} />
+                            <span className={styles.timelineTotal}>{formatCurrency(o.total)}</span>
+                            {o.balanceDue > 0 && (
+                              <span className={styles.timelineBalance}>
+                                balance {formatCurrency(o.balanceDue)}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.emptyNote}>No orders yet.</div>
+                    )}
+                  </section>
+
+                  {selectedCustomer.notes && (
+                    <section className={`${styles.sectionBlock} ${styles.fullSpan} ${styles.notesBlock}`}>
+                      <div className={styles.sectionHead}>
+                        <span className={styles.sectionNum}>04</span>
+                        <span className={styles.sectionTitleText}>Notes</span>
+                        <span className={styles.sectionRule} />
+                      </div>
+                      <p className={styles.notesBody}>{selectedCustomer.notes}</p>
+                    </section>
                   )}
                 </div>
+              )}
 
-                {selectedStats && selectedStats.topProducts.length > 0 && (
-                  <div className={styles.reorderSection}>
-                    <h4 className={styles.sectionTitle}>Most Reordered Items</h4>
-                    <div style={{ height: 200, width: '100%' }}>
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={selectedStats.topProducts}
-                            dataKey="quantity"
-                            nameKey="name"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                          >
-                            {selectedStats.topProducts.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {detailTab === 'orders' && (
-              <div className={styles.ordersContainer}>
+              {detailTab === 'orders' && (
                 <div className={styles.tableCard}>
                   <DataTable
                     columns={orderColumns}
-                    data={selectedCustomer.salesOrders ?? []}
+                    data={orders}
                     emptyMessage="No orders yet"
                   />
                 </div>
-              </div>
-            )}
+              )}
 
-            {detailTab === 'payments' && (
-              <div className={styles.ordersContainer}>
+              {detailTab === 'payments' && (
                 <div className={styles.tableCard}>
                   <DataTable
                     columns={paymentColumns}
-                    data={(selectedCustomer.salesOrders ?? []).flatMap(o => o.payments ?? [])}
+                    data={orders.flatMap((o) => o.payments ?? [])}
                     emptyMessage="No payments yet"
                   />
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          );
+        })()}
       </Modal>
+
+      {printing && selectedCustomer && (
+        <CustomerReport customer={selectedCustomer} stats={selectedStats} />
+      )}
     </div>
   );
 }

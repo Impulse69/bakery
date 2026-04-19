@@ -115,10 +115,6 @@ export function CartPanel({
       </div>
 
       <div className={styles.totals} data-empty={isEmpty}>
-        <div className={styles.totalRow}>
-          <span>Subtotal</span>
-          <span className={styles.num}>{formatCurrency(subtotal)}</span>
-        </div>
         {taxTotal > 0 && (
           <div className={styles.totalRow}>
             <span>Tax</span>

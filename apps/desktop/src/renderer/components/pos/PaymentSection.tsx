@@ -8,8 +8,6 @@ import styles from './PaymentSection.module.css';
 const PAYMENT_OPTIONS: { value: PaymentMethod; label: string; hint: string }[] = [
   { value: 'cash', label: 'Cash', hint: '₵' },
   { value: 'momo', label: 'MoMo', hint: '📱' },
-  { value: 'card', label: 'Card', hint: '💳' },
-  { value: 'credit', label: 'Credit', hint: '⌛' },
 ];
 
 interface PaymentSectionProps {

@@ -1,0 +1,460 @@
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  CUSTOMER REPORT — A4 printable patron dossier                   ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+.printOnly {
+  display: none;
+}
+
+@media print {
+  :global(html),
+  :global(body),
+  :global(#root) {
+    background: #fff !important;
+  }
+  :global(#root) {
+    display: none !important;
+  }
+  .printOnly {
+    display: block !important;
+  }
+  @page {
+    size: A4;
+    margin: 14mm 12mm;
+  }
+}
+
+.page {
+  background: #fff;
+  color: #131b2e;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-feature-settings: 'tnum' 1;
+  padding: 8mm 10mm;
+  max-width: 210mm;
+  margin: 0 auto;
+  line-height: 1.45;
+}
+
+/* ── Masthead ────────────────────────────────────────────────────── */
+.masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+  padding-bottom: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.brandMark {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #131b2e;
+  color: #fdf8f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.brandName {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #131b2e;
+  line-height: 1;
+}
+
+.brandSub {
+  font-size: 10.5px;
+  color: rgba(19, 27, 46, 0.55);
+  margin-top: 3px;
+  letter-spacing: 0.01em;
+}
+
+.mastMeta {
+  text-align: right;
+}
+
+.eyebrow {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #e07b3c;
+}
+
+.eyebrowSm {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.48);
+}
+
+.issuedLine {
+  font-size: 11px;
+  color: rgba(19, 27, 46, 0.55);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rule {
+  height: 2px;
+  background: #131b2e;
+  margin: 6px 0 20px;
+}
+
+/* ── Portrait block ──────────────────────────────────────────────── */
+.portraitBlock {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1.25rem;
+  align-items: center;
+  padding: 14px 0 18px;
+}
+
+.monogram {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  color: #fdf8f1;
+  background:
+    radial-gradient(circle at 30% 30%, #f4a261, #e07b3c 60%, #c85a2f);
+  box-shadow: 0 10px 26px -12px rgba(224, 123, 60, 0.6);
+  flex-shrink: 0;
+}
+
+.portraitMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.patronName {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #131b2e;
+  margin: 2px 0 2px;
+  line-height: 1;
+}
+
+.contactLine {
+  font-size: 12.5px;
+  color: rgba(19, 27, 46, 0.72);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  color: rgba(19, 27, 46, 0.3);
+}
+
+.addressLine {
+  font-size: 11.5px;
+  color: rgba(19, 27, 46, 0.55);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.ltvBlock {
+  text-align: right;
+  padding-left: 1rem;
+  border-left: 2px solid rgba(19, 27, 46, 0.1);
+}
+
+.ltvFigure {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.ltvSub {
+  font-size: 10.5px;
+  color: rgba(19, 27, 46, 0.55);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── KPI ribbon ──────────────────────────────────────────────────── */
+.kpiRibbon {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px dashed rgba(19, 27, 46, 0.18);
+  border-bottom: 1px dashed rgba(19, 27, 46, 0.18);
+  padding: 12px 0;
+  margin: 8px 0 18px;
+}
+
+.kpi {
+  padding: 0 14px;
+  border-left: 1px solid rgba(19, 27, 46, 0.08);
+}
+
+.kpi:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.kpiLabel {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.kpiValue {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  margin-top: 5px;
+}
+
+.kpiDanger { color: #c85a2f; }
+
+/* ── Sections ────────────────────────────────────────────────────── */
+.section {
+  margin: 22px 0 0;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: #131b2e;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.sectionNum {
+  font-family: 'JetBrains Mono', 'Menlo', monospace;
+  font-size: 11px;
+  color: #e07b3c;
+  font-weight: 700;
+  padding: 2px 7px;
+  border: 1px solid rgba(224, 123, 60, 0.45);
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.sectionRule {
+  flex: 1;
+  height: 1px;
+  background-image: linear-gradient(to right, rgba(19, 27, 46, 0.22) 50%, transparent 0%);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+}
+
+/* Cadence */
+.cadenceGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cadenceRow {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.cadenceLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(19, 27, 46, 0.65);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cadenceBarTrack {
+  height: 10px;
+  background: rgba(19, 27, 46, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.cadenceBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #e07b3c, #c85a2f);
+  border-radius: 3px;
+}
+
+.cadenceValue {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  min-width: 72px;
+  text-align: right;
+}
+
+/* Favourites */
+.favGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.favRow {
+  display: grid;
+  grid-template-columns: 36px 1.5fr 2fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(19, 27, 46, 0.1);
+}
+
+.favRow:last-child { border-bottom: none; }
+
+.favRank {
+  font-family: 'JetBrains Mono', 'Menlo', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(19, 27, 46, 0.4);
+  letter-spacing: 0.05em;
+}
+
+.favName {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #131b2e;
+}
+
+.favBarTrack {
+  height: 6px;
+  background: rgba(19, 27, 46, 0.05);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.favBarFill {
+  height: 100%;
+  background: #e07b3c;
+}
+
+.favQty {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  justify-content: flex-end;
+}
+
+.favQtyUnit {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: rgba(19, 27, 46, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+/* Orders table */
+.ordersTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.ordersTable thead th {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+  padding: 6px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.18);
+}
+
+.ordersTable tbody td {
+  padding: 7px 8px;
+  border-bottom: 1px dashed rgba(19, 27, 46, 0.1);
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.orderNum {
+  font-family: 'JetBrains Mono', 'Menlo', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #131b2e;
+}
+
+.statusPill {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(224, 123, 60, 0.14);
+  color: #c85a2f;
+  border: 1px solid rgba(224, 123, 60, 0.3);
+}
+
+/* Footer */
+.footerRule {
+  margin-top: 28px;
+  height: 1px;
+  background: #131b2e;
+  opacity: 0.8;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 8px;
+}
+
+.footerText {
+  font-size: 11px;
+  font-weight: 600;
+  color: #131b2e;
+  margin-top: 3px;
+}
+
+.footerRight {
+  text-align: right;
+}
