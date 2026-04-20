@@ -6,7 +6,7 @@ import {
 } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { CustomerReport } from '../components/customers/CustomerReport';
@@ -119,6 +119,7 @@ export function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [selectedStats, setSelectedCustomerStats] = useState<CustomerStats | null>(null);
   const [detailTab, setDetailTab] = useState<'overview' | 'orders' | 'payments'>('overview');
+  const [trendRange, setTrendRange] = useState<'1W' | '1M' | '1Q' | '1Y'>('1M');
   const [printing, setPrinting] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -421,14 +422,71 @@ export function CustomersPage() {
           const topProducts = selectedStats?.topProducts?.slice(0, 5) ?? [];
           const topMax = topProducts.reduce((m, p) => Math.max(m, p.quantity), 0) || 1;
           const periodic = selectedStats?.periodic;
-          const periodEntries: Array<[string, number]> = periodic ? [
-            ['Today', periodic.daily],
-            ['Week', periodic.weekly],
-            ['Month', periodic.monthly],
-            ['Quarter', periodic.quarterly],
-            ['Year', periodic.yearly],
+          const periodEntries: Array<[string, string, number]> = periodic ? [
+            ['Today', 'D', periodic.daily],
+            ['This Week', 'W', periodic.weekly],
+            ['This Month', 'M', periodic.monthly],
+            ['This Quarter', 'Q', periodic.quarterly],
+            ['This Year', 'Y', periodic.yearly],
           ] : [];
-          const periodMax = periodEntries.reduce((m, [, v]) => Math.max(m, v), 0) || 1;
+          const periodMax = periodEntries.reduce((m, [, , v]) => Math.max(m, v), 0) || 1;
+
+          // Build trend series from the customer's real orders
+          const trendConfig: Record<typeof trendRange, { days: number; bucket: 'day' | 'week' | 'month'; format: Intl.DateTimeFormatOptions }> = {
+            '1W': { days: 7,   bucket: 'day',   format: { weekday: 'short' } },
+            '1M': { days: 30,  bucket: 'day',   format: { day: '2-digit', month: 'short' } },
+            '1Q': { days: 90,  bucket: 'week',  format: { day: '2-digit', month: 'short' } },
+            '1Y': { days: 365, bucket: 'month', format: { month: 'short' } },
+          };
+          const cfg = trendConfig[trendRange];
+          const rangeStart = new Date();
+          rangeStart.setHours(0, 0, 0, 0);
+          rangeStart.setDate(rangeStart.getDate() - cfg.days + 1);
+
+          const bucketKey = (d: Date) => {
+            if (cfg.bucket === 'day') return d.toISOString().slice(0, 10);
+            if (cfg.bucket === 'week') {
+              const x = new Date(d);
+              const day = x.getDay() === 0 ? 7 : x.getDay();
+              x.setDate(x.getDate() - (day - 1));
+              return x.toISOString().slice(0, 10);
+            }
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          };
+
+          const buckets = new Map<string, { label: string; revenue: number; orders: number; ts: number }>();
+          const cursor = new Date(rangeStart);
+          const today = new Date(); today.setHours(0, 0, 0, 0);
+          while (cursor <= today) {
+            const k = bucketKey(cursor);
+            if (!buckets.has(k)) {
+              buckets.set(k, {
+                label: cursor.toLocaleDateString('en-GB', cfg.format),
+                revenue: 0,
+                orders: 0,
+                ts: cursor.getTime(),
+              });
+            }
+            if (cfg.bucket === 'day') cursor.setDate(cursor.getDate() + 1);
+            else if (cfg.bucket === 'week') cursor.setDate(cursor.getDate() + 7);
+            else cursor.setMonth(cursor.getMonth() + 1);
+          }
+          for (const o of orders) {
+            const od = new Date(o.createdAt);
+            if (od < rangeStart) continue;
+            const k = bucketKey(od);
+            const b = buckets.get(k);
+            if (b) { b.revenue += o.total; b.orders += 1; }
+          }
+          const trendData = Array.from(buckets.values()).sort((a, b) => a.ts - b.ts);
+          const trendTotal = trendData.reduce((s, b) => s + b.revenue, 0);
+          const trendPeak = trendData.reduce((m, b) => Math.max(m, b.revenue), 0);
+          const rangeLabel: Record<typeof trendRange, string> = {
+            '1W': 'past 7 days',
+            '1M': 'past 30 days',
+            '1Q': 'past 90 days',
+            '1Y': 'past 12 months',
+          };
           const recentOrders = [...orders]
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 6);
@@ -538,37 +596,136 @@ export function CustomersPage() {
               {/* Tab content */}
               {detailTab === 'overview' && (
                 <div className={styles.overviewGrid}>
-                  {/* Cadence */}
-                  <section className={styles.sectionBlock}>
+                  {/* Cadence — horizontal progress dials */}
+                  <section className={`${styles.sectionBlock} ${styles.fullSpan}`}>
                     <div className={styles.sectionHead}>
                       <span className={styles.sectionNum}>01</span>
                       <span className={styles.sectionTitleText}>Cadence</span>
                       <span className={styles.sectionRule} />
+                      <span className={styles.sectionHint}>share of patron's peak period</span>
                     </div>
                     {periodEntries.length > 0 ? (
-                      <div className={styles.cadenceList}>
-                        {periodEntries.map(([label, value]) => (
-                          <div key={label} className={styles.cadenceRow}>
-                            <span className={styles.cadenceLabel}>{label}</span>
-                            <div className={styles.cadenceTrack}>
+                      <div className={styles.dialRow}>
+                        {periodEntries.map(([label, glyph, value], idx) => {
+                          const pct = periodMax > 0 ? Math.round((value / periodMax) * 100) : 0;
+                          const isPeak = value > 0 && value === periodMax;
+                          return (
+                            <div key={label} className={styles.dialItem} style={{ animationDelay: `${idx * 70}ms` }}>
                               <div
-                                className={styles.cadenceFill}
-                                style={{ width: `${Math.max(2, (value / periodMax) * 100)}%` }}
-                              />
+                                className={`${styles.dial} ${isPeak ? styles.dialPeak : ''}`}
+                                style={{ ['--fill' as any]: `${pct}` }}
+                                aria-label={`${label}: ${formatCurrency(value)}, ${pct}% of peak`}
+                              >
+                                <div className={styles.dialInner}>
+                                  <span className={styles.dialGlyph}>{glyph}</span>
+                                  <span className={styles.dialValue}>{formatCurrency(value)}</span>
+                                  <span className={styles.dialPct}>{pct}%</span>
+                                </div>
+                              </div>
+                              <span className={styles.dialLabel}>{label}</span>
                             </div>
-                            <span className={styles.cadenceValue}>{formatCurrency(value)}</span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className={styles.emptyNote}>No cadence data yet.</div>
                     )}
                   </section>
 
+                  {/* Trend chart — weekly / monthly / quarterly / yearly */}
+                  <section className={`${styles.sectionBlock} ${styles.fullSpan}`}>
+                    <div className={styles.sectionHead}>
+                      <span className={styles.sectionNum}>02</span>
+                      <span className={styles.sectionTitleText}>Spending Trend</span>
+                      <span className={styles.sectionRule} />
+                      <div className={styles.trendToggle} role="tablist" aria-label="Trend range">
+                        {(['1W', '1M', '1Q', '1Y'] as const).map((r) => (
+                          <button
+                            key={r}
+                            role="tab"
+                            aria-selected={trendRange === r}
+                            className={`${styles.trendBtn} ${trendRange === r ? styles.trendBtnActive : ''}`}
+                            onClick={() => setTrendRange(r)}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className={styles.trendCard}>
+                      <div className={styles.trendHeader}>
+                        <div>
+                          <div className={styles.trendEyebrow}>Revenue · {rangeLabel[trendRange]}</div>
+                          <div className={styles.trendTotal}>{formatCurrency(trendTotal)}</div>
+                        </div>
+                        <div className={styles.trendPeakChip}>
+                          <span className={styles.trendPeakLabel}>Peak</span>
+                          <span className={styles.trendPeakValue}>{formatCurrency(trendPeak)}</span>
+                        </div>
+                      </div>
+                      <div className={styles.trendChart}>
+                        {trendTotal > 0 ? (
+                          <ResponsiveContainer>
+                            <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                              <defs>
+                                <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#e07b3c" stopOpacity={0.45} />
+                                  <stop offset="100%" stopColor="#e07b3c" stopOpacity={0.02} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid stroke="rgba(19,27,46,0.05)" vertical={false} />
+                              <XAxis
+                                dataKey="label"
+                                fontSize={10}
+                                tickLine={false}
+                                axisLine={{ stroke: 'rgba(19,27,46,0.08)' }}
+                                tick={{ fill: 'rgba(19,27,46,0.5)' }}
+                                minTickGap={24}
+                              />
+                              <YAxis
+                                fontSize={10}
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fill: 'rgba(19,27,46,0.5)' }}
+                                width={52}
+                                tickFormatter={(v) => `₵${Math.round(Number(v) / 100)}`}
+                              />
+                              <Tooltip
+                                cursor={{ stroke: 'rgba(19,27,46,0.12)' }}
+                                contentStyle={{
+                                  border: '1px solid rgba(19,27,46,0.1)',
+                                  borderRadius: 10,
+                                  background: '#fffefb',
+                                  fontFamily: 'Manrope, Inter, sans-serif',
+                                  fontSize: 12,
+                                }}
+                                formatter={(val, name) => {
+                                  if (name === 'revenue') return [formatCurrency(Number(val)), 'Revenue'];
+                                  return [val, name];
+                                }}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="revenue"
+                                stroke="#c85a2f"
+                                strokeWidth={2.25}
+                                fill="url(#trendFill)"
+                                dot={false}
+                                activeDot={{ r: 4, fill: '#c85a2f', stroke: '#fffefb', strokeWidth: 2 }}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className={styles.trendEmpty}>No purchases in the {rangeLabel[trendRange]}.</div>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
                   {/* Favourites */}
                   <section className={styles.sectionBlock}>
                     <div className={styles.sectionHead}>
-                      <span className={styles.sectionNum}>02</span>
+                      <span className={styles.sectionNum}>03</span>
                       <span className={styles.sectionTitleText}>Most Reordered</span>
                       <span className={styles.sectionRule} />
                     </div>
@@ -596,7 +753,7 @@ export function CustomersPage() {
                   {/* Recent orders */}
                   <section className={`${styles.sectionBlock} ${styles.fullSpan}`}>
                     <div className={styles.sectionHead}>
-                      <span className={styles.sectionNum}>03</span>
+                      <span className={styles.sectionNum}>04</span>
                       <span className={styles.sectionTitleText}>Recent Orders</span>
                       <span className={styles.sectionRule} />
                     </div>
@@ -624,7 +781,7 @@ export function CustomersPage() {
                   {selectedCustomer.notes && (
                     <section className={`${styles.sectionBlock} ${styles.fullSpan} ${styles.notesBlock}`}>
                       <div className={styles.sectionHead}>
-                        <span className={styles.sectionNum}>04</span>
+                        <span className={styles.sectionNum}>05</span>
                         <span className={styles.sectionTitleText}>Notes</span>
                         <span className={styles.sectionRule} />
                       </div>

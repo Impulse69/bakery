@@ -461,21 +461,36 @@
 .barLabelToday { color: #131b2e; }
 .barLabelSun { color: #e07b3c; }
 
-/* Peak callout flag */
+/* Peak callout flag — sits above the bar in flex flow */
 .peakTag {
-  position: absolute;
-  top: -2px;
   font-family: 'Manrope', 'Inter', system-ui, sans-serif;
   font-size: 10px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #131b2e;
-  background: rgba(224, 123, 60, 0.18);
-  border: 1px solid rgba(224, 123, 60, 0.45);
-  padding: 2px 6px;
+  background: #fff6ec;
+  border: 1px solid rgba(224, 123, 60, 0.5);
+  padding: 3px 8px;
   border-radius: 999px;
   white-space: nowrap;
   letter-spacing: -0.01em;
+  box-shadow: 0 4px 10px -6px rgba(200, 90, 47, 0.4);
+  margin-bottom: 6px;
+  align-self: center;
+  position: relative;
+}
+
+.peakTag::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 6px;
+  height: 6px;
+  background: #fff6ec;
+  border-right: 1px solid rgba(224, 123, 60, 0.5);
+  border-bottom: 1px solid rgba(224, 123, 60, 0.5);
 }
 
 /* Chart empty state */
