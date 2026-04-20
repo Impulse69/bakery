@@ -80,16 +80,45 @@ router.patch(
   }),
 );
 
-// DELETE /api/products/:id (soft delete)
+// DELETE /api/products/:id  (soft delete by default; ?permanent=true removes the row)
 router.delete(
   '/:id',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    await prisma.product.update({
-      where: { id: getParam(req, 'id') },
-      data: { isAvailable: false },
+    const id = getParam(req, 'id');
+    const permanent = req.query.permanent === 'true' || req.query.permanent === '1';
+
+    if (!permanent) {
+      await prisma.product.update({ where: { id }, data: { isAvailable: false } });
+      res.json({ message: 'Product deactivated' });
+      return;
+    }
+
+    // Refuse permanent delete when the product is referenced by historical
+    // business records we should never silently rewrite.
+    const [orderItems, poItems] = await Promise.all([
+      prisma.salesOrderItem.count({ where: { productId: id } }),
+      prisma.purchaseOrderLineItem.count({ where: { productId: id } }),
+    ]);
+    if (orderItems > 0 || poItems > 0) {
+      const where: string[] = [];
+      if (orderItems > 0) where.push(`${orderItems} sales order line(s)`);
+      if (poItems > 0) where.push(`${poItems} purchase order line(s)`);
+      throw new AppError(
+        409,
+        `Cannot permanently delete: product appears on ${where.join(' and ')}. Deactivate it to keep the history intact.`,
+      );
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.productStockAdjustment.deleteMany({ where: { productId: id } });
+      await tx.dailyProductionTarget.deleteMany({ where: { productId: id } });
+      await tx.productionBatch.deleteMany({ where: { productId: id } });
+      await tx.productVariant.deleteMany({ where: { productId: id } });
+      await tx.product.delete({ where: { id } });
     });
-    res.json({ message: 'Product deactivated' });
+
+    res.json({ message: 'Product permanently deleted' });
   }),
 );
 

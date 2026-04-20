@@ -416,8 +416,9 @@ export function CustomersPage() {
       >
         {selectedCustomer && (() => {
           const orders = selectedCustomer.salesOrders ?? [];
-          const ltv = selectedStats?.totalSpent ?? orders.reduce((s, o) => s + o.total, 0);
-          const orderCount = selectedStats?.totalOrders ?? orders.length;
+          const billable = orders.filter((o) => o.status !== 'cancelled');
+          const ltv = selectedStats?.totalSpent ?? billable.reduce((s, o) => s + o.total, 0);
+          const orderCount = selectedStats?.totalOrders ?? billable.length;
           const avgOrder = orderCount > 0 ? Math.round(ltv / orderCount) : 0;
           const topProducts = selectedStats?.topProducts?.slice(0, 5) ?? [];
           const topMax = topProducts.reduce((m, p) => Math.max(m, p.quantity), 0) || 1;
@@ -471,7 +472,7 @@ export function CustomersPage() {
             else if (cfg.bucket === 'week') cursor.setDate(cursor.getDate() + 7);
             else cursor.setMonth(cursor.getMonth() + 1);
           }
-          for (const o of orders) {
+          for (const o of billable) {
             const od = new Date(o.createdAt);
             if (od < rangeStart) continue;
             const k = bucketKey(od);

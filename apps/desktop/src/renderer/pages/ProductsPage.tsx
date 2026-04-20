@@ -181,7 +181,7 @@ export function ProductsPage() {
 
   const handleDeactivate = async () => {
     if (!editingProduct) return;
-    if (!window.confirm(`Deactivate "${editingProduct.name}"?`)) return;
+    if (!window.confirm(`Deactivate "${editingProduct.name}"? It will be hidden from the POS but kept on record.`)) return;
     setSaving(true);
     try {
       await api.delete(`/products/${editingProduct.id}`);
@@ -190,6 +190,30 @@ export function ProductsPage() {
       fetchProducts();
     } catch (err: any) {
       showToast(err.message || 'Failed to deactivate', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!editingProduct) return;
+    const first = window.confirm(
+      `Permanently delete "${editingProduct.name}"?\n\nThis removes it from the catalog entirely. It can only succeed if the product has never appeared on a sales or purchase order.`,
+    );
+    if (!first) return;
+    const second = window.prompt(`Type the product name to confirm deletion:`);
+    if (second !== editingProduct.name) {
+      if (second !== null) showToast('Name did not match — deletion cancelled', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.delete(`/products/${editingProduct.id}?permanent=true`);
+      showToast('Product permanently deleted', 'success');
+      closeModal();
+      fetchProducts();
+    } catch (err: any) {
+      showToast(err.message || 'Failed to delete product', 'error');
     } finally {
       setSaving(false);
     }
@@ -282,9 +306,14 @@ export function ProductsPage() {
 
           <div className={styles.actions}>
             {editingProduct && (
-              <Button variant="danger" onClick={handleDeactivate} loading={saving}>
-                Deactivate
-              </Button>
+              <>
+                <Button variant="ghost" onClick={handlePermanentDelete} loading={saving}>
+                  Delete permanently
+                </Button>
+                <Button variant="danger" onClick={handleDeactivate} loading={saving}>
+                  Deactivate
+                </Button>
+              </>
             )}
             <Button variant="ghost" onClick={closeModal}>Cancel</Button>
             <Button onClick={handleSubmit} loading={saving}>
