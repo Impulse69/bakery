@@ -1,32 +1,46 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import type { Product } from '@bakery/types';
-import { DataTable, Pagination, Button, Modal, Input, Select, Badge } from '@bakery/ui';
-import type { DataTableColumn, SelectOption } from '@bakery/ui';
-import { formatCurrency } from '@bakery/utils';
-import { api } from '../lib/api';
-import { useToast } from '../components/Toast';
-import styles from './ProductsPage.module.css';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
+import type { Product } from "@bakery/types";
+import {
+  DataTable,
+  Pagination,
+  Button,
+  Modal,
+  Input,
+  Select,
+  Badge,
+} from "@bakery/ui";
+import type { DataTableColumn, SelectOption } from "@bakery/ui";
+import { formatCurrency } from "@bakery/utils";
+import { api } from "../lib/api";
+import { useToast } from "../components/Toast";
+import styles from "./ProductsPage.module.css";
 
 const CATEGORY_OPTIONS: SelectOption[] = [
-  { value: 'bread', label: 'Bread' },
-  { value: 'pastry', label: 'Pastry' },
-  { value: 'cake', label: 'Cake' },
-  { value: 'snack', label: 'Snack' },
-  { value: 'drink', label: 'Drink' },
-  { value: 'other', label: 'Other' },
+  { value: "bread", label: "Bread" },
+  { value: "pastry", label: "Pastry" },
+  { value: "cake", label: "Cake" },
+  { value: "snack", label: "Snack" },
+  { value: "drink", label: "Drink" },
+  { value: "other", label: "Other" },
 ];
 
 const CATEGORY_GLYPH: Record<string, string> = {
-  Bread: '🍞',
-  Pastry: '🥐',
-  Cake: '🎂',
-  Snack: '🍪',
-  Drink: '🥤',
-  Other: '📦',
+  Bread: "🍞",
+  Pastry: "🥐",
+  Cake: "🎂",
+  Snack: "🍪",
+  Drink: "🥤",
+  Other: "📦",
 };
 
-const EMPTY_FORM = { name: '', sku: '', category: '', priceDisplay: '', description: '' };
+const EMPTY_FORM = {
+  name: "",
+  sku: "",
+  category: "",
+  priceDisplay: "",
+  description: "",
+};
 
 export function ProductsPage() {
   const { showToast } = useToast();
@@ -39,61 +53,69 @@ export function ProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [includeInactive, setIncludeInactive] = useState(false);
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
 
-  const columns: DataTableColumn<Product>[] = useMemo(() => [
-    {
-      key: 'name',
-      label: 'Product',
-      sortable: true,
-      render: (row) => (
-        <div className={styles.productCell}>
-          <span className={styles.productGlyph} aria-hidden="true">
-            {CATEGORY_GLYPH[row.category] ?? '📦'}
-          </span>
-          <div className={styles.productText}>
-            <span className={styles.productName}>{row.name}</span>
-            {row.description && (
-              <span className={styles.productDesc}>{row.description}</span>
-            )}
+  const columns: DataTableColumn<Product>[] = useMemo(
+    () => [
+      {
+        key: "name",
+        label: "Product",
+        sortable: true,
+        render: (row) => (
+          <div className={styles.productCell}>
+            <span className={styles.productGlyph} aria-hidden="true">
+              {CATEGORY_GLYPH[row.category] ?? "📦"}
+            </span>
+            <div className={styles.productText}>
+              <span className={styles.productName}>{row.name}</span>
+              {row.description && (
+                <span className={styles.productDesc}>{row.description}</span>
+              )}
+            </div>
           </div>
-        </div>
-      ),
-    },
-    {
-      key: 'category',
-      label: 'Category',
-      render: (row) => <span className={styles.categoryChip}>{row.category}</span>,
-    },
-    {
-      key: 'sku',
-      label: 'SKU',
-      render: (row) => <span className={styles.mono}>{row.sku}</span>,
-    },
-    {
-      key: 'price',
-      label: 'Price',
-      sortable: true,
-      render: (row) => <span className={styles.priceCell}>{formatCurrency(row.price)}</span>,
-    },
-    {
-      key: 'isAvailable',
-      label: 'Status',
-      render: (row) => (
-        <Badge variant={row.isAvailable ? 'success' : 'danger'}>
-          {row.isAvailable ? 'Active' : 'Inactive'}
-        </Badge>
-      ),
-    },
-  ], []);
+        ),
+      },
+      {
+        key: "category",
+        label: "Category",
+        render: (row) => (
+          <span className={styles.categoryChip}>{row.category}</span>
+        ),
+      },
+      {
+        key: "sku",
+        label: "SKU",
+        render: (row) => <span className={styles.mono}>{row.sku}</span>,
+      },
+      {
+        key: "price",
+        label: "Price",
+        sortable: true,
+        render: (row) => (
+          <span className={styles.priceCell}>{formatCurrency(row.price)}</span>
+        ),
+      },
+      {
+        key: "isAvailable",
+        label: "Status",
+        render: (row) => (
+          <Badge variant={row.isAvailable ? "success" : "danger"}>
+            {row.isAvailable ? "Active" : "Inactive"}
+          </Badge>
+        ),
+      },
+    ],
+    [],
+  );
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.get<{ data: Product[]; total: number }>(
-        `/products?page=${page}&limit=${limit}`,
+        `/products?page=${page}&limit=${limit}&includeInactive=${includeInactive}`,
       );
       setProducts(res.data);
       setTotal(res.total);
@@ -102,7 +124,7 @@ export function ProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page]);
+  }, [page, limit, includeInactive]);
 
   useEffect(() => {
     fetchProducts();
@@ -115,9 +137,9 @@ export function ProductsPage() {
   }, []);
 
   useEffect(() => {
-    if (searchParams.get('action') === 'new') {
+    if (searchParams.get("action") === "new") {
       openAddModal();
-      searchParams.delete('action');
+      searchParams.delete("action");
       setSearchParams(searchParams);
     }
   }, [searchParams, setSearchParams, openAddModal]);
@@ -131,11 +153,11 @@ export function ProductsPage() {
         sku: full.sku,
         category: full.category,
         priceDisplay: (full.price / 100).toFixed(2),
-        description: full.description ?? '',
+        description: full.description ?? "",
       });
       setShowModal(true);
     } catch (err: any) {
-      showToast(err.message || 'Failed to load product', 'error');
+      showToast(err.message || "Failed to load product", "error");
     }
   };
 
@@ -146,12 +168,12 @@ export function ProductsPage() {
 
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.sku.trim() || !form.category) {
-      showToast('Name, SKU, and category are required', 'error');
+      showToast("Name, SKU, and category are required", "error");
       return;
     }
     const price = Math.round(Number(form.priceDisplay) * 100);
     if (isNaN(price) || price < 0) {
-      showToast('Invalid price', 'error');
+      showToast("Invalid price", "error");
       return;
     }
     setSaving(true);
@@ -165,15 +187,15 @@ export function ProductsPage() {
       };
       if (editingProduct) {
         await api.patch(`/products/${editingProduct.id}`, body);
-        showToast('Product updated', 'success');
+        showToast("Product updated", "success");
       } else {
-        await api.post('/products', body);
-        showToast('Product created', 'success');
+        await api.post("/products", body);
+        showToast("Product created", "success");
       }
       closeModal();
       fetchProducts();
     } catch (err: any) {
-      showToast(err.message || 'Failed to save product', 'error');
+      showToast(err.message || "Failed to save product", "error");
     } finally {
       setSaving(false);
     }
@@ -181,15 +203,20 @@ export function ProductsPage() {
 
   const handleDeactivate = async () => {
     if (!editingProduct) return;
-    if (!window.confirm(`Deactivate "${editingProduct.name}"? It will be hidden from the POS but kept on record.`)) return;
+    if (
+      !window.confirm(
+        `Deactivate "${editingProduct.name}"? It will be hidden from the POS but kept on record.`,
+      )
+    )
+      return;
     setSaving(true);
     try {
       await api.delete(`/products/${editingProduct.id}`);
-      showToast('Product deactivated', 'success');
+      showToast("Product deactivated", "success");
       closeModal();
       fetchProducts();
     } catch (err: any) {
-      showToast(err.message || 'Failed to deactivate', 'error');
+      showToast(err.message || "Failed to deactivate", "error");
     } finally {
       setSaving(false);
     }
@@ -203,29 +230,32 @@ export function ProductsPage() {
     if (!first) return;
     const second = window.prompt(`Type the product name to confirm deletion:`);
     if (second !== editingProduct.name) {
-      if (second !== null) showToast('Name did not match — deletion cancelled', 'error');
+      if (second !== null)
+        showToast("Name did not match — deletion cancelled", "error");
       return;
     }
     setSaving(true);
     try {
       await api.delete(`/products/${editingProduct.id}?permanent=true`);
-      showToast('Product permanently deleted', 'success');
+      showToast("Product permanently deleted", "success");
       closeModal();
       fetchProducts();
     } catch (err: any) {
-      showToast(err.message || 'Failed to delete product', 'error');
+      showToast(err.message || "Failed to delete product", "error");
     } finally {
       setSaving(false);
     }
   };
 
-  const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((f) => ({ ...f, [field]: e.target.value }));
-  };
+  const setField =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((f) => ({ ...f, [field]: e.target.value }));
+    };
 
-  const setSelectField = (field: string) => (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setForm((f) => ({ ...f, [field]: e.target.value }));
-  };
+  const setSelectField =
+    (field: string) => (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setForm((f) => ({ ...f, [field]: e.target.value }));
+    };
 
   const activeCount = products.filter((p) => p.isAvailable).length;
   const categoryCount = new Set(products.map((p) => p.category)).size;
@@ -241,6 +271,26 @@ export function ProductsPage() {
           </p>
         </div>
         <div className={styles.heroActions}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              cursor: "pointer",
+              color: "var(--bui-text-secondary)",
+              fontSize: "0.875rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={includeInactive}
+              onChange={(e) => {
+                setIncludeInactive(e.target.checked);
+                setPage(1);
+              }}
+            />
+            Show inactive
+          </label>
           <Button onClick={openAddModal}>＋ Add Product</Button>
         </div>
       </header>
@@ -275,49 +325,67 @@ export function ProductsPage() {
 
       {totalPages > 1 && (
         <div className={styles.pagerWrap}>
-          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       )}
 
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={editingProduct ? 'Edit Product' : 'Add Product'}
+        title={editingProduct ? "Edit Product" : "Add Product"}
         size="lg"
       >
         <div className={styles.form}>
-          <Input label="Name" value={form.name} onChange={setField('name')} />
-          <Input label="SKU" value={form.sku} onChange={setField('sku')} />
+          <Input label="Name" value={form.name} onChange={setField("name")} />
+          <Input label="SKU" value={form.sku} onChange={setField("sku")} />
           <Select
             label="Category"
             options={CATEGORY_OPTIONS}
             value={form.category}
-            onChange={setSelectField('category')}
+            onChange={setSelectField("category")}
             placeholder="Select category"
           />
           <Input
             label="Price (GH₵)"
             type="number"
             value={form.priceDisplay}
-            onChange={setField('priceDisplay')}
+            onChange={setField("priceDisplay")}
             placeholder="0.00"
           />
-          <Input label="Description" value={form.description} onChange={setField('description')} />
+          <Input
+            label="Description"
+            value={form.description}
+            onChange={setField("description")}
+          />
 
           <div className={styles.actions}>
             {editingProduct && (
               <>
-                <Button variant="ghost" onClick={handlePermanentDelete} loading={saving}>
+                <Button
+                  variant="ghost"
+                  onClick={handlePermanentDelete}
+                  loading={saving}
+                >
                   Delete permanently
                 </Button>
-                <Button variant="danger" onClick={handleDeactivate} loading={saving}>
+                <Button
+                  variant="danger"
+                  onClick={handleDeactivate}
+                  loading={saving}
+                >
                   Deactivate
                 </Button>
               </>
             )}
-            <Button variant="ghost" onClick={closeModal}>Cancel</Button>
+            <Button variant="ghost" onClick={closeModal}>
+              Cancel
+            </Button>
             <Button onClick={handleSubmit} loading={saving}>
-              {editingProduct ? 'Update' : 'Create'}
+              {editingProduct ? "Update" : "Create"}
             </Button>
           </div>
         </div>

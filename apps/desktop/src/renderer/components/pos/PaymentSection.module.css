@@ -21,6 +21,7 @@
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: rgba(19, 27, 46, 0.55);
+  text-align: center;
 }
 
 /* Embedded combobox — strip its own label, restyle input */
@@ -42,8 +43,8 @@
 
 /* ── Segmented payment pills ─────────────────────────────────────── */
 .segmented {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: inline-flex;
+  align-self: center;
   gap: 4px;
   padding: 4px;
   background: rgba(19, 27, 46, 0.06);
@@ -56,6 +57,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
+  min-width: 100px;
   height: 52px;
   border: none;
   border-radius: 9px;
@@ -63,7 +65,7 @@
   color: rgba(19, 27, 46, 0.6);
   cursor: pointer;
   font-family: inherit;
-  padding: 0;
+  padding: 0 1rem;
   transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.08s ease;
 }
 

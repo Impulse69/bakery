@@ -29,14 +29,18 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const { skip, take } = req.pagination;
+    const includeInactive = req.query.includeInactive === 'true' || req.query.includeInactive === '1';
+    const where = includeInactive ? {} : { isAvailable: true };
+
     const [products, total] = await Promise.all([
       prisma.product.findMany({
+        where,
         include: { variants: { where: { isActive: true } } },
         skip,
         take,
         orderBy: { name: 'asc' },
       }),
-      prisma.product.count(),
+      prisma.product.count({ where }),
     ]);
     res.json({ data: products, total, page: req.pagination.page, limit: req.pagination.limit });
   }),

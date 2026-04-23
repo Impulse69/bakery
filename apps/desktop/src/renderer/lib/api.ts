@@ -51,14 +51,14 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         if (path.startsWith('/products')) {
            if (Array.isArray(data)) {
                await db.products.bulkPut(data);
-           } else if (data.items && Array.isArray(data.items)) {
-               await db.products.bulkPut(data.items);
+           } else if (data.data && Array.isArray(data.data)) {
+               await db.products.bulkPut(data.data);
            }
         } else if (path.startsWith('/customers')) {
            if (Array.isArray(data)) {
                await db.customers.bulkPut(data);
-           } else if (data.items && Array.isArray(data.items)) {
-               await db.customers.bulkPut(data.items);
+           } else if (data.data && Array.isArray(data.data)) {
+               await db.customers.bulkPut(data.data);
            }
         }
       } catch (dbErr) {
