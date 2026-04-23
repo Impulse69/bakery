@@ -53,7 +53,7 @@ export function ProductsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [includeInactive, setIncludeInactive] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(true);
 
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
@@ -99,11 +99,11 @@ export function ProductsPage() {
         ),
       },
       {
-        key: "isAvailable",
+        key: "isActive",
         label: "Status",
         render: (row) => (
-          <Badge variant={row.isAvailable ? "success" : "danger"}>
-            {row.isAvailable ? "Active" : "Inactive"}
+          <Badge variant={row.isActive ? "success" : "danger"}>
+            {row.isActive ? "Active" : "Inactive"}
           </Badge>
         ),
       },
@@ -228,12 +228,7 @@ export function ProductsPage() {
       `Permanently delete "${editingProduct.name}"?\n\nThis removes it from the catalog entirely. It can only succeed if the product has never appeared on a sales or purchase order.`,
     );
     if (!first) return;
-    const second = window.prompt(`Type the product name to confirm deletion:`);
-    if (second !== editingProduct.name) {
-      if (second !== null)
-        showToast("Name did not match — deletion cancelled", "error");
-      return;
-    }
+    
     setSaving(true);
     try {
       await api.delete(`/products/${editingProduct.id}?permanent=true`);
@@ -257,7 +252,7 @@ export function ProductsPage() {
       setForm((f) => ({ ...f, [field]: e.target.value }));
     };
 
-  const activeCount = products.filter((p) => p.isAvailable).length;
+  const activeCount = products.filter((p) => p.isActive).length;
   const categoryCount = new Set(products.map((p) => p.category)).size;
 
   return (

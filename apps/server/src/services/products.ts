@@ -6,9 +6,9 @@ type Tx = Prisma.TransactionClient | typeof prisma;
 export async function syncProductAvailability(tx: Tx, productId: string) {
   const product = await tx.product.findUnique({
     where: { id: productId },
-    select: { stockQuantity: true, isAvailable: true },
+    select: { stockQuantity: true, isAvailable: true, isActive: true },
   });
-  if (!product) return;
+  if (!product || !product.isActive) return;
   const shouldBeAvailable = product.stockQuantity > 0;
   if (product.isAvailable === shouldBeAvailable) return;
   await tx.product.update({

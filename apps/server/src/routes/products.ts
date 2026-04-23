@@ -15,6 +15,7 @@ const createProductSchema = z.object({
   price: z.number().int().min(0),
   wholesalePrice: z.number().int().min(0).optional(),
   description: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 const updateProductSchema = createProductSchema.partial();
@@ -30,7 +31,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const { skip, take } = req.pagination;
     const includeInactive = req.query.includeInactive === 'true' || req.query.includeInactive === '1';
-    const where = includeInactive ? {} : { isAvailable: true };
+    const where = includeInactive ? {} : { isActive: true };
 
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -93,7 +94,7 @@ router.delete(
     const permanent = req.query.permanent === 'true' || req.query.permanent === '1';
 
     if (!permanent) {
-      await prisma.product.update({ where: { id }, data: { isAvailable: false } });
+      await prisma.product.update({ where: { id }, data: { isActive: false, isAvailable: false } });
       res.json({ message: 'Product deactivated' });
       return;
     }

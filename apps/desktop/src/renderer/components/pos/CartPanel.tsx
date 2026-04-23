@@ -56,62 +56,73 @@ export function CartPanel({
             <p className={styles.emptyHint}>Tap a bread from the catalog to start the order.</p>
           </div>
         )}
-        {items.map((item, index) => (
-          <div key={index} className={styles.item}>
-            <div className={styles.itemHead}>
-              <div className={styles.itemTitleBlock}>
-                <span className={styles.itemName}>
-                  {item.product.name}
-                  {item.variant && <span className={styles.variantTag}>{item.variant.name}</span>}
+        {items.map((item, index) => {
+          const isInsufficient = item.quantity > (item.product.stockQuantity || 0);
+          return (
+            <div
+              key={index}
+              className={`${styles.item} ${isInsufficient ? styles.itemWarning : ''}`}
+            >
+              <div className={styles.itemHead}>
+                <div className={styles.itemTitleBlock}>
+                  <span className={styles.itemName}>
+                    {item.product.name}
+                    {item.variant && <span className={styles.variantTag}>{item.variant.name}</span>}
+                  </span>
+                  <span className={styles.itemPrice}>{formatCurrency(item.unitPrice)} ea</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.removeBtn}
+                  onClick={() => onRemoveItem(index)}
+                  aria-label={`Remove ${item.product.name}`}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.itemFoot}>
+                <div className={styles.qtyControls}>
+                  <button
+                    type="button"
+                    className={styles.qtyBtn}
+                    onClick={() => onUpdateQuantity(index, -1)}
+                    aria-label="Decrease quantity"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    className={styles.qtyInput}
+                    value={item.quantity === 0 ? '' : item.quantity}
+                    placeholder="0"
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val)) onSetQuantity(index, val);
+                      else if (e.target.value === '') onSetQuantity(index, 0);
+                    }}
+                    min="0"
+                  />
+                  <button
+                    type="button"
+                    className={styles.qtyBtn}
+                    onClick={() => onUpdateQuantity(index, 1)}
+                    aria-label="Increase quantity"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className={styles.lineTotal}>
+                  {formatCurrency(item.quantity * item.unitPrice)}
                 </span>
-                <span className={styles.itemPrice}>{formatCurrency(item.unitPrice)} ea</span>
               </div>
-              <button
-                type="button"
-                className={styles.removeBtn}
-                onClick={() => onRemoveItem(index)}
-                aria-label={`Remove ${item.product.name}`}
-              >
-                ×
-              </button>
+              {isInsufficient && (
+                <div className={styles.stockError}>
+                  Only {item.product.stockQuantity || 0} available in stock
+                </div>
+              )}
             </div>
-            <div className={styles.itemFoot}>
-              <div className={styles.qtyControls}>
-                <button
-                  type="button"
-                  className={styles.qtyBtn}
-                  onClick={() => onUpdateQuantity(index, -1)}
-                  aria-label="Decrease quantity"
-                >
-                  −
-                </button>
-                <input
-                  type="number"
-                  className={styles.qtyInput}
-                  value={item.quantity === 0 ? '' : item.quantity}
-                  placeholder="0"
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value);
-                    if (!isNaN(val)) onSetQuantity(index, val);
-                    else if (e.target.value === '') onSetQuantity(index, 0);
-                  }}
-                  min="0"
-                />
-                <button
-                  type="button"
-                  className={styles.qtyBtn}
-                  onClick={() => onUpdateQuantity(index, 1)}
-                  aria-label="Increase quantity"
-                >
-                  +
-                </button>
-              </div>
-              <span className={styles.lineTotal}>
-                {formatCurrency(item.quantity * item.unitPrice)}
-              </span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className={styles.totals} data-empty={isEmpty}>

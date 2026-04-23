@@ -181,8 +181,20 @@ router.post(
         include: { items: { include: { product: true } } },
       });
 
-      // Decrement stock for each product and implement Sold Out logic
+      // Verify stock availability and decrement stock for each product
       for (const item of computedItems) {
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { name: true, stockQuantity: true },
+        });
+
+        if (!product || product.stockQuantity < item.quantity) {
+          throw new AppError(
+            400,
+            `Insufficient stock for "${product?.name || 'Unknown product'}". Available: ${product?.stockQuantity || 0}, Requested: ${item.quantity}`,
+          );
+        }
+
         await tx.product.update({
           where: { id: item.productId },
           data: { stockQuantity: { decrement: item.quantity } },

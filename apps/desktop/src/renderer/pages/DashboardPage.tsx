@@ -104,7 +104,7 @@ const WheatGlyph = () => (
 
 // ── Bar chart — real 7-day data ─────────────────────────
 function WeeklyBar({ weeklyData }: { weeklyData: WeeklyEntry[] }) {
-  const days = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const todayISO = new Date().toISOString().split('T')[0];
   const peak = Math.max(...weeklyData.map((d) => d.revenue), 1);
   const peakIdx = weeklyData.findIndex((d) => d.revenue === peak);
@@ -119,9 +119,8 @@ function WeeklyBar({ weeklyData }: { weeklyData: WeeklyEntry[] }) {
         {weeklyData.map((entry, i) => {
           const height = Math.max(4, (entry.revenue / peak) * 100);
           const isToday = entry.date === todayISO;
-          const jsDay = new Date(entry.date + 'T12:00:00').getDay();
-          const dayLabel = days[jsDay === 0 ? 6 : jsDay - 1];
-          const isSun = jsDay === 0;
+          const dayLabel = days[i];
+          const isSun = i === 0;
           const isPeak = i === peakIdx && entry.revenue > 0;
           return (
             <div key={i} className={styles.barCol}>

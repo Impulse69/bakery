@@ -93,6 +93,26 @@
 
 .item:hover { border-color: rgba(224, 123, 60, 0.25); background: #fff; }
 
+.itemWarning {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.itemWarning:hover {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.stockError {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b91c1c;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .itemHead {
   display: flex;
   align-items: flex-start;

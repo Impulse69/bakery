@@ -27,6 +27,7 @@ interface PaymentSectionProps {
   loading: boolean;
   cartEmpty: boolean;
   hasLastOrder: boolean;
+  isInvalid?: boolean;
 }
 
 export function PaymentSection({
@@ -46,6 +47,7 @@ export function PaymentSection({
   loading,
   cartEmpty,
   hasLastOrder,
+  isInvalid,
 }: PaymentSectionProps) {
   const { showToast } = useToast();
   const change = paymentMethod === 'cash' ? amountTendered - grandTotal : 0;
@@ -64,7 +66,7 @@ export function PaymentSection({
   };
 
   const completeDisabled =
-    cartEmpty || loading || (paymentMethod === 'cash' && amountTendered < grandTotal);
+    cartEmpty || loading || (paymentMethod === 'cash' && amountTendered < grandTotal) || isInvalid;
 
   return (
     <div className={styles.section}>
@@ -133,6 +135,12 @@ export function PaymentSection({
         </div>
       )}
 
+      {isInvalid && !cartEmpty && (
+        <div className={styles.stockWarning}>
+          ⚠️ Insufficient stock for some items
+        </div>
+      )}
+
       <div className={styles.dock}>
         <button
           type="button"
@@ -156,7 +164,7 @@ export function PaymentSection({
           type="button"
           className={styles.secondaryCta}
           onClick={onGenerateInvoice}
-          disabled={cartEmpty || !selectedCustomerId || loading}
+          disabled={cartEmpty || !selectedCustomerId || loading || isInvalid}
         >
           Bill Customer (Invoice)
         </button>
@@ -166,7 +174,7 @@ export function PaymentSection({
             type="button"
             className={styles.ghostBtn}
             onClick={onSaveDraft}
-            disabled={cartEmpty || loading}
+            disabled={cartEmpty || loading || isInvalid}
           >
             Save Draft
           </button>

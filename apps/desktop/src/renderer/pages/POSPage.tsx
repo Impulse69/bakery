@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { Product, ProductVariant, Customer, PaymentMethod, SalesOrder } from '@bakery/types';
 import { api } from '../lib/api';
+import { getSocket } from '../lib/socket';
 import { useToast } from '../components/Toast';
 import { ProductGrid } from '../components/pos/ProductGrid';
 import { CartPanel } from '../components/pos/CartPanel';
@@ -46,17 +47,30 @@ export function POSPage() {
     }
   }, [queryCustomerId, customers]);
 
-  useEffect(() => {
+  const fetchProducts = useCallback(() => {
     api
       .get<{ data: Product[] }>('/products?limit=100')
       .then((res) => setProducts(res.data))
       .catch(() => showToast('Failed to load products', 'error'));
+  }, [showToast]);
 
+  useEffect(() => {
+    fetchProducts();
     api
       .get<{ data: Customer[] }>('/customers?limit=100')
       .then((res) => setCustomers(res.data))
       .catch(() => {});
-  }, [showToast]);
+  }, [fetchProducts]);
+
+  useEffect(() => {
+    const socket = getSocket();
+    socket.on('sale:created', fetchProducts);
+    socket.on('inventory:updated', fetchProducts);
+    return () => {
+      socket.off('sale:created', fetchProducts);
+      socket.off('inventory:updated', fetchProducts);
+    };
+  }, [fetchProducts]);
 
   const addToCart = useCallback((product: Product, variant?: ProductVariant) => {
     setCart((prev) => {
@@ -112,6 +126,7 @@ export function POSPage() {
   const subtotal = cart.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxTotal = cart.reduce((s, item) => s + item.tax * item.quantity, 0);
   const grandTotal = subtotal + taxTotal;
+  const isInvalid = cart.some((item) => item.quantity > (item.product.stockQuantity || 0));
 
   const createOrder = useCallback(async () => {
     const items = cart.map((item) => ({
@@ -138,7 +153,7 @@ export function POSPage() {
   };
 
   const handleCompleteSale = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || isInvalid) return;
     setLoading(true);
     try {
       const order = await createOrder();
@@ -152,6 +167,7 @@ export function POSPage() {
       setShowPreview(true);
       showToast(`Sale completed! Order ${order.orderNumber}`);
       resetCart();
+      fetchProducts();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Sale failed', 'error');
     } finally {
@@ -160,7 +176,7 @@ export function POSPage() {
   };
 
   const handleGenerateInvoice = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || isInvalid) return;
     setLoading(true);
     try {
       const order = await createOrder();
@@ -169,6 +185,7 @@ export function POSPage() {
       setShowPreview(true);
       showToast(`Invoice generated for ${order.orderNumber}`);
       resetCart();
+      fetchProducts();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to generate invoice', 'error');
     } finally {
@@ -185,12 +202,13 @@ export function POSPage() {
   }, [persistedLastOrder, showToast]);
 
   const handleSaveDraft = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0 || isInvalid) return;
     setLoading(true);
     try {
       const order = await createOrder();
       showToast(`Draft saved! Order ${order.orderNumber}`);
       resetCart();
+      fetchProducts();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to save draft', 'error');
     } finally {
@@ -238,6 +256,7 @@ export function POSPage() {
           loading={loading}
           cartEmpty={cart.length === 0}
           hasLastOrder={!!persistedLastOrder}
+          isInvalid={isInvalid}
         />
       </div>
       {showPreview && persistedLastOrder && (

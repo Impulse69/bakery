@@ -45,9 +45,9 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 
     const data = await res.json();
     
-    // Optimistically cache GET requests for offline use
-    if (method === 'GET') {
-      try {
+    // Manage cache on success
+    try {
+      if (method === 'GET') {
         if (path.startsWith('/products')) {
            if (Array.isArray(data)) {
                await db.products.bulkPut(data);
@@ -61,9 +61,25 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
                await db.customers.bulkPut(data.data);
            }
         }
-      } catch (dbErr) {
-        console.error('Failed to cache GET response', dbErr);
+      } else {
+        // Mutations: POST, PATCH, PUT, DELETE
+        const isProduct = path.startsWith('/products');
+        const isCustomer = path.startsWith('/customers');
+        
+        if (isProduct || isCustomer) {
+          const table = isProduct ? db.products : db.customers;
+          const segments = path.split('/');
+          const id = segments.length > 2 ? segments[2].split('?')[0] : null;
+
+          if (method === 'DELETE' && id) {
+            await table.delete(id);
+          } else if (data && data.id) {
+            await (table as any).put(data);
+          }
+        }
       }
+    } catch (dbErr) {
+      console.error('Failed to update cache', dbErr);
     }
     
     return data;

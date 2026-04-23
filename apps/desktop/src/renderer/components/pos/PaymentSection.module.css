@@ -184,6 +184,23 @@
 .changeShort .changeLabel { color: rgba(185, 28, 28, 0.8); }
 .changeShort .changeAmount { color: #b91c1c; }
 
+.stockWarning {
+  padding: 0.625rem 0.875rem;
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  border-radius: 10px;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  margin-top: -0.25rem;
+  box-shadow: 0 4px 12px -4px rgba(185, 28, 28, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 /* ── Action dock ─────────────────────────────────────────────────── */
 .dock {
   display: flex;

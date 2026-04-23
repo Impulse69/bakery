@@ -112,11 +112,23 @@ router.get(
     const endDateStr = req.query.endDate as string | undefined;
     if (!endDateStr) throw new AppError(400, 'endDate query parameter is required');
 
-    const startDate = new Date(endDateStr);
-    startDate.setDate(startDate.getDate() - 6);
+    // Parse date as YYYY-MM-DD to avoid timezone shifts
+    const parts = endDateStr.split('-').map(Number);
+    if (parts.length !== 3) throw new AppError(400, 'Invalid date format');
+    
+    // Create UTC date at noon to be extremely safe about day boundaries
+    const endDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 12, 0, 0));
+    
+    // Calculate the most recent Sunday
+    const dayOfWeek = endDate.getUTCDay(); // 0 = Sunday
+    const startDate = new Date(endDate);
+    startDate.setUTCDate(endDate.getUTCDate() - dayOfWeek);
+    startDate.setUTCHours(0, 0, 0, 0);
 
-    const nextDay = new Date(endDateStr);
-    nextDay.setDate(nextDay.getDate() + 1);
+    const nextDay = new Date(startDate);
+    nextDay.setUTCDate(startDate.getUTCDate() + 7);
+
+    console.log(`[Reports] Generating week starting from ${startDate.toISOString()} (Sunday)`);
 
     const orders = await prisma.salesOrder.findMany({
       where: {
@@ -128,9 +140,10 @@ router.get(
 
     const dailyMap = new Map<string, number>();
     for (let i = 0; i < 7; i++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + i);
-        dailyMap.set(d.toISOString().split('T')[0], 0);
+      const d = new Date(startDate);
+      d.setUTCDate(startDate.getUTCDate() + i);
+      const key = d.toISOString().split('T')[0];
+      dailyMap.set(key, 0);
     }
     
     for (const order of orders) {
