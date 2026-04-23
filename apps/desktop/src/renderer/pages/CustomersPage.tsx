@@ -26,7 +26,9 @@ function formatShortDate(d: string | Date | undefined): string {
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-const COLORS = ['#e07b3c', '#c85a2f', '#f4a261', '#8d5524', '#131b2e'];
+const PIE_COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6'];
+const BAR_COLORS = ['#0ea5e9', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#f43f5e'];
+const ORDERS_PRIMARY = '#6366f1';
 
 const columns: DataTableColumn<Customer>[] = [
   { key: 'name', label: 'Name', sortable: true },
@@ -352,7 +354,7 @@ export function CustomersPage() {
                       label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                     >
                       {analytics.revenueShare.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip formatter={(val) => formatCurrency(Number(val))} />
@@ -369,7 +371,7 @@ export function CustomersPage() {
                     <XAxis dataKey="period" fontSize={12} />
                     <YAxis fontSize={12} />
                     <Tooltip />
-                    <Bar dataKey="orders" fill="#e07b3c" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="orders" fill={ORDERS_PRIMARY} radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -383,7 +385,11 @@ export function CustomersPage() {
                     <XAxis type="number" fontSize={12} />
                     <YAxis type="category" dataKey="name" fontSize={12} width={120} />
                     <Tooltip />
-                    <Bar dataKey="quantity" fill="#c85a2f" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="quantity" radius={[0, 6, 6, 0]}>
+                      {analytics.topProducts.map((_, i) => (
+                        <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -670,8 +676,8 @@ export function CustomersPage() {
                             <AreaChart data={trendData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                               <defs>
                                 <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#e07b3c" stopOpacity={0.45} />
-                                  <stop offset="100%" stopColor="#e07b3c" stopOpacity={0.02} />
+                                  <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
+                                  <stop offset="100%" stopColor="#6366f1" stopOpacity={0.02} />
                                 </linearGradient>
                               </defs>
                               <CartesianGrid stroke="rgba(19,27,46,0.05)" vertical={false} />
@@ -708,11 +714,11 @@ export function CustomersPage() {
                               <Area
                                 type="monotone"
                                 dataKey="revenue"
-                                stroke="#c85a2f"
+                                stroke="#4f46e5"
                                 strokeWidth={2.25}
                                 fill="url(#trendFill)"
                                 dot={false}
-                                activeDot={{ r: 4, fill: '#c85a2f', stroke: '#fffefb', strokeWidth: 2 }}
+                                activeDot={{ r: 4, fill: '#4f46e5', stroke: '#fffefb', strokeWidth: 2 }}
                               />
                             </AreaChart>
                           </ResponsiveContainer>

@@ -334,7 +334,7 @@
   isolation: isolate;
   border: 1px solid rgba(19, 27, 46, 0.08);
   background:
-    radial-gradient(circle at 100% 0%, rgba(224, 123, 60, 0.14), transparent 55%),
+    radial-gradient(circle at 100% 0%, rgba(99, 102, 241, 0.14), transparent 55%),
     linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
 }
@@ -364,8 +364,8 @@
   font-size: 26px;
   letter-spacing: -0.02em;
   color: #fdf8f1;
-  background: radial-gradient(circle at 30% 30%, #f4a261, #e07b3c 60%, #c85a2f);
-  box-shadow: 0 10px 26px -12px rgba(224, 123, 60, 0.7), 0 0 0 3px rgba(255, 255, 255, 0.6) inset;
+  background: radial-gradient(circle at 30% 30%, #818cf8, #6366f1 60%, #4f46e5);
+  box-shadow: 0 10px 26px -12px rgba(99, 102, 241, 0.7), 0 0 0 3px rgba(255, 255, 255, 0.6) inset;
   flex-shrink: 0;
 }
 
@@ -384,13 +384,13 @@
   font-weight: 800;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #e07b3c;
+  color: #6366f1;
 }
 
 .eyebrowDivider {
   width: 22px;
   height: 2px;
-  background: #e07b3c;
+  background: #6366f1;
   border-radius: 999px;
   opacity: 0.7;
 }
@@ -503,7 +503,7 @@
   margin-top: 0.3rem;
 }
 
-.kpiDanger { color: #c85a2f; }
+.kpiDanger { color: #f43f5e; }
 
 /* Action bar */
 .actionBar {
@@ -600,9 +600,9 @@
   font-family: 'JetBrains Mono', 'Menlo', monospace;
   font-size: 10.5px;
   font-weight: 700;
-  color: #e07b3c;
+  color: #6366f1;
   padding: 2px 6px;
-  border: 1px solid rgba(224, 123, 60, 0.45);
+  border: 1px solid rgba(99, 102, 241, 0.45);
   border-radius: 4px;
   letter-spacing: 0.05em;
 }
@@ -664,8 +664,8 @@
   background:
     conic-gradient(
       from -90deg,
-      #e07b3c 0%,
-      #c85a2f calc(var(--fill) * 1%),
+      #6366f1 0%,
+      #4f46e5 calc(var(--fill) * 1%),
       rgba(19, 27, 46, 0.07) calc(var(--fill) * 1%),
       rgba(19, 27, 46, 0.07) 100%
     );
@@ -673,7 +673,7 @@
   align-items: center;
   justify-content: center;
   transition: transform 0.2s ease, filter 0.2s ease;
-  filter: drop-shadow(0 6px 14px rgba(200, 90, 47, 0.12));
+  filter: drop-shadow(0 6px 14px rgba(99, 102, 241, 0.12));
 }
 
 .dial::after {
@@ -688,7 +688,7 @@
 .dial:hover { transform: translateY(-2px); }
 
 .dialPeak {
-  filter: drop-shadow(0 10px 22px rgba(200, 90, 47, 0.35));
+  filter: drop-shadow(0 10px 22px rgba(99, 102, 241, 0.35));
 }
 
 .dialPeak::before {
@@ -721,7 +721,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.2em;
-  color: #e07b3c;
+  color: #6366f1;
 }
 
 .dialValue {
@@ -808,7 +808,7 @@
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #e07b3c;
+  color: #6366f1;
   margin-bottom: 3px;
 }
 
