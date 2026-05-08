@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast';
 import { ProductGrid } from '../components/pos/ProductGrid';
 import { CartPanel } from '../components/pos/CartPanel';
 import { PaymentSection } from '../components/pos/PaymentSection';
+import { CheckoutModal } from '../components/pos/CheckoutModal';
 import { Receipt } from '../components/pos/Receipt';
 import styles from './POSPage.module.css';
 
@@ -30,6 +31,7 @@ export function POSPage() {
   const [amountTendered, setAmountTendered] = useState(0);
 
   const [loading, setLoading] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   
   // Persisted last order for re-printing
   const [persistedLastOrder, setPersistedLastOrder] = useState<{ order: SalesOrder; type: 'receipt' | 'invoice' } | null>(null);
@@ -166,6 +168,7 @@ export function POSPage() {
       setPersistedLastOrder({ order: fullOrder, type: 'receipt' });
       setShowPreview(true);
       showToast(`Sale completed! Order ${order.orderNumber}`);
+      setIsCheckoutModalOpen(false);
       resetCart();
       fetchProducts();
     } catch (err) {
@@ -184,6 +187,7 @@ export function POSPage() {
       setPersistedLastOrder({ order: fullOrder, type: 'invoice' });
       setShowPreview(true);
       showToast(`Invoice generated for ${order.orderNumber}`);
+      setIsCheckoutModalOpen(false);
       resetCart();
       fetchProducts();
     } catch (err) {
@@ -207,6 +211,7 @@ export function POSPage() {
     try {
       const order = await createOrder();
       showToast(`Draft saved! Order ${order.orderNumber}`);
+      setIsCheckoutModalOpen(false);
       resetCart();
       fetchProducts();
     } catch (err) {
@@ -238,26 +243,32 @@ export function POSPage() {
           onUpdateQuantity={updateQuantity}
           onSetQuantity={setQuantity}
           onRemoveItem={removeItem}
+          onProceedToCheckout={() => setIsCheckoutModalOpen(true)}
         />
-        <PaymentSection
-          customers={customers}
-          selectedCustomerId={customerId}
-          onCustomerChange={setCustomerId}
-          onCustomersChange={setCustomers}
-          paymentMethod={paymentMethod}
-          onPaymentMethodChange={setPaymentMethod}
-          amountTendered={amountTendered}
-          onAmountTenderedChange={setAmountTendered}
-          grandTotal={grandTotal}
-          onCompleteSale={handleCompleteSale}
-          onGenerateInvoice={handleGenerateInvoice}
-          onPrintLast={handlePrintLast}
-          onSaveDraft={handleSaveDraft}
-          loading={loading}
-          cartEmpty={cart.length === 0}
-          hasLastOrder={!!persistedLastOrder}
-          isInvalid={isInvalid}
-        />
+        <CheckoutModal 
+          isOpen={isCheckoutModalOpen} 
+          onClose={() => setIsCheckoutModalOpen(false)}
+        >
+          <PaymentSection
+            customers={customers}
+            selectedCustomerId={customerId}
+            onCustomerChange={setCustomerId}
+            onCustomersChange={setCustomers}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
+            amountTendered={amountTendered}
+            onAmountTenderedChange={setAmountTendered}
+            grandTotal={grandTotal}
+            onCompleteSale={handleCompleteSale}
+            onGenerateInvoice={handleGenerateInvoice}
+            onPrintLast={handlePrintLast}
+            onSaveDraft={handleSaveDraft}
+            loading={loading}
+            cartEmpty={cart.length === 0}
+            hasLastOrder={!!persistedLastOrder}
+            isInvalid={isInvalid}
+          />
+        </CheckoutModal>
       </div>
       {showPreview && persistedLastOrder && (
         <Receipt
