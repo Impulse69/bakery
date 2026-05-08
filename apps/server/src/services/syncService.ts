@@ -1,4 +1,5 @@
 import { prisma, remotePrisma } from '../lib/prisma.js';
+import { logger } from '../lib/logger.js';
 
 interface SyncConfig {
   table: string;
@@ -37,22 +38,30 @@ const SYNC_ORDER: SyncConfig[] = [
 ];
 
 let isSyncing = false;
+let isRemoteAvailable = true;
 
 export function startSyncService(intervalMs = 60 * 1000) { // Default every 1 minute
   if (!remotePrisma) {
-    console.log('[Cloud Sync] DIRECT_URL not set or remote database unavailable. Sync disabled.');
+    logger.info('DIRECT_URL not set or remote database unavailable. Sync disabled.');
     return;
   }
   
-  console.log(`[Cloud Sync] Service started. Syncing every ${intervalMs / 1000} seconds.`);
+  logger.info({ intervalMs }, 'Cloud Sync service started');
   
   setInterval(async () => {
-    if (isSyncing) return;
+    if (isSyncing || !isRemoteAvailable) return;
     try {
       isSyncing = true;
       await runSync();
     } catch (err) {
-      console.error('[Cloud Sync] Failed:', err);
+      // If it's a schema mismatch (tables/columns missing), disable sync completely
+      const errMsg = err instanceof Error ? err.message : String(err);
+      if (errMsg.includes('does not exist in the current database')) {
+        logger.error('Cloud Sync disabled due to remote database schema mismatch. Please run Prisma migrations on the remote database.');
+        isRemoteAvailable = false;
+      } else {
+        logger.error({ err }, 'Cloud Sync failed');
+      }
     } finally {
       isSyncing = false;
     }
@@ -124,11 +133,17 @@ async function runSync() {
       }
       
       if (successCount > 0) {
-        console.log(`[Cloud Sync] Pushed ${successCount} updates to remote table: ${config.table}`);
+        logger.info({ table: config.table, count: successCount }, 'Cloud Sync pushed updates');
       }
 
     } catch (err) {
-      console.warn(`[Cloud Sync] Error syncing ${config.table}:`, err instanceof Error ? err.message : String(err));
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.warn({ table: config.table, err: errMsg }, 'Cloud Sync error');
+      
+      // Bubble up structural errors so we can shut down the sync loop
+      if (errMsg.includes('does not exist in the current database')) {
+        throw err;
+      }
     }
   }
 }
