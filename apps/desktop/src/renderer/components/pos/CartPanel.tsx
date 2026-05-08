@@ -7,6 +7,7 @@ interface CartPanelProps {
   onUpdateQuantity: (index: number, delta: number) => void;
   onSetQuantity: (index: number, quantity: number) => void;
   onRemoveItem: (index: number) => void;
+  onProceedToCheckout?: () => void;
 }
 
 function WheatMark() {
@@ -28,6 +29,7 @@ export function CartPanel({
   onUpdateQuantity,
   onSetQuantity,
   onRemoveItem,
+  onProceedToCheckout,
 }: CartPanelProps) {
   const subtotal = items.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
   const taxTotal = items.reduce((s, item) => s + item.tax * item.quantity, 0);
@@ -136,6 +138,17 @@ export function CartPanel({
           <span className={styles.grandLabel}>Total</span>
           <span className={styles.grandAmount}>{formatCurrency(grandTotal)}</span>
         </div>
+      </div>
+
+      <div className={styles.proceedRow}>
+        <button 
+          type="button" 
+          className={styles.proceedBtn} 
+          onClick={onProceedToCheckout}
+          disabled={isEmpty || items.some(item => item.quantity > (item.product.stockQuantity || 0))}
+        >
+          Proceed to Checkout
+        </button>
       </div>
     </div>
   );

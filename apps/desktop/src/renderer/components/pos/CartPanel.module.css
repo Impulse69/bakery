@@ -5,6 +5,7 @@
   flex: 1 1 auto;
   background: transparent;
   font-feature-settings: 'tnum' 1, 'cv11' 1;
+  height: 100%;
 }
 
 /* ── Header ──────────────────────────────────────────────────────── */
@@ -343,4 +344,32 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1;
+}
+
+.proceedRow {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(19, 27, 46, 0.1);
+  background: #fffaf2;
+}
+
+.proceedBtn {
+  width: 100%;
+  padding: 1rem;
+  background: #e07b3c;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.proceedBtn:hover:not(:disabled) {
+  background: #d06a2b;
+}
+
+.proceedBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
