@@ -27,6 +27,28 @@ router.get(
   }),
 );
 
+// GET /api/inventory/low-stock
+router.get(
+  '/low-stock',
+  asyncHandler(async (_req, res) => {
+    const products = await prisma.product.findMany({
+      where: { stockQuantity: { lte: 20 }, isActive: true },
+      orderBy: { stockQuantity: 'asc' },
+      take: 10,
+    });
+    
+    const lowStockItems = products.map(p => ({
+      id: p.id,
+      name: p.name,
+      unit: p.unit || 'pcs',
+      quantityOnHand: p.stockQuantity,
+      lowStockThreshold: 20, // Default threshold since it's not in the DB yet
+    }));
+    
+    res.json(lowStockItems);
+  }),
+);
+
 // GET /api/inventory/sold-out
 router.get(
   '/sold-out',

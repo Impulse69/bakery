@@ -337,7 +337,7 @@ export function DashboardPage() {
           ) : lowStock.length === 0 ? (
             <div className={styles.alertsOk}>
               <span className={styles.alertsOkMark}>✓</span>
-              <span>Every ingredient is stocked above its threshold.</span>
+              <span>Every product is stocked above its threshold.</span>
             </div>
           ) : (
             <ul className={styles.alertList}>
