@@ -168,7 +168,8 @@ export function DashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const calls: Promise<unknown>[] = [api.get<LowStockItem[]>('/inventory/low-stock')];
+      // Fetch products to check for low stock client-side as a reliable fallback
+      const calls: Promise<unknown>[] = [api.get<{ data: LowStockItem[] }>('/inventory?limit=100')];
       if (canSeeSales) {
         calls.push(
           api.get<DailyReport>(`/reports/daily?date=${today}`),
@@ -179,8 +180,21 @@ export function DashboardPage() {
         calls.push(api.get<DailyReport>(`/reports/daily?date=${today}`));
       }
       const results = await Promise.allSettled(calls);
-      const lowStockRes = results[0];
-      if (lowStockRes.status === 'fulfilled') setLowStock(lowStockRes.value as LowStockItem[]);
+      const invRes = results[0];
+      if (invRes.status === 'fulfilled') {
+        const allItems = (invRes.value as { data: any[] }).data || [];
+        const low = allItems
+          .filter(item => item.stockQuantity <= 20)
+          .map(item => ({
+            id: item.id,
+            name: item.name,
+            unit: item.unit || 'pcs',
+            quantityOnHand: item.stockQuantity,
+            lowStockThreshold: 20
+          }))
+          .sort((a, b) => a.quantityOnHand - b.quantityOnHand);
+        setLowStock(low);
+      }
       if (canSeeSales) {
         const [, reportRes, weeklyRes, ordersRes] = results as PromiseSettledResult<unknown>[];
         if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
