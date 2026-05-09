@@ -201,22 +201,34 @@ export function ProductsPage() {
     }
   };
 
-  const handleDeactivate = async () => {
+  const handleToggleActive = async () => {
     if (!editingProduct) return;
+    const activating = !editingProduct.isActive;
+
     if (
+      !activating &&
       !window.confirm(
         `Deactivate "${editingProduct.name}"? It will be hidden from the POS but kept on record.`,
       )
     )
       return;
+
     setSaving(true);
     try {
-      await api.delete(`/products/${editingProduct.id}`);
-      showToast("Product deactivated", "success");
+      if (activating) {
+        await api.patch(`/products/${editingProduct.id}`, { isActive: true });
+        showToast("Product activated", "success");
+      } else {
+        await api.delete(`/products/${editingProduct.id}`);
+        showToast("Product deactivated", "success");
+      }
       closeModal();
       fetchProducts();
     } catch (err: any) {
-      showToast(err.message || "Failed to deactivate", "error");
+      showToast(
+        err.message || `Failed to ${activating ? "activate" : "deactivate"}`,
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -368,11 +380,11 @@ export function ProductsPage() {
                   Delete permanently
                 </Button>
                 <Button
-                  variant="danger"
-                  onClick={handleDeactivate}
+                  variant={editingProduct.isActive ? "danger" : "primary"}
+                  onClick={handleToggleActive}
                   loading={saving}
                 >
-                  Deactivate
+                  {editingProduct.isActive ? "Deactivate" : "Activate"}
                 </Button>
               </>
             )}

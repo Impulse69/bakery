@@ -232,16 +232,32 @@ export function CustomersPage() {
     }
   };
 
-  const handleDeactivate = async () => {
+  const handleToggleActive = async () => {
     if (!selectedCustomer) return;
-    if (!confirm(`Are you sure you want to deactivate ${selectedCustomer.name}?`)) return;
+    const activating = !selectedCustomer.isActive;
+
+    if (
+      !activating &&
+      !confirm(`Are you sure you want to deactivate ${selectedCustomer.name}?`)
+    )
+      return;
+
     try {
-      await api.delete(`/customers/${selectedCustomer.id}`);
-      showToast('Customer deactivated', 'success');
+      if (activating) {
+        await api.patch(`/customers/${selectedCustomer.id}`, { isActive: true });
+        showToast("Customer activated", "success");
+      } else {
+        await api.delete(`/customers/${selectedCustomer.id}`);
+        showToast("Customer deactivated", "success");
+      }
       setSelectedCustomer(null);
       fetchCustomers();
     } catch (err: any) {
-      showToast(err.message || 'Failed to deactivate customer', 'error');
+      showToast(
+        err.message ||
+          `Failed to ${activating ? "activate" : "deactivate"} customer`,
+        "error",
+      );
     }
   };
 
@@ -594,8 +610,15 @@ export function CustomersPage() {
                   >
                     ＋ New Sale
                   </button>
-                  <button className={styles.actionDanger} onClick={handleDeactivate}>
-                    Deactivate
+                  <button
+                    className={
+                      selectedCustomer.isActive
+                        ? styles.actionDanger
+                        : styles.actionPrimary
+                    }
+                    onClick={handleToggleActive}
+                  >
+                    {selectedCustomer.isActive ? "Deactivate" : "Activate"}
                   </button>
                 </div>
               </div>

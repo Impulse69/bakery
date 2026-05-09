@@ -77,10 +77,25 @@ router.patch(
   requireRole('admin'),
   asyncHandler(async (req, res) => {
     const data = updateProductSchema.parse(req.body);
+    const productId = getParam(req, 'id');
     const product = await prisma.product.update({
-      where: { id: getParam(req, 'id') },
+      where: { id: productId },
       data,
     });
+
+    if (data.isActive !== undefined) {
+      await prisma.$transaction(async (tx) => {
+        if (data.isActive === false) {
+          await tx.product.update({
+            where: { id: productId },
+            data: { isAvailable: false },
+          });
+        } else {
+          await syncProductAvailability(tx, productId);
+        }
+      });
+    }
+
     res.json(product);
   }),
 );
