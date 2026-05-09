@@ -1,20 +1,24 @@
-import { Service } from 'node-windows';
-import path from 'path';
-import { fileURLToPath } from 'url';
+const { Service } = require('node-windows');
+const path = require('path');
+const fs = require('fs');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const localNodePath = path.join(__dirname, '..', 'runtime', 'node.exe');
+const execPath = fs.existsSync(localNodePath) ? localNodePath : process.execPath;
 
 // Create a new service object
 const svc = new Service({
   name: 'Bread Faculty Server',
   description: 'The Node.js backend API and WebSocket server for the Bread Faculty POS system.',
   script: path.join(__dirname, '..', 'dist', 'index.js'),
+  execPath,
   nodeOptions: [
-    '--harmony',
-    '--max_old_space_size=4096',
-    '--import=tsx'
+    '--max_old_space_size=4096'
   ],
+  workingDirectory: path.join(__dirname, '..'),
+  env: {
+    name: 'NODE_ENV',
+    value: 'production'
+  },
   // Wait 2 seconds before restarting if it crashes
   wait: 2,
   // Restart infinitely

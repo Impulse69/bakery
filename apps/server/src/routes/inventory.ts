@@ -32,17 +32,19 @@ router.get(
   '/low-stock',
   asyncHandler(async (_req, res) => {
     const products = await prisma.product.findMany({
-      where: { stockQuantity: { lte: 20 }, isActive: true },
+      where: { stockQuantity: { lte: 20 } },
       orderBy: { stockQuantity: 'asc' },
-      take: 10,
+      take: 20,
     });
+    
+    console.log(`[Inventory] Found ${products.length} low stock items`);
     
     const lowStockItems = products.map(p => ({
       id: p.id,
       name: p.name,
       unit: p.unit || 'pcs',
       quantityOnHand: p.stockQuantity,
-      lowStockThreshold: 20, // Default threshold since it's not in the DB yet
+      lowStockThreshold: 20,
     }));
     
     res.json(lowStockItems);

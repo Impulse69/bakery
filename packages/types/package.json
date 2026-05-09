@@ -6,7 +6,7 @@
   "scripts": {
     "build": "echo 'Building types...'",
     "dev": "echo 'Starting types dev...'",
-    "lint": "echo 'Linting types...'",
-    "clean": "rm -rf dist"
+    "lint": "tsc --noEmit --strict --esModuleInterop --skipLibCheck --forceConsistentCasingInFileNames src/index.ts",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true});\""
   }
 }

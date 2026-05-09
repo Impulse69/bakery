@@ -6,8 +6,8 @@
   "scripts": {
     "build": "echo 'Building utils...'",
     "dev": "echo 'Starting utils dev...'",
-    "lint": "echo 'Linting utils...'",
-    "clean": "rm -rf dist"
+    "lint": "tsc --noEmit --strict --esModuleInterop --skipLibCheck --forceConsistentCasingInFileNames src/index.ts",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true});\""
   },
   "dependencies": {
     "@bakery/types": "*"

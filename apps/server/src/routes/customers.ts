@@ -286,10 +286,16 @@ router.get(
       })
     ]);
 
-    // Enrich top products with names
-    const enrichedProducts = await Promise.all(topProducts.map(async (tp) => {
-      const p = await prisma.product.findUnique({ where: { id: tp.productId }, select: { name: true } });
-      return { name: p?.name, quantity: tp._sum.quantity };
+    // Enrich top products with names (batched query instead of N+1)
+    const topProductIds = topProducts.map((tp) => tp.productId);
+    const productDetails = await prisma.product.findMany({
+      where: { id: { in: topProductIds } },
+      select: { id: true, name: true },
+    });
+    const productMap = new Map(productDetails.map((p) => [p.id, p.name]));
+    const enrichedProducts = topProducts.map((tp) => ({
+      name: productMap.get(tp.productId) ?? 'Unknown',
+      quantity: tp._sum.quantity,
     }));
 
     // Compute week-streak: consecutive ISO weeks (Mon–Sun) with ≥1 order

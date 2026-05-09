@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
+import { logger } from '../lib/logger.js';
 
 const router = Router();
 
@@ -128,7 +129,7 @@ router.get(
     const nextDay = new Date(startDate);
     nextDay.setUTCDate(startDate.getUTCDate() + 7);
 
-    console.log(`[Reports] Generating week starting from ${startDate.toISOString()} (Sunday)`);
+    logger.debug({ startDate: startDate.toISOString() }, 'Generating weekly report');
 
     const orders = await prisma.salesOrder.findMany({
       where: {

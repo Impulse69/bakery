@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET, authMiddleware } from '../middleware/auth.js';
 import { asyncHandler, AppError } from '../middleware/errorHandler.js';
+import { authRateLimiter } from '../middleware/rateLimit.js';
+import { logger } from '../lib/logger.js';
 
 const router = Router();
 
@@ -16,6 +18,7 @@ const loginSchema = z.object({
 // POST /api/auth/login
 router.post(
   '/login',
+  authRateLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
 

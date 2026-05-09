@@ -2,7 +2,12 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'bread-faculty-dev-secret';
+if (!process.env.JWT_SECRET) {
+  console.error('CRITICAL ERROR: JWT_SECRET environment variable is not defined.');
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export { JWT_SECRET };
 

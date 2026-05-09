@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import { logger } from '../lib/logger.js';
 
 export class AppError extends Error {
   constructor(
@@ -29,6 +30,6 @@ export function globalErrorHandler(
     return;
   }
 
-  console.error('Unhandled error:', err);
+  logger.error({ err }, 'Unhandled server error');
   res.status(500).json({ error: 'Internal server error' });
 }

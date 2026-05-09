@@ -5,8 +5,8 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev --port 3002",
-    "lint": "next lint",
-    "clean": "rm -rf .next"
+    "lint": "tsc --noEmit",
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true});\""
   },
   "dependencies": {
     "@bakery/types": "*",
