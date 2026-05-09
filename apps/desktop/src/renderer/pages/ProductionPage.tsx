@@ -339,7 +339,7 @@ function DailyRunTab() {
                       {item.carriedOverShortage > 0 && (
                         <span className={styles.carryChip} title={`${item.carriedOverShortage} units rolled over from the previous run`}>
                           <CarryIcon size={12} />
-                          <span>+{item.carriedOverShortage} from yesterday</span>
+                          <span>+{item.carriedOverShortage} from {new Date(item.sourceDate || latestShortage?.date || '').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
                         </span>
                       )}
 
