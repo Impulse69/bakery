@@ -75,10 +75,23 @@ function DailyRunTab() {
   const [edits, setEdits] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
 
-  const fetchDailyRun = useCallback(async () => {
+  const [latestShortage, setLatestShortage] = useState<{ date: string, totalUnits: number } | null>(null);
+  const [carryFromDate, setCarryFromDate] = useState<string | null>(null);
+  const [showIntervention, setShowIntervention] = useState(false);
+
+  const fetchDailyRun = useCallback(async (explicitCarryFrom?: string | null) => {
     setLoading(true);
     try {
-      const res = await api.get<any>(`/production/daily-run?date=${selectedDate}`);
+      const carryParam = explicitCarryFrom !== undefined ? explicitCarryFrom : carryFromDate;
+      const url = `/production/daily-run?date=${selectedDate}${carryParam ? `&carryFrom=${carryParam}` : ''}`;
+      const res = await api.get<any>(url);
+
+      setLatestShortage(res.latestShortage || null);
+      if (res.status === 'not_started' && res.latestShortage && explicitCarryFrom === undefined && !carryFromDate) {
+        setShowIntervention(true);
+      } else {
+        setShowIntervention(false);
+      }
 
       let items = [];
       const newEdits: Record<string, number> = {};
@@ -98,7 +111,7 @@ function DailyRunTab() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, carryFromDate]);
 
   useEffect(() => { fetchDailyRun(); }, [fetchDailyRun]);
 
@@ -228,6 +241,22 @@ function DailyRunTab() {
         </div>
       ) : (
         <>
+          {showIntervention && latestShortage && (
+            <div className={styles.interventionBanner}>
+              <div className={styles.interventionIcon}>⚠️</div>
+              <div className={styles.interventionContent}>
+                <h4>Unfinished production found</h4>
+                <p>There are <strong>{latestShortage.totalUnits} units</strong> short from <strong>{new Date(latestShortage.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}</strong>.</p>
+              </div>
+              <div className={styles.interventionActions}>
+                <button onClick={() => { setCarryFromDate(null); fetchDailyRun(null); }}>Start Fresh</button>
+                <button className={styles.primary} onClick={() => { setCarryFromDate(latestShortage.date); fetchDailyRun(latestShortage.date); }}>
+                  Carry from {new Date(latestShortage.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── KPI Strip ── */}
           <div className={styles.kpiStrip}>
             <div className={styles.kpiTile}>
