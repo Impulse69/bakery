@@ -50,6 +50,7 @@ router.get(
   '/daily-run',
   asyncHandler(async (req, res) => {
     const dateStr = req.query.date as string;
+    const carryFrom = req.query.carryFrom as string | undefined;
     if (!dateStr) throw new AppError(400, 'date is required');
 
     const targetDate = new Date(dateStr);
@@ -66,32 +67,80 @@ router.get(
       include: { product: true }
     });
 
+    // 1.5 Find the latest day with ANY shortage
+    const latestTargetWithShortage = await prisma.dailyProductionTarget.findFirst({
+      where: {
+        targetDate: { lt: targetDate },
+        shortage: { gt: 0 },
+        product: { isActive: true },
+      },
+      orderBy: { targetDate: 'desc' },
+      select: { targetDate: true },
+    });
+
+    let latestShortage = null;
+    if (latestTargetWithShortage) {
+      const date = latestTargetWithShortage.targetDate;
+      const dayShortages = await prisma.dailyProductionTarget.aggregate({
+        where: { targetDate: date, shortage: { gt: 0 } },
+        _sum: { shortage: true },
+      });
+      latestShortage = {
+        date: date.toISOString().split('T')[0],
+        totalUnits: dayShortages._sum.shortage || 0,
+      };
+    }
+
     if (targets.length > 0) {
-      res.json({ status: targets[0].status, targets });
+      const activeTargets = targets.filter(
+        (t) =>
+          t.product.isActive ||
+          t.targetQty > 0 ||
+          t.actualQty > 0 ||
+          t.carriedOverShortage > 0,
+      );
+      res.json({
+        status: targets[0].status,
+        targets: activeTargets,
+        latestShortage,
+      });
       return;
     }
 
-    // 2. If not, generate suggestions for all bread products
-    const allProducts = await prisma.product.findMany();
-    const breadProducts = allProducts.filter(p => p.category?.toLowerCase().includes('bread'));
+    // 2. If not, generate suggestions for all active bread products
+    const breadProducts = await prisma.product.findMany({
+      where: {
+        category: { contains: 'bread', mode: 'insensitive' },
+        isActive: true,
+      },
+    });
 
     const suggestions = await Promise.all(breadProducts.map(async (product) => {
-      const lastTarget = await prisma.dailyProductionTarget.findFirst({
-        where: {
-          productId: product.id,
-          targetDate: { lt: targetDate }
-        },
-        orderBy: { targetDate: 'desc' }
-      });
+      let shortage = 0;
+      let sourceDate = null;
+
+      if (carryFrom) {
+        const prev = await prisma.dailyProductionTarget.findUnique({
+          where: {
+            targetDate_productId: {
+              targetDate: new Date(carryFrom),
+              productId: product.id,
+            },
+          },
+        });
+        shortage = prev?.shortage || 0;
+        sourceDate = carryFrom;
+      }
 
       return {
         productId: product.id,
         product,
-        carriedOverShortage: lastTarget?.shortage || 0,
+        carriedOverShortage: shortage,
+        sourceDate,
       };
     }));
 
-    res.json({ status: 'not_started', suggestions });
+    res.json({ status: 'not_started', suggestions, latestShortage });
   })
 );
 
