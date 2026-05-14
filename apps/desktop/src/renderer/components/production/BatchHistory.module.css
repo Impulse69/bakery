@@ -1,0 +1,195 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  animation: rise 0.35s ease both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Filter bar ─────────────────────────────────────────────────── */
+.filterBar {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.searchGroup {
+  grid-column: span 2;
+}
+
+.filterLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.filterInput {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid rgba(19, 27, 46, 0.12);
+  border-radius: 8px;
+  background: #fdf8f1;
+  color: #131b2e;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.filterInput:hover {
+  border-color: rgba(224, 123, 60, 0.4);
+}
+
+.filterInput:focus {
+  border-color: #c85a2f;
+  background: #fff;
+}
+
+/* ── Day list ─────────────────────────────────────────────────── */
+.dayStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ── Load earlier ─────────────────────────────────────────────── */
+.loadMoreWrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 0 1.25rem;
+}
+
+.loadMoreBtn {
+  padding: 0.55rem 1.4rem;
+  background: transparent;
+  border: 1px solid rgba(19, 27, 46, 0.16);
+  border-radius: 999px;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #131b2e;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.loadMoreBtn:hover:not(:disabled) {
+  border-color: #c85a2f;
+  color: #c85a2f;
+  background: rgba(224, 123, 60, 0.06);
+}
+
+.loadMoreBtn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.emptyCard {
+  background: #fffefb;
+  border: 1px dashed rgba(19, 27, 46, 0.18);
+  border-radius: 14px;
+  padding: 3rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.emptyTitle {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #131b2e;
+  margin: 0.5rem 0 0;
+  letter-spacing: -0.01em;
+}
+
+.emptyBody {
+  font-size: 12.5px;
+  color: rgba(19, 27, 46, 0.55);
+  margin: 0;
+  max-width: 32ch;
+}
+
+/* ── Error ─────────────────────────────────────────────────────── */
+.errorCard {
+  background: rgba(200, 90, 47, 0.05);
+  border: 1px solid rgba(200, 90, 47, 0.25);
+  border-radius: 14px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.errorMsg {
+  margin: 0;
+  font-size: 13px;
+  color: #c85a2f;
+  font-weight: 600;
+}
+
+.retryBtn {
+  padding: 0.4rem 1rem;
+  background: #131b2e;
+  color: #fdf8f1;
+  border: none;
+  border-radius: 999px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.retryBtn:hover { background: #1f2a45; }
+
+/* ── Skeleton ─────────────────────────────────────────────────── */
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skeletonCard {
+  height: 168px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    rgba(19, 27, 46, 0.04) 0%,
+    rgba(19, 27, 46, 0.08) 50%,
+    rgba(19, 27, 46, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@media (max-width: 800px) {
+  .searchGroup { grid-column: span 1; }
+}

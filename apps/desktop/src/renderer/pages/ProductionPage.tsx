@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
+import { BatchHistory } from '../components/production/BatchHistory';
 import styles from './ProductionPage.module.css';
 
 function getToday(): string {
@@ -472,6 +473,7 @@ function DailyRunTab() {
 export function ProductionPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+  const [tab, setTab] = useState<'daily' | 'history'>('daily');
 
   return (
     <div className={styles.page}>
@@ -482,8 +484,31 @@ export function ProductionPage() {
         </div>
       </div>
 
+      {isAdmin && (
+        <div className={styles.tabsRow} role="tablist" aria-label="Production view">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'daily'}
+            className={`${styles.tab} ${tab === 'daily' ? styles.tabActive : ''}`}
+            onClick={() => setTab('daily')}
+          >
+            Daily Run
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === 'history'}
+            className={`${styles.tab} ${tab === 'history' ? styles.tabActive : ''}`}
+            onClick={() => setTab('history')}
+          >
+            Batch History
+          </button>
+        </div>
+      )}
+
       {isAdmin ? (
-        <DailyRunTab />
+        tab === 'daily' ? <DailyRunTab /> : <BatchHistory />
       ) : (
         <div className={styles.emptyShell}>
           <div className={styles.emptyIcon}><FlourBagIcon size={36} /></div>

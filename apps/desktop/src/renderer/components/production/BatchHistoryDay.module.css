@@ -1,0 +1,280 @@
+.card {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 14px,
+    rgba(19, 27, 46, 0.012) 14px 15px
+  );
+  pointer-events: none;
+}
+
+/* ── Head ─────────────────────────────────────────────────────── */
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  position: relative;
+}
+
+.headLeft { display: flex; flex-direction: column; gap: 2px; }
+
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #e07b3c;
+}
+
+.heading {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #131b2e;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.batchChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 6px 12px;
+  background: rgba(19, 27, 46, 0.06);
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.batchChip strong {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #131b2e;
+}
+
+.batchChipLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+/* ── Rollup strip ─────────────────────────────────────────────── */
+.rollupStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border-top: 1px dashed rgba(19, 27, 46, 0.14);
+  border-bottom: 1px dashed rgba(19, 27, 46, 0.14);
+  padding: 10px 0;
+  position: relative;
+}
+
+.rollup {
+  padding: 0 14px;
+  border-left: 1px solid rgba(19, 27, 46, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rollup:first-child {
+  border-left: none;
+  padding-left: 0;
+}
+
+.rollupLabel {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.rollupValue {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.rollupShort { color: #c85a2f; }
+.rollupSurplus { color: #1d4ed8; }
+.rollupOk { color: #15803d; }
+
+/* ── Product rows ─────────────────────────────────────────────── */
+.rows {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.row {
+  all: unset;
+  display: grid;
+  grid-template-columns: minmax(140px, 1.6fr) 70px 80px 70px 100px 1fr 14px;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.25rem;
+  border-bottom: 1px dashed rgba(19, 27, 46, 0.08);
+  cursor: pointer;
+  transition: background 0.12s ease, padding 0.12s ease;
+  border-radius: 6px;
+}
+
+.row:last-child { border-bottom: none; }
+
+.row:hover {
+  background: rgba(224, 123, 60, 0.04);
+  padding-left: 0.5rem;
+}
+
+.row:focus-visible {
+  outline: 2px solid rgba(200, 90, 47, 0.45);
+  outline-offset: -2px;
+}
+
+.rowName {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #131b2e;
+  letter-spacing: -0.01em;
+}
+
+.rowCell {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rowCellLabel {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.45);
+}
+
+.rowCellValue {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.variancePill {
+  font-family: 'JetBrains Mono', 'Menlo', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.variance_hit {
+  background: rgba(21, 128, 61, 0.1);
+  color: #15803d;
+}
+.variance_short {
+  background: rgba(200, 90, 47, 0.1);
+  color: #c85a2f;
+}
+.variance_surplus {
+  background: rgba(29, 78, 216, 0.1);
+  color: #1d4ed8;
+}
+
+.statusPill {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.status_hit {
+  background: rgba(21, 128, 61, 0.14);
+  color: #15803d;
+  border: 1px solid rgba(21, 128, 61, 0.25);
+}
+.status_short {
+  background: rgba(200, 90, 47, 0.14);
+  color: #c85a2f;
+  border: 1px solid rgba(200, 90, 47, 0.3);
+}
+.status_surplus {
+  background: rgba(29, 78, 216, 0.14);
+  color: #1d4ed8;
+  border: 1px solid rgba(29, 78, 216, 0.25);
+}
+.status_failed {
+  background: rgba(185, 28, 28, 0.14);
+  color: #b91c1c;
+  border: 1px solid rgba(185, 28, 28, 0.25);
+}
+.status_in_progress {
+  background: rgba(19, 27, 46, 0.08);
+  color: rgba(19, 27, 46, 0.7);
+  border: 1px solid rgba(19, 27, 46, 0.15);
+}
+
+.batchNums {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.batchNum {
+  font-family: 'JetBrains Mono', 'Menlo', monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(19, 27, 46, 0.7);
+  background: rgba(19, 27, 46, 0.04);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.chevron {
+  font-size: 18px;
+  color: rgba(19, 27, 46, 0.3);
+  text-align: right;
+  line-height: 1;
+}
+
+.row:hover .chevron { color: #c85a2f; }
+
+@media (max-width: 900px) {
+  .row {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .rowCell, .variancePill, .statusPill, .batchNums { grid-column: span 1; }
+  .rowName { grid-column: span 2; }
+  .chevron { display: none; }
+}

@@ -279,6 +279,270 @@ router.get(
   }),
 );
 
+// GET /api/production/history
+// Returns a paginated, day-grouped read of past production activity for
+// admins and owners. Days with zero batches are excluded.
+router.get(
+  '/history',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    type DerivedStatus = 'hit' | 'short' | 'surplus' | 'failed' | 'in_progress';
+    const ALL_DERIVED: DerivedStatus[] = ['hit', 'short', 'surplus', 'failed', 'in_progress'];
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parseDate = (s: unknown, fallback: Date): Date => {
+      if (typeof s !== 'string' || s.length === 0) return fallback;
+      const d = new Date(s);
+      if (Number.isNaN(d.getTime())) return fallback;
+      d.setHours(0, 0, 0, 0);
+      return d;
+    };
+
+    const defaultFrom = new Date(today);
+    defaultFrom.setDate(defaultFrom.getDate() - 30);
+
+    const from = parseDate(req.query.from, defaultFrom);
+    const to = parseDate(req.query.to, today);
+    if (to < from) throw new AppError(400, 'to must be on or after from');
+
+    const productIdFilter = typeof req.query.productId === 'string' && req.query.productId.length > 0
+      ? req.query.productId : undefined;
+    const statusFilter = typeof req.query.status === 'string' && ALL_DERIVED.includes(req.query.status as DerivedStatus)
+      ? (req.query.status as DerivedStatus) : undefined;
+    const qFilter = typeof req.query.q === 'string' && req.query.q.trim().length > 0
+      ? req.query.q.trim().toLowerCase() : undefined;
+    const cursor = parseDate(req.query.cursor, new Date(8640000000000000));
+    const limit = Math.min(
+      Math.max(parseInt((req.query.limit as string) ?? '30', 10) || 30, 1),
+      90,
+    );
+
+    const dayEnd = new Date(to);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    const [targets, batches] = await Promise.all([
+      prisma.dailyProductionTarget.findMany({
+        where: {
+          targetDate: { gte: from, lt: dayEnd },
+          ...(productIdFilter ? { productId: productIdFilter } : {}),
+        },
+        include: { product: { select: { id: true, name: true } } },
+      }),
+      prisma.productionBatch.findMany({
+        where: {
+          startedAt: { gte: from, lt: dayEnd },
+          ...(productIdFilter ? { productId: productIdFilter } : {}),
+        },
+        include: {
+          product: { select: { id: true, name: true } },
+          user: { select: { id: true, name: true } },
+        },
+        orderBy: { startedAt: 'asc' },
+      }),
+    ]);
+
+    // Local-date key (avoids UTC drift)
+    const dateKey = (d: Date): string => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    type Acc = {
+      date: string;
+      targetByProduct: Map<string, { productName: string; target: number; carryOver: number; shortage: number }>;
+      batchesByProduct: Map<string, Array<typeof batches[number]>>;
+      productNames: Map<string, string>;
+    };
+    const byDate = new Map<string, Acc>();
+    const ensureDay = (key: string): Acc => {
+      const existing = byDate.get(key);
+      if (existing) return existing;
+      const fresh: Acc = {
+        date: key,
+        targetByProduct: new Map(),
+        batchesByProduct: new Map(),
+        productNames: new Map(),
+      };
+      byDate.set(key, fresh);
+      return fresh;
+    };
+
+    for (const t of targets) {
+      const key = dateKey(new Date(t.targetDate));
+      const day = ensureDay(key);
+      day.targetByProduct.set(t.productId, {
+        productName: t.product.name,
+        target: t.targetQty,
+        carryOver: t.carriedOverShortage,
+        shortage: t.shortage,
+      });
+      day.productNames.set(t.productId, t.product.name);
+    }
+    for (const b of batches) {
+      const key = dateKey(new Date(b.startedAt));
+      const day = ensureDay(key);
+      const list = day.batchesByProduct.get(b.productId) ?? [];
+      list.push(b);
+      day.batchesByProduct.set(b.productId, list);
+      day.productNames.set(b.productId, b.product.name);
+    }
+
+    type HistoryBatch = {
+      id: string;
+      batchNumber: string;
+      quantityProduced: number;
+      status: 'in_progress' | 'completed' | 'failed';
+      startedAt: string;
+      completedAt: string | null;
+      notes: string | null;
+      producedBy: { id: string; name: string };
+    };
+    type HistoryRow = {
+      productId: string;
+      productName: string;
+      target: number;
+      carryOver: number;
+      actualProduced: number;
+      shortage: number;
+      derivedStatus: DerivedStatus;
+      batches: HistoryBatch[];
+    };
+    type HistoryDay = {
+      date: string;
+      batchCount: number;
+      totalTarget: number;
+      totalProduced: number;
+      totalShortage: number;
+      totalSurplus: number;
+      completionPct: number;
+      rows: HistoryRow[];
+    };
+
+    const days: HistoryDay[] = [];
+
+    for (const acc of byDate.values()) {
+      const productIds = new Set<string>([
+        ...acc.targetByProduct.keys(),
+        ...acc.batchesByProduct.keys(),
+      ]);
+
+      const rows: HistoryRow[] = [];
+      let batchCount = 0;
+
+      for (const pid of productIds) {
+        const t = acc.targetByProduct.get(pid);
+        const productBatches = acc.batchesByProduct.get(pid) ?? [];
+        if (productBatches.length === 0 && !t) continue;
+
+        const productName = acc.productNames.get(pid) ?? '—';
+        const actualProduced = productBatches
+          .filter((b) => b.status !== 'failed')
+          .reduce((s, b) => s + b.quantityProduced, 0);
+        const target = t?.target ?? 0;
+        const carryOver = t?.carryOver ?? 0;
+        const shortage = t ? Math.max(0, target - actualProduced) : 0;
+
+        // Multi-batch worst-of rule
+        let derivedStatus: DerivedStatus;
+        if (productBatches.some((b) => b.status === 'failed')) {
+          derivedStatus = 'failed';
+        } else if (productBatches.some((b) => b.status === 'in_progress')) {
+          derivedStatus = 'in_progress';
+        } else if (target === 0) {
+          derivedStatus = productBatches.length > 0 ? 'surplus' : 'hit';
+        } else if (actualProduced >= target && actualProduced === target) {
+          derivedStatus = 'hit';
+        } else if (actualProduced > target) {
+          derivedStatus = 'surplus';
+        } else {
+          derivedStatus = 'short';
+        }
+
+        const historyBatches: HistoryBatch[] = productBatches.map((b) => ({
+          id: b.id,
+          batchNumber: b.batchNumber,
+          quantityProduced: b.quantityProduced,
+          status: b.status,
+          startedAt: b.startedAt.toISOString(),
+          completedAt: b.completedAt ? b.completedAt.toISOString() : null,
+          notes: b.notes,
+          producedBy: { id: b.user.id, name: b.user.name },
+        }));
+
+        rows.push({
+          productId: pid,
+          productName,
+          target,
+          carryOver,
+          actualProduced,
+          shortage,
+          derivedStatus,
+          batches: historyBatches,
+        });
+
+        batchCount += productBatches.length;
+      }
+
+      // Skip days with zero batches per spec §3.3
+      if (batchCount === 0) continue;
+
+      // Post-filter status
+      let filteredRows = statusFilter
+        ? rows.filter((r) => r.derivedStatus === statusFilter)
+        : rows;
+
+      // Post-filter q (matches product name OR batch number, case-insensitive contains)
+      if (qFilter) {
+        filteredRows = filteredRows.filter((r) =>
+          r.productName.toLowerCase().includes(qFilter) ||
+          r.batches.some((b) => b.batchNumber.toLowerCase().includes(qFilter)),
+        );
+      }
+
+      if (filteredRows.length === 0) continue;
+
+      filteredRows.sort((a, b) => a.productName.localeCompare(b.productName));
+
+      const totalTarget = filteredRows.reduce((s, r) => s + r.target, 0);
+      const totalProduced = filteredRows.reduce((s, r) => s + r.actualProduced, 0);
+      const totalShortage = Math.max(0, totalTarget - totalProduced);
+      const totalSurplus = Math.max(0, totalProduced - totalTarget);
+      const completionPct = totalTarget > 0
+        ? Math.round((totalProduced / totalTarget) * 100)
+        : 100;
+
+      days.push({
+        date: acc.date,
+        batchCount: filteredRows.reduce((s, r) => s + r.batches.length, 0),
+        totalTarget,
+        totalProduced,
+        totalShortage,
+        totalSurplus,
+        completionPct,
+        rows: filteredRows,
+      });
+    }
+
+    days.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+    const cursorKey = dateKey(cursor);
+    const afterCursor = req.query.cursor
+      ? days.filter((d) => d.date < cursorKey)
+      : days;
+
+    const paged = afterCursor.slice(0, limit);
+    const nextCursor = paged.length === limit && afterCursor.length > limit
+      ? paged[paged.length - 1].date
+      : null;
+
+    res.json({ days: paged, nextCursor });
+  }),
+);
+
 // GET /api/production/targets
 router.get(
   '/targets',
