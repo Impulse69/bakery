@@ -50,38 +50,40 @@ function batchStatusLabel(status: 'in_progress' | 'completed' | 'failed'): strin
 export function BatchHistoryDetailModal({ open, dayDate, row, onClose }: Props) {
   return (
     <Modal isOpen={open} onClose={onClose} title="" size="lg">
-      {row && (
+      {row && (() => {
+        const batches = row.batches ?? [];
+        return (
         <div className={styles.body}>
           <div className={styles.header}>
             <span className={styles.eyebrow}>Production Details</span>
             <h2 className={styles.title}>{formatDayHeader(dayDate)}</h2>
-            <p className={styles.product}>{row.productName}</p>
+            <p className={styles.product}>{row.productName ?? '—'}</p>
           </div>
 
           {/* Product totals */}
           <div className={styles.totals}>
             <div className={styles.totalCell}>
               <span className={styles.totalLabel}>Target</span>
-              <span className={styles.totalValue}>{row.target.toLocaleString()}</span>
+              <span className={styles.totalValue}>{(row.target ?? 0).toLocaleString()}</span>
             </div>
             <div className={styles.totalCell}>
               <span className={styles.totalLabel}>Carry-over</span>
-              <span className={styles.totalValue}>{row.carryOver.toLocaleString()}</span>
+              <span className={styles.totalValue}>{(row.carryOver ?? 0).toLocaleString()}</span>
             </div>
             <div className={styles.totalCell}>
               <span className={styles.totalLabel}>Actual produced</span>
-              <span className={styles.totalValue}>{row.actualProduced.toLocaleString()}</span>
+              <span className={styles.totalValue}>{(row.actualProduced ?? 0).toLocaleString()}</span>
             </div>
             <div className={styles.totalCell}>
               <span className={styles.totalLabel}>Shortage</span>
-              <span className={`${styles.totalValue} ${row.shortage > 0 ? styles.totalShort : ''}`}>
-                {row.shortage.toLocaleString()}
+              <span className={`${styles.totalValue} ${(row.shortage ?? 0) > 0 ? styles.totalShort : ''}`}>
+                {(row.shortage ?? 0).toLocaleString()}
               </span>
             </div>
             <div className={styles.totalCell}>
               <span className={styles.totalLabel}>Status</span>
-              <span className={`${styles.statusPill} ${styles[`status_${row.derivedStatus}`]}`}>
-                {STATUS_LABEL[row.derivedStatus]}
+              <span className={`${styles.statusPill} ${styles[`status_${row.derivedStatus}`] ?? ''}`}>
+                {STATUS_LABEL[row.derivedStatus] ?? row.derivedStatus}
               </span>
             </div>
           </div>
@@ -89,22 +91,22 @@ export function BatchHistoryDetailModal({ open, dayDate, row, onClose }: Props) 
           {/* Per-batch */}
           <div className={styles.batchHeading}>
             <span className={styles.batchEyebrow}>Batches</span>
-            <span className={styles.batchCount}>{row.batches.length}</span>
+            <span className={styles.batchCount}>{batches.length}</span>
           </div>
 
           <div className={styles.batchList}>
-            {row.batches.length === 0 ? (
+            {batches.length === 0 ? (
               <p className={styles.noBatches}>No batches were logged for this product on this day.</p>
             ) : (
-              row.batches.map((b) => (
+              batches.map((b) => (
                 <div key={b.id} className={styles.batchCard}>
                   <div className={styles.batchTop}>
                     <span className={styles.batchNum}>{b.batchNumber}</span>
-                    <span className={`${styles.batchStatus} ${styles[`batchStatus_${b.status}`]}`}>
+                    <span className={`${styles.batchStatus} ${styles[`batchStatus_${b.status}`] ?? ''}`}>
                       {batchStatusLabel(b.status)}
                     </span>
                     <span className={styles.batchQty}>
-                      <strong>{b.quantityProduced.toLocaleString()}</strong>
+                      <strong>{(b.quantityProduced ?? 0).toLocaleString()}</strong>
                       <span className={styles.batchQtyUnit}>units</span>
                     </span>
                   </div>
@@ -119,7 +121,7 @@ export function BatchHistoryDetailModal({ open, dayDate, row, onClose }: Props) 
                     </div>
                     <div className={styles.metaRow}>
                       <dt>Recorded by</dt>
-                      <dd>{b.producedBy.name}</dd>
+                      <dd>{b.producedBy?.name ?? '—'}</dd>
                     </div>
                     {b.notes && (
                       <div className={`${styles.metaRow} ${styles.metaRowFull}`}>
@@ -137,7 +139,8 @@ export function BatchHistoryDetailModal({ open, dayDate, row, onClose }: Props) 
             <button type="button" className={styles.closeBtn} onClick={onClose}>Close</button>
           </div>
         </div>
-      )}
+        );
+      })()}
     </Modal>
   );
 }

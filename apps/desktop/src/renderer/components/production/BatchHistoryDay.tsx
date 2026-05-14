@@ -38,8 +38,15 @@ function formatVariance(actual: number, target: number): { label: string; tone: 
 }
 
 export function BatchHistoryDay({ day, onRowClick }: Props) {
-  const showShortage = day.totalShortage > 0;
-  const showSurplus = !showShortage && day.totalSurplus > 0;
+  const totalTarget = day.totalTarget ?? 0;
+  const totalProduced = day.totalProduced ?? 0;
+  const totalShortage = day.totalShortage ?? 0;
+  const totalSurplus = day.totalSurplus ?? 0;
+  const completionPct = day.completionPct ?? 0;
+  const batchCount = day.batchCount ?? 0;
+  const rows = day.rows ?? [];
+  const showShortage = totalShortage > 0;
+  const showSurplus = !showShortage && totalSurplus > 0;
 
   return (
     <article className={styles.card}>
@@ -49,64 +56,68 @@ export function BatchHistoryDay({ day, onRowClick }: Props) {
           <h3 className={styles.heading}>{formatDayHeader(day.date)}</h3>
         </div>
         <span className={styles.batchChip}>
-          <strong>{day.batchCount}</strong>
-          <span className={styles.batchChipLabel}>{day.batchCount === 1 ? 'batch' : 'batches'}</span>
+          <strong>{batchCount}</strong>
+          <span className={styles.batchChipLabel}>{batchCount === 1 ? 'batch' : 'batches'}</span>
         </span>
       </header>
 
       <div className={styles.rollupStrip}>
         <div className={styles.rollup}>
           <span className={styles.rollupLabel}>Target</span>
-          <span className={styles.rollupValue}>{day.totalTarget.toLocaleString()}</span>
+          <span className={styles.rollupValue}>{totalTarget.toLocaleString()}</span>
         </div>
         <div className={styles.rollup}>
           <span className={styles.rollupLabel}>Produced</span>
-          <span className={styles.rollupValue}>{day.totalProduced.toLocaleString()}</span>
+          <span className={styles.rollupValue}>{totalProduced.toLocaleString()}</span>
         </div>
         {(showShortage || showSurplus) && (
           <div className={styles.rollup}>
             <span className={styles.rollupLabel}>{showShortage ? 'Shortage' : 'Surplus'}</span>
             <span className={`${styles.rollupValue} ${showShortage ? styles.rollupShort : styles.rollupSurplus}`}>
-              {showShortage ? `−${day.totalShortage.toLocaleString()}` : `+${day.totalSurplus.toLocaleString()}`}
+              {showShortage ? `−${totalShortage.toLocaleString()}` : `+${totalSurplus.toLocaleString()}`}
             </span>
           </div>
         )}
         <div className={styles.rollup}>
           <span className={styles.rollupLabel}>Completion</span>
-          <span className={`${styles.rollupValue} ${day.completionPct >= 100 ? styles.rollupOk : ''}`}>
-            {day.completionPct}%
+          <span className={`${styles.rollupValue} ${completionPct >= 100 ? styles.rollupOk : ''}`}>
+            {completionPct}%
           </span>
         </div>
       </div>
 
       <div className={styles.rows}>
-        {day.rows.map((row) => {
-          const variance = formatVariance(row.actualProduced, row.target);
+        {rows.map((row) => {
+          const target = row.target ?? 0;
+          const actualProduced = row.actualProduced ?? 0;
+          const batches = row.batches ?? [];
+          const productName = row.productName ?? '—';
+          const variance = formatVariance(actualProduced, target);
           return (
             <button
               key={row.productId}
               type="button"
               className={styles.row}
               onClick={() => onRowClick(row)}
-              aria-label={`View ${row.productName} on ${formatDayHeader(day.date)}`}
+              aria-label={`View ${productName} on ${formatDayHeader(day.date)}`}
             >
-              <span className={styles.rowName}>{row.productName}</span>
+              <span className={styles.rowName}>{productName}</span>
               <span className={styles.rowCell}>
                 <span className={styles.rowCellLabel}>Target</span>
-                <span className={styles.rowCellValue}>{row.target.toLocaleString()}</span>
+                <span className={styles.rowCellValue}>{target.toLocaleString()}</span>
               </span>
               <span className={styles.rowCell}>
                 <span className={styles.rowCellLabel}>Produced</span>
-                <span className={styles.rowCellValue}>{row.actualProduced.toLocaleString()}</span>
+                <span className={styles.rowCellValue}>{actualProduced.toLocaleString()}</span>
               </span>
               <span className={`${styles.variancePill} ${styles[`variance_${variance.tone}`]}`}>
                 {variance.label}
               </span>
-              <span className={`${styles.statusPill} ${styles[`status_${row.derivedStatus}`]}`}>
-                {STATUS_LABEL[row.derivedStatus]}
+              <span className={`${styles.statusPill} ${styles[`status_${row.derivedStatus}`] ?? ''}`}>
+                {STATUS_LABEL[row.derivedStatus] ?? row.derivedStatus}
               </span>
               <span className={styles.batchNums}>
-                {row.batches.map((b) => (
+                {batches.map((b) => (
                   <span key={b.id} className={styles.batchNum}>{b.batchNumber}</span>
                 ))}
               </span>

@@ -1,10 +1,45 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Component, type ReactNode } from 'react';
 import type { Product } from '@bakery/types';
 import { api } from '../../lib/api';
 import { useToast } from '../Toast';
 import { BatchHistoryDay } from './BatchHistoryDay';
 import { BatchHistoryDetailModal } from './BatchHistoryDetailModal';
 import styles from './BatchHistory.module.css';
+
+// Local error boundary so a render-time exception inside the history view
+// surfaces in the UI instead of crashing the whole renderer to a blank window.
+class HistoryErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: unknown) {
+    // eslint-disable-next-line no-console
+    console.error('[BatchHistory] render error', error, info);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className={styles.errorCard}>
+          <p className={styles.errorMsg}>
+            Batch History crashed while rendering: {this.state.error.message}
+          </p>
+          <button
+            type="button"
+            className={styles.retryBtn}
+            onClick={() => this.setState({ error: null })}
+          >
+            Reset
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export type DerivedStatus = 'hit' | 'short' | 'surplus' | 'failed' | 'in_progress';
 
@@ -83,6 +118,14 @@ function WheatGlyph() {
 }
 
 export function BatchHistory() {
+  return (
+    <HistoryErrorBoundary>
+      <BatchHistoryInner />
+    </HistoryErrorBoundary>
+  );
+}
+
+function BatchHistoryInner() {
   const { showToast } = useToast();
 
   // Filters
