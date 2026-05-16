@@ -19,6 +19,10 @@ export type SalesOrder = Timestamps & {
   balanceDue: number;
   notes?: string;
   completedAt?: string;
+  /** Set whenever a line item is added/edited/removed after creation. */
+  lastModifiedAt?: string | null;
+  /** User id of whoever performed the latest line-item modification. */
+  lastModifiedBy?: string | null;
   items?: SalesOrderItem[];
   payments?: Payment[];
   customer?: Customer;
@@ -30,7 +34,10 @@ export type SalesOrderItem = {
   productId: string;
   variantId?: string;
   quantity: number;
+  /** Selling price snapshot per unit at the time of sale. */
   unitPrice: number;
+  /** Cost price snapshot per unit at the time of sale. */
+  unitCostPrice?: number;
   tax: number;
   total: number;
   product?: Product;

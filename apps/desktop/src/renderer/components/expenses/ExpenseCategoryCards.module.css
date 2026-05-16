@@ -1,0 +1,210 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.periodBar {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.periodLabel {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.periodBtns {
+  display: inline-flex;
+  gap: 0.35rem;
+  background: rgba(19, 27, 46, 0.04);
+  padding: 0.25rem;
+  border-radius: 9999px;
+}
+
+.periodBtn {
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: rgba(19, 27, 46, 0.65);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.periodBtn:hover {
+  color: #131b2e;
+}
+
+.periodBtnActive {
+  background: #131b2e;
+  color: #fffefb;
+}
+
+.periodBtnActive:hover {
+  color: #fffefb;
+}
+
+.grandTotal {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.grandTotalLabel {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.grandTotalValue {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.85rem;
+}
+
+.card {
+  --accent: #131b2e;
+  position: relative;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.95rem 1rem 0.85rem;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(19, 27, 46, 0.18);
+  box-shadow: 0 4px 12px rgba(19, 27, 46, 0.08);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.cardActive {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.cardDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+.cardLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(19, 27, 46, 0.7);
+  letter-spacing: 0.01em;
+}
+
+.cardValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.cardMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.cardPct {
+  font-weight: 700;
+  color: rgba(19, 27, 46, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardBar {
+  margin-top: 0.15rem;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(19, 27, 46, 0.06);
+  overflow: hidden;
+}
+
+.cardBarFill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 9999px;
+  transition: width 0.3s ease;
+}
+
+.activeChipRow {
+  display: flex;
+}
+
+.activeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.5rem 0.3rem 0.7rem;
+  background: rgba(224, 123, 60, 0.12);
+  color: #b45a1f;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.activeChipClear {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: none;
+  background: rgba(224, 123, 60, 0.25);
+  color: #b45a1f;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activeChipClear:hover {
+  background: rgba(224, 123, 60, 0.4);
+}

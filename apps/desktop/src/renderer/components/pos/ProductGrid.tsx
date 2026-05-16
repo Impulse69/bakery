@@ -5,10 +5,6 @@ import { formatCurrency } from '@bakery/utils';
 import styles from './ProductGrid.module.css';
 
 import breadIcon from '../../assets/categories/bread.png';
-import pastryIcon from '../../assets/categories/pastry.png';
-import cakeIcon from '../../assets/categories/cake.png';
-import snackIcon from '../../assets/categories/snack.png';
-import drinkIcon from '../../assets/categories/drink.png';
 import otherIcon from '../../assets/categories/other.png';
 
 import sugarBreadImg from '../../assets/products/sugar_bread.png';
@@ -17,13 +13,9 @@ import butterBreadImg from '../../assets/products/butter_bread.png';
 import wheatBreadImg from '../../assets/products/wheat_bread.png';
 import cocoaBreadImg from '../../assets/products/cocoa_bread.png';
 
+// Lowercase keys to match how the DB normalizes category values.
 const CATEGORY_ICONS: Record<string, string> = {
-  Bread: breadIcon,
-  Pastry: pastryIcon,
-  Cake: cakeIcon,
-  Snack: snackIcon,
-  Drink: drinkIcon,
-  Other: otherIcon,
+  bread: breadIcon,
 };
 
 const PRODUCT_IMAGES: Record<string, string> = {
@@ -102,7 +94,13 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
               <div className={styles.cardContent}>
                 <span className={styles.name}>{product.name}</span>
                 <span className={styles.category}>{product.category}</span>
-                <span className={styles.price}>{formatCurrency(product.price)}</span>
+                <span className={styles.price}>
+                  {formatCurrency(
+                    (product as { sellingPrice?: number; price?: number }).sellingPrice
+                      ?? (product as { price?: number }).price
+                      ?? 0,
+                  )}
+                </span>
               </div>
             </button>
           );
@@ -128,7 +126,11 @@ export function ProductGrid({ products, onAddToCart }: ProductGridProps) {
                 onClick={() => handleVariantSelect(variant)}
                 className={styles.variantBtn}
               >
-                {variant.name} — {formatCurrency(variant.price)}
+                {variant.name} — {formatCurrency(
+                  (variant as { sellingPrice?: number; price?: number }).sellingPrice
+                    ?? (variant as { price?: number }).price
+                    ?? 0,
+                )}
               </Button>
             ))}
         </div>

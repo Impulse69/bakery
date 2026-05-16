@@ -42,8 +42,8 @@ describe('Sales & Stock Integration', () => {
       create: {
         name: 'Test Bread',
         sku: 'TEST-BRD-01',
-        price: 1000,
-        wholesalePrice: 800,
+        sellingPrice: 1000,
+        costPrice: 800,
         stockQuantity: 50,
         category: 'Bread',
         isAvailable: true

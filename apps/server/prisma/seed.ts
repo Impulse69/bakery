@@ -78,11 +78,11 @@ async function main() {
 
   // ── Products ──────────────────────────────────────────────────────────────
   const products = [
-    { name: 'Sugar Bread', sku: 'BRD-SGR-01', category: 'Bread', price: 1000, wholesalePrice: 950 },
-    { name: 'Tea Bread', sku: 'BRD-TEA-01', category: 'Bread', price: 800, wholesalePrice: 750 },
-    { name: 'Butter Bread', sku: 'BRD-BTR-01', category: 'Bread', price: 1200, wholesalePrice: 1100 },
-    { name: 'Wheat Bread', sku: 'BRD-WHT-01', category: 'Bread', price: 1500, wholesalePrice: 1400 },
-    { name: 'Cocoa Bread', sku: 'BRD-CCO-01', category: 'Bread', price: 1500, wholesalePrice: 1400 },
+    { name: 'Sugar Bread', sku: 'BRD-SGR-01', category: 'bread', sellingPrice: 1000, costPrice: 950 },
+    { name: 'Tea Bread', sku: 'BRD-TEA-01', category: 'bread', sellingPrice: 800, costPrice: 750 },
+    { name: 'Butter Bread', sku: 'BRD-BTR-01', category: 'bread', sellingPrice: 1200, costPrice: 1100 },
+    { name: 'Wheat Bread', sku: 'BRD-WHT-01', category: 'bread', sellingPrice: 1500, costPrice: 1400 },
+    { name: 'Cocoa Bread', sku: 'BRD-CCO-01', category: 'bread', sellingPrice: 1500, costPrice: 1400 },
   ];
 
   for (const p of products) {

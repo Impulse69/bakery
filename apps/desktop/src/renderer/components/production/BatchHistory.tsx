@@ -173,7 +173,11 @@ function BatchHistoryInner() {
 
       try {
         const res = await api.get<HistoryResponse>(`/production/history?${params.toString()}`);
-        return res;
+        // Defensively normalize — offline fallback or partial response may omit fields.
+        return {
+          days: Array.isArray(res?.days) ? res.days : [],
+          nextCursor: res?.nextCursor ?? null,
+        };
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Failed to load history';
         if (/403|forbidden/i.test(msg)) {

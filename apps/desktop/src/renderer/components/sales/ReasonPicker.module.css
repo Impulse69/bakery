@@ -1,0 +1,100 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.compact {
+  flex: 1 1 180px;
+}
+
+.comfy {
+  width: 100%;
+}
+
+.selectWrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100%;
+  padding: 0.4rem 1.8rem 0.4rem 0.7rem;
+  border: 1px solid rgba(19, 27, 46, 0.18);
+  border-radius: 8px;
+  background: #fffefb;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 0.82rem;
+  color: #131b2e;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.comfy .select {
+  padding: 0.6rem 2rem 0.6rem 0.85rem;
+  font-size: 0.88rem;
+}
+
+.select:hover {
+  border-color: rgba(19, 27, 46, 0.35);
+}
+
+.select:focus {
+  outline: none;
+  border-color: #e07b3c;
+  box-shadow: 0 0 0 3px rgba(224, 123, 60, 0.18);
+}
+
+.select option {
+  background: #fffefb;
+  color: #131b2e;
+}
+
+.select option[disabled] {
+  color: rgba(19, 27, 46, 0.4);
+}
+
+.chevron {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 0.75rem;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.customInput {
+  width: 100%;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid rgba(224, 123, 60, 0.4);
+  border-radius: 8px;
+  background: rgba(224, 123, 60, 0.04);
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: 0.82rem;
+  color: #131b2e;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.comfy .customInput {
+  padding: 0.55rem 0.8rem;
+  font-size: 0.88rem;
+}
+
+.customInput::placeholder {
+  color: rgba(19, 27, 46, 0.4);
+}
+
+.customInput:focus {
+  outline: none;
+  border-color: #e07b3c;
+  box-shadow: 0 0 0 3px rgba(224, 123, 60, 0.18);
+  background: #fffefb;
+}

@@ -5,10 +5,11 @@ import {
   DataTable, Pagination, Button, Modal, Input, SearchInput, OrderStatusBadge, StatCard,
 } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
-import { formatCurrency } from '@bakery/utils';
+import { formatCurrency, can } from '@bakery/utils';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../store/AuthContext';
 import { CustomerReport } from '../components/customers/CustomerReport';
 import styles from './CustomersPage.module.css';
 
@@ -109,6 +110,10 @@ interface CustomerAnalytics {
 
 export function CustomersPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const canDeactivate = user ? can(user.role, 'customers:delete') : false;
+  // Cashier can't see the Leaderboard/Analytics tabs — they hit admin/owner-only endpoints.
+  const canSeeAnalytics = user ? can(user.role, 'customers:view') && (user.role === 'admin' || user.role === 'owner') : false;
   const [activeTab, setActiveTab] = useState<'all' | 'leaderboard' | 'analytics'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
@@ -290,18 +295,22 @@ export function CustomersPage() {
           >
             All
           </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('leaderboard')}
-          >
-            Leaderboard
-          </button>
-          <button
-            className={`${styles.tab} ${activeTab === 'analytics' ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab('analytics')}
-          >
-            Analytics
-          </button>
+          {canSeeAnalytics && (
+            <>
+              <button
+                className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('leaderboard')}
+              >
+                Leaderboard
+              </button>
+              <button
+                className={`${styles.tab} ${activeTab === 'analytics' ? styles.tabActive : ''}`}
+                onClick={() => setActiveTab('analytics')}
+              >
+                Analytics
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -420,8 +429,6 @@ export function CustomersPage() {
           <Input label="Name" value={form.name} onChange={setField('name')} />
           <Input label="Phone" value={form.phone} onChange={setField('phone')} />
           <Input label="Email" type="email" value={form.email} onChange={setField('email')} />
-          <Input label="Address" value={form.address} onChange={setField('address')} />
-          <Input label="Notes" value={form.notes} onChange={setField('notes')} />
           <div className={styles.actions}>
             <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
             <Button onClick={handleAdd} loading={saving}>Create</Button>
@@ -610,16 +617,18 @@ export function CustomersPage() {
                   >
                     ＋ New Sale
                   </button>
-                  <button
-                    className={
-                      selectedCustomer.isActive
-                        ? styles.actionDanger
-                        : styles.actionPrimary
-                    }
-                    onClick={handleToggleActive}
-                  >
-                    {selectedCustomer.isActive ? "Deactivate" : "Activate"}
-                  </button>
+                  {canDeactivate && (
+                    <button
+                      className={
+                        selectedCustomer.isActive
+                          ? styles.actionDanger
+                          : styles.actionPrimary
+                      }
+                      onClick={handleToggleActive}
+                    >
+                      {selectedCustomer.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                  )}
                 </div>
               </div>
 

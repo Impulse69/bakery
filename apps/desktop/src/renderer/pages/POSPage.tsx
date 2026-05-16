@@ -97,7 +97,11 @@ export function POSPage() {
           product,
           variant,
           quantity: 1,
-          unitPrice: variant?.price ?? product.price,
+          unitPrice:
+            variant?.price
+            ?? (product as { sellingPrice?: number; price?: number }).sellingPrice
+            ?? (product as { price?: number }).price
+            ?? 0,
           tax: 0,
         },
       ];

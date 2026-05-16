@@ -90,6 +90,13 @@ const IconOrders = () => (
   </svg>
 );
 
+const IconShelf = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18M3 12h18M3 18h18" />
+    <path d="M5 6v12M19 6v12" />
+  </svg>
+);
+
 const WheatGlyph = () => (
   <svg width="42" height="42" viewBox="0 0 64 64" fill="none" aria-hidden="true">
     <path d="M32 10v46" stroke="#131b2e" strokeWidth="2" strokeLinecap="round" />
@@ -159,6 +166,7 @@ export function DashboardPage() {
   const [weeklyData, setWeeklyData] = useState<WeeklyEntry[]>([]);
   const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [orders, setOrders] = useState<RecentOrder[]>([]);
+  const [stockValue, setStockValue] = useState<{ totalValue: number; totalUnits: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const role = user?.role;
@@ -168,8 +176,12 @@ export function DashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      // Fetch products to check for low stock client-side as a reliable fallback
-      const calls: Promise<unknown>[] = [api.get<{ data: LowStockItem[] }>('/inventory?limit=100')];
+      // Fetch products to check for low stock client-side as a reliable fallback,
+      // plus the global stock-value rollup (cashier's target ceiling for the day).
+      const calls: Promise<unknown>[] = [
+        api.get<{ data: LowStockItem[] }>('/inventory?limit=100'),
+        api.get<{ totalValue: number; totalUnits: number }>('/inventory/value'),
+      ];
       if (canSeeSales) {
         calls.push(
           api.get<DailyReport>(`/reports/daily?date=${today}`),
@@ -181,6 +193,7 @@ export function DashboardPage() {
       }
       const results = await Promise.allSettled(calls);
       const invRes = results[0];
+      const valueRes = results[1];
       if (invRes.status === 'fulfilled') {
         const allItems = (invRes.value as { data: any[] }).data || [];
         const low = allItems
@@ -195,13 +208,17 @@ export function DashboardPage() {
           .sort((a, b) => a.quantityOnHand - b.quantityOnHand);
         setLowStock(low);
       }
+      if (valueRes.status === 'fulfilled') {
+        setStockValue(valueRes.value as { totalValue: number; totalUnits: number });
+      }
+      // Offset is +2 now (inventory list + value precede the role-gated calls).
       if (canSeeSales) {
-        const [, reportRes, weeklyRes, ordersRes] = results as PromiseSettledResult<unknown>[];
+        const [, , reportRes, weeklyRes, ordersRes] = results as PromiseSettledResult<unknown>[];
         if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
         if (weeklyRes?.status === 'fulfilled') setWeeklyData(weeklyRes.value as WeeklyEntry[]);
         if (ordersRes?.status === 'fulfilled') setOrders((ordersRes.value as { data: RecentOrder[] }).data ?? []);
       } else if (canSeeExpenses) {
-        const reportRes = results[1];
+        const reportRes = results[2];
         if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
       }
     } finally {
@@ -262,6 +279,24 @@ export function DashboardPage() {
               <p className={styles.statLabel}>Total Cash-ins</p>
               <p className={styles.statValue}>{loading ? '—' : formatCurrency(revenue)}</p>
               <p className={styles.statFoot}>Revenue across {orderCount} order{orderCount === 1 ? '' : 's'}</p>
+            </article>
+          )}
+
+          {canSeeSales && stockValue && stockValue.totalValue > 0 && (
+            <article className={styles.statCard} style={{ animationDelay: '90ms' }}>
+              <div className={styles.statTop}>
+                <span className={styles.statIcon}><IconShelf /></span>
+                <span className={styles.statTag}>
+                  {Math.min(100, Math.round((revenue / stockValue.totalValue) * 100))}%
+                </span>
+              </div>
+              <p className={styles.statLabel}>Today's Target</p>
+              <p className={styles.statValue}>
+                {loading ? '—' : formatCurrency(stockValue.totalValue)}
+              </p>
+              <p className={styles.statFoot}>
+                {stockValue.totalUnits.toLocaleString()} units on shelves to sell
+              </p>
             </article>
           )}
 

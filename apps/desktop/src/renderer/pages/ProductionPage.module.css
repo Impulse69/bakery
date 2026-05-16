@@ -1063,10 +1063,11 @@
   letter-spacing: 0.02em;
   color: rgba(19, 27, 46, 0.55);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tab:hover {
+  background: #fffaf2;
   border-color: rgba(224, 123, 60, 0.4);
   color: #131b2e;
 }
@@ -1075,4 +1076,11 @@
   background: #131b2e;
   color: #fdf8f1;
   border-color: #131b2e;
+}
+
+.tabActive:hover {
+  background: #0a0e1c;
+  border-color: var(--bui-accent);
+  color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(224, 123, 60, 0.2);
 }

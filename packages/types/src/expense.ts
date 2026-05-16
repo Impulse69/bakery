@@ -15,3 +15,19 @@ export type Expense = {
   notes?: string;
   createdAt: string;
 };
+
+export type ExpensePeriod = 'weekly' | 'monthly' | 'quarterly' | 'annual';
+
+export type ExpenseCategorySummary = {
+  category: ExpenseCategory;
+  total: number;
+  count: number;
+  percentOfTotal: number;
+};
+
+export type ExpenseSummaryResponse = {
+  from: string | null;
+  to: string | null;
+  total: number;
+  categories: ExpenseCategorySummary[];
+};

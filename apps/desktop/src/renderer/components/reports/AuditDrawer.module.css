@@ -1,0 +1,106 @@
+.loading, .empty {
+  text-align: center;
+  color: rgba(19, 27, 46, 0.55);
+  padding: 1.5rem;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 65vh;
+  overflow-y: auto;
+}
+
+.entry {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+}
+
+.entryHead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.action {
+  font-weight: 700;
+  color: #131b2e;
+  font-size: 0.9rem;
+}
+
+.entityChip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.45rem;
+  background: rgba(19, 27, 46, 0.06);
+  color: rgba(19, 27, 46, 0.65);
+  border-radius: 9999px;
+}
+
+.time {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: rgba(19, 27, 46, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+.reason {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: rgba(19, 27, 46, 0.75);
+  margin: 0.25rem 0 0.45rem;
+}
+
+.diff {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.diffCol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.diffLabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.diffPre {
+  margin: 0;
+  padding: 0.5rem;
+  background: rgba(19, 27, 46, 0.04);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  color: #131b2e;
+}
+
+.entryFoot {
+  margin-top: 0.35rem;
+}
+
+.entityId {
+  font-family: 'JetBrains Mono', 'Menlo', 'Consolas', monospace;
+  font-size: 0.65rem;
+  color: rgba(19, 27, 46, 0.4);
+  letter-spacing: 0.02em;
+}

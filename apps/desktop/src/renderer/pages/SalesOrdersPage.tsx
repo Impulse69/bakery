@@ -21,7 +21,16 @@ const columns: DataTableColumn<SalesOrder>[] = [
     key: 'orderNumber',
     label: 'Order #',
     sortable: true,
-    render: (row) => <span className={styles.mono}>{row.orderNumber}</span>,
+    render: (row) => (
+      <span className={styles.mono}>
+        {row.orderNumber}
+        {row.lastModifiedAt && (
+          <span className={styles.editedChip} title="This order was modified after creation">
+            Edited
+          </span>
+        )}
+      </span>
+    ),
   },
   {
     key: 'customer',

@@ -18,9 +18,9 @@ import inventoryRoutes from './routes/inventory.js';
 import salesOrderRoutes from './routes/sales-orders.js';
 import productionRoutes from './routes/production.js';
 import supplierRoutes from './routes/suppliers.js';
-import purchaseOrderRoutes from './routes/purchase-orders.js';
 import expenseRoutes from './routes/expenses.js';
 import reportRoutes from './routes/reports.js';
+import auditRoutes from './routes/audit.js';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
@@ -65,9 +65,9 @@ app.use('/api/inventory', authMiddleware, inventoryRoutes);
 app.use('/api/sales-orders', authMiddleware, salesOrderRoutes);
 app.use('/api/production', authMiddleware, productionRoutes);
 app.use('/api/suppliers', authMiddleware, supplierRoutes);
-app.use('/api/purchase-orders', authMiddleware, purchaseOrderRoutes);
 app.use('/api/expenses', authMiddleware, expenseRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
+app.use('/api/audit', authMiddleware, auditRoutes);
 
 // Error handler (must be last)
 app.use(globalErrorHandler);

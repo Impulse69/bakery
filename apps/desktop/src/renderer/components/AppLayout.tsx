@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../store/AuthContext';
 import { Sidebar } from './Sidebar';
+import { LowStockBell } from './LowStockBell';
+import { RoleSwitcher } from './RoleSwitcher';
 import styles from './AppLayout.module.css';
 import logo from '../assets/logo.png';
 
@@ -46,10 +48,10 @@ export function AppLayout() {
               <span className={styles.statusDot}></span>
               {isOnline ? 'Online' : 'Offline'}
             </div>
-            
-            <button className={styles.iconBtn} title="Notifications">
-              <span>🔔</span>
-            </button>
+
+            <RoleSwitcher />
+
+            <LowStockBell />
             <button className={styles.iconBtn} title="Help">
               <span style={{ fontWeight: 700 }}>?</span>
             </button>

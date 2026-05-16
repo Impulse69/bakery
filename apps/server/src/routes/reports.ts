@@ -37,11 +37,11 @@ router.get(
     const totalTax = orders.reduce((s, o) => s + o.taxTotal, 0);
     const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
     
-    // Marginal Profit calculation: (Price - WholesalePrice) * Quantity
+    // Marginal Profit calculation: (sellingPrice - costPrice) * Quantity
     const totalMarginalProfit = orders.reduce((sum, order) => {
       return sum + order.items.reduce((itemSum, item) => {
-        const wholesale = item.unitWholesalePrice ?? 0;
-        return itemSum + ((item.unitPrice - wholesale) * item.quantity);
+        const cost = item.unitCostPrice ?? 0;
+        return itemSum + ((item.unitPrice - cost) * item.quantity);
       }, 0);
     }, 0);
 
@@ -93,7 +93,7 @@ router.get(
         profit: 0,
       };
 
-      const cost = (item.unitWholesalePrice ?? 0) * item.quantity;
+      const cost = (item.unitCostPrice ?? 0) * item.quantity;
       existing.quantity += item.quantity;
       existing.revenue += item.total;
       existing.cost += cost;
@@ -228,6 +228,84 @@ router.get(
     }));
 
     res.json(enriched);
+  }),
+);
+
+// GET /api/reports/cashier-activity?from=&to=
+// Per-cashier rollup: orders processed, revenue, margin, # of modifications.
+// Used by the Admin Activity view.
+router.get(
+  '/cashier-activity',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const { from, to } = req.query as Record<string, string | undefined>;
+    const orderRange: { gte?: Date; lte?: Date } = {};
+    if (from) orderRange.gte = new Date(from);
+    if (to) orderRange.lte = new Date(to);
+    const hasRange = !!(orderRange.gte || orderRange.lte);
+
+    // 1. Per-cashier order totals + margin (excluding cancelled orders).
+    const orders = await prisma.salesOrder.findMany({
+      where: {
+        ...(hasRange ? { createdAt: orderRange } : {}),
+        status: { not: 'cancelled' },
+      },
+      include: { items: { select: { unitPrice: true, unitCostPrice: true, quantity: true } } },
+    });
+
+    const byUser = new Map<
+      string,
+      { orderCount: number; totalRevenue: number; totalMarginalProfit: number }
+    >();
+    for (const o of orders) {
+      const acc = byUser.get(o.processedBy) ?? {
+        orderCount: 0,
+        totalRevenue: 0,
+        totalMarginalProfit: 0,
+      };
+      acc.orderCount += 1;
+      acc.totalRevenue += o.total;
+      acc.totalMarginalProfit += o.items.reduce(
+        (s, i) => s + (i.unitPrice - (i.unitCostPrice ?? 0)) * i.quantity,
+        0,
+      );
+      byUser.set(o.processedBy, acc);
+    }
+
+    // 2. Modification counts (item_added / quantity_changed / item_removed).
+    const modWhere: Record<string, unknown> = {
+      action: { in: ['item_added', 'item_quantity_changed', 'item_removed'] },
+    };
+    if (hasRange) modWhere.createdAt = orderRange;
+    const mods = await prisma.auditLog.groupBy({
+      by: ['userId'],
+      where: modWhere,
+      _count: { _all: true },
+    });
+    const modCountByUser = new Map(mods.map((m) => [m.userId, m._count._all]));
+
+    // 3. Resolve user names (union of buckets so cashiers with only mods still appear).
+    const userIds = Array.from(new Set([...byUser.keys(), ...modCountByUser.keys()]));
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, role: true },
+    });
+
+    const rows = users.map((u) => {
+      const o = byUser.get(u.id) ?? { orderCount: 0, totalRevenue: 0, totalMarginalProfit: 0 };
+      return {
+        userId: u.id,
+        name: u.name,
+        role: u.role,
+        orderCount: o.orderCount,
+        totalRevenue: o.totalRevenue,
+        totalMarginalProfit: o.totalMarginalProfit,
+        modificationsCount: modCountByUser.get(u.id) ?? 0,
+      };
+    });
+
+    rows.sort((a, b) => b.totalRevenue - a.totalRevenue);
+    res.json(rows);
   }),
 );
 

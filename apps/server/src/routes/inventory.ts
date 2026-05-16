@@ -51,6 +51,55 @@ router.get(
   }),
 );
 
+// GET /api/inventory/value
+// Total selling-price value of every unit currently in stock, plus a
+// per-product breakdown so the desktop can build a "today's sellable" hint.
+router.get(
+  '/value',
+  asyncHandler(async (_req, res) => {
+    const products = await prisma.product.findMany({
+      where: { isActive: true, stockQuantity: { gt: 0 } },
+      select: {
+        id: true,
+        name: true,
+        unit: true,
+        stockQuantity: true,
+        sellingPrice: true,
+        costPrice: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    let totalValue = 0;
+    let totalCostValue = 0;
+    let totalUnits = 0;
+    const breakdown = products.map((p) => {
+      const qty = p.stockQuantity;
+      const lineValue = Math.round(qty * p.sellingPrice);
+      const lineCost = Math.round(qty * (p.costPrice ?? 0));
+      totalValue += lineValue;
+      totalCostValue += lineCost;
+      totalUnits += qty;
+      return {
+        id: p.id,
+        name: p.name,
+        unit: p.unit || 'pcs',
+        quantityOnHand: qty,
+        sellingPrice: p.sellingPrice,
+        lineValue,
+      };
+    });
+
+    res.json({
+      totalValue,
+      totalCostValue,
+      totalUnits,
+      productCount: products.length,
+      breakdown,
+    });
+  }),
+);
+
 // GET /api/inventory/sold-out
 router.get(
   '/sold-out',

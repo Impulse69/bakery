@@ -1,0 +1,99 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.filters {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.periodBtns {
+  display: inline-flex;
+  gap: 0.35rem;
+  background: rgba(19, 27, 46, 0.04);
+  padding: 0.25rem;
+  border-radius: 9999px;
+}
+
+.periodBtn {
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: rgba(19, 27, 46, 0.65);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.periodBtn:hover {
+  color: #131b2e;
+}
+
+.periodBtnActive {
+  background: #131b2e;
+  color: #fffefb;
+}
+
+.periodBtnActive:hover {
+  color: #fffefb;
+}
+
+.dateRow {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.name {
+  font-weight: 700;
+  color: #131b2e;
+}
+
+.role {
+  font-size: 0.72rem;
+  color: rgba(19, 27, 46, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #131b2e;
+}
+
+.numDim {
+  font-variant-numeric: tabular-nums;
+  color: rgba(19, 27, 46, 0.4);
+}
+
+.pos { color: #0f7a4a; }
+.neg { color: #c53030; }
+
+.modChip {
+  display: inline-block;
+  min-width: 28px;
+  padding: 0.15rem 0.45rem;
+  background: rgba(224, 123, 60, 0.15);
+  color: #b45a1f;
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}

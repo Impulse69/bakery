@@ -11,39 +11,58 @@ import {
   Badge,
 } from "@bakery/ui";
 import type { DataTableColumn, SelectOption } from "@bakery/ui";
-import { formatCurrency } from "@bakery/utils";
+import { formatCurrency, can } from "@bakery/utils";
 import { api } from "../lib/api";
 import { useToast } from "../components/Toast";
+import { useAuth } from "../store/AuthContext";
 import styles from "./ProductsPage.module.css";
+
+// Only one product category in this bakery — kept as a typed constant so the
+// rest of the page (chip, glyph, server payload) stays readable without an enum.
+const DEFAULT_CATEGORY = "bread";
 
 const CATEGORY_OPTIONS: SelectOption[] = [
   { value: "bread", label: "Bread" },
-  { value: "pastry", label: "Pastry" },
-  { value: "cake", label: "Cake" },
-  { value: "snack", label: "Snack" },
-  { value: "drink", label: "Drink" },
-  { value: "other", label: "Other" },
 ];
 
 const CATEGORY_GLYPH: Record<string, string> = {
+  bread: "🍞",
   Bread: "🍞",
-  Pastry: "🥐",
-  Cake: "🎂",
-  Snack: "🍪",
-  Drink: "🥤",
-  Other: "📦",
 };
 
 const EMPTY_FORM = {
   name: "",
   sku: "",
-  category: "",
-  priceDisplay: "",
+  category: DEFAULT_CATEGORY,
+  sellingPriceDisplay: "",
+  costPriceDisplay: "",
   description: "",
 };
 
+/** Helper: read selling price from product (handles legacy `price` field). */
+function getSellingPrice(p: Product): number {
+  return (p as Product & { sellingPrice?: number; price?: number }).sellingPrice
+    ?? (p as { price?: number }).price
+    ?? 0;
+}
+
+/** Helper: read cost price from product (handles legacy `wholesalePrice`). */
+function getCostPrice(p: Product): number {
+  return (p as Product & { costPrice?: number; wholesalePrice?: number }).costPrice
+    ?? (p as { wholesalePrice?: number }).wholesalePrice
+    ?? 0;
+}
+
 export function ProductsPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const canSeeCost = user ? can(user.role, "products:cost-view") : false;
+  // Only admin/owner can mutate the catalog. Cashier sees a read-only list.
+  const canEditCatalog = user
+    ? can(user.role, "products:create") || can(user.role, "products:edit")
+    : false;
+  const canCreateProduct = user ? can(user.role, "products:create") : false;
+  const canDeleteProduct = user ? can(user.role, "products:delete") : false;
   const [products, setProducts] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -58,8 +77,8 @@ export function ProductsPage() {
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
 
-  const columns: DataTableColumn<Product>[] = useMemo(
-    () => [
+  const columns: DataTableColumn<Product>[] = useMemo(() => {
+    const base: DataTableColumn<Product>[] = [
       {
         key: "name",
         label: "Product",
@@ -79,37 +98,64 @@ export function ProductsPage() {
         ),
       },
       {
-        key: "category",
-        label: "Category",
-        render: (row) => (
-          <span className={styles.categoryChip}>{row.category}</span>
-        ),
-      },
-      {
         key: "sku",
         label: "SKU",
         render: (row) => <span className={styles.mono}>{row.sku}</span>,
       },
       {
-        key: "price",
-        label: "Price",
+        key: "sellingPrice",
+        label: "Selling Price",
         sortable: true,
         render: (row) => (
-          <span className={styles.priceCell}>{formatCurrency(row.price)}</span>
+          <span className={styles.priceCell}>{formatCurrency(getSellingPrice(row))}</span>
         ),
       },
-      {
-        key: "isActive",
-        label: "Status",
-        render: (row) => (
-          <Badge variant={row.isActive ? "success" : "danger"}>
-            {row.isActive ? "Active" : "Inactive"}
-          </Badge>
-        ),
-      },
-    ],
-    [],
-  );
+    ];
+
+    // Cost + Margin columns are admin/owner-only — cashier never sees cost data.
+    if (canSeeCost) {
+      base.push(
+        {
+          key: "costPrice",
+          label: "Cost",
+          render: (row) => (
+            <span className={styles.priceCell}>{formatCurrency(getCostPrice(row))}</span>
+          ),
+        },
+        {
+          key: "margin",
+          label: "Margin",
+          render: (row) => {
+            const sp = getSellingPrice(row);
+            const cp = getCostPrice(row);
+            const margin = sp - cp;
+            const pct = cp > 0 ? Math.round((margin / cp) * 100) : null;
+            const tone = margin < 0 ? styles.marginNeg : styles.marginPos;
+            return (
+              <span className={`${styles.priceCell} ${tone}`}>
+                {formatCurrency(margin)}
+                {pct !== null && (
+                  <span className={styles.marginPct}> ({pct >= 0 ? "+" : ""}{pct}%)</span>
+                )}
+              </span>
+            );
+          },
+        },
+      );
+    }
+
+    base.push({
+      key: "isActive",
+      label: "Status",
+      render: (row) => (
+        <Badge variant={row.isActive ? "success" : "danger"}>
+          {row.isActive ? "Active" : "Inactive"}
+        </Badge>
+      ),
+    });
+
+    return base;
+  }, [canSeeCost]);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -152,7 +198,8 @@ export function ProductsPage() {
         name: full.name,
         sku: full.sku,
         category: full.category,
-        priceDisplay: (full.price / 100).toFixed(2),
+        sellingPriceDisplay: (getSellingPrice(full) / 100).toFixed(2),
+        costPriceDisplay: (getCostPrice(full) / 100).toFixed(2),
         description: full.description ?? "",
       });
       setShowModal(true);
@@ -167,24 +214,41 @@ export function ProductsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.name.trim() || !form.sku.trim() || !form.category) {
-      showToast("Name, SKU, and category are required", "error");
+    if (!form.name.trim() || !form.category) {
+      showToast("Name and category are required", "error");
       return;
     }
-    const price = Math.round(Number(form.priceDisplay) * 100);
-    if (isNaN(price) || price < 0) {
-      showToast("Invalid price", "error");
+    const sellingPrice = Math.round(Number(form.sellingPriceDisplay) * 100);
+    if (isNaN(sellingPrice) || sellingPrice < 0) {
+      showToast("Invalid selling price", "error");
       return;
+    }
+    const costPrice = form.costPriceDisplay.trim()
+      ? Math.round(Number(form.costPriceDisplay) * 100)
+      : 0;
+    if (isNaN(costPrice) || costPrice < 0) {
+      showToast("Invalid cost price", "error");
+      return;
+    }
+    if (costPrice > sellingPrice) {
+      const ok = window.confirm(
+        "Cost price is higher than selling price — every sale will lose money. Save anyway?",
+      );
+      if (!ok) return;
     }
     setSaving(true);
     try {
-      const body = {
+      const body: Record<string, unknown> = {
         name: form.name,
-        sku: form.sku,
         category: form.category,
-        price,
-        description: form.description || undefined,
+        sellingPrice,
+        costPrice,
       };
+      // Only send SKU when editing (admin may want to change it); on create,
+      // the server auto-generates a sequenced SKU from the category.
+      if (editingProduct && form.sku.trim()) {
+        body.sku = form.sku.trim();
+      }
       if (editingProduct) {
         await api.patch(`/products/${editingProduct.id}`, body);
         showToast("Product updated", "success");
@@ -237,9 +301,13 @@ export function ProductsPage() {
   const handlePermanentDelete = async () => {
     if (!editingProduct) return;
     const first = window.confirm(
-      `Permanently delete "${editingProduct.name}"?\n\nThis removes it from the catalog entirely. It can only succeed if the product has never appeared on a sales or purchase order.`,
+      `Permanently delete "${editingProduct.name}"?\n\nThis removes the product and ALL related history — sales order lines, purchase order lines, production batches, daily targets, stock adjustments, and variants. This cannot be undone.\n\nPrefer "Deactivate" if you want to keep history.`,
     );
     if (!first) return;
+    const second = window.confirm(
+      `Last chance. "${editingProduct.name}" and every record referencing it will be wiped. Continue?`,
+    );
+    if (!second) return;
     
     setSaving(true);
     try {
@@ -298,7 +366,9 @@ export function ProductsPage() {
             />
             Show inactive
           </label>
-          <Button onClick={openAddModal}>＋ Add Product</Button>
+          {canCreateProduct && (
+            <Button onClick={openAddModal}>＋ Add Product</Button>
+          )}
         </div>
       </header>
 
@@ -325,7 +395,8 @@ export function ProductsPage() {
           columns={columns}
           data={products}
           loading={loading}
-          onRowClick={openEditModal}
+          // Only admin/owner can open the edit modal. Cashiers see a read-only list.
+          onRowClick={canEditCatalog ? openEditModal : undefined}
           emptyMessage="No products yet — add your first SKU to get started."
         />
       </div>
@@ -348,37 +419,53 @@ export function ProductsPage() {
       >
         <div className={styles.form}>
           <Input label="Name" value={form.name} onChange={setField("name")} />
-          <Input label="SKU" value={form.sku} onChange={setField("sku")} />
-          <Select
-            label="Category"
-            options={CATEGORY_OPTIONS}
-            value={form.category}
-            onChange={setSelectField("category")}
-            placeholder="Select category"
-          />
+          {editingProduct && form.category !== DEFAULT_CATEGORY && (
+            // Only surfaced when editing a legacy non-bread product, so the
+            // admin can migrate it to the canonical category.
+            <Select
+              label="Category"
+              options={CATEGORY_OPTIONS}
+              value={form.category}
+              onChange={setSelectField("category")}
+            />
+          )}
           <Input
-            label="Price (GH₵)"
+            label="Selling Price (GH₵)"
             type="number"
-            value={form.priceDisplay}
-            onChange={setField("priceDisplay")}
+            value={form.sellingPriceDisplay}
+            onChange={setField("sellingPriceDisplay")}
             placeholder="0.00"
           />
-          <Input
-            label="Description"
-            value={form.description}
-            onChange={setField("description")}
-          />
+          {canSeeCost && (
+            <Input
+              label="Cost Price (GH₵)"
+              type="number"
+              value={form.costPriceDisplay}
+              onChange={setField("costPriceDisplay")}
+              placeholder="0.00"
+            />
+          )}
+          {editingProduct && (
+            <Input
+              label="SKU"
+              value={form.sku}
+              onChange={setField("sku")}
+              placeholder="Auto-generated on create"
+            />
+          )}
 
           <div className={styles.actions}>
             {editingProduct && (
               <>
-                <Button
-                  variant="ghost"
-                  onClick={handlePermanentDelete}
-                  loading={saving}
-                >
-                  Delete permanently
-                </Button>
+                {canDeleteProduct && (
+                  <Button
+                    variant="ghost"
+                    onClick={handlePermanentDelete}
+                    loading={saving}
+                  >
+                    Delete permanently
+                  </Button>
+                )}
                 <Button
                   variant={editingProduct.isActive ? "danger" : "primary"}
                   onClick={handleToggleActive}

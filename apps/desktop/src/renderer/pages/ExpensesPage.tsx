@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Expense, ExpenseCategory, PaymentMethod } from '@bakery/types';
+import type { Expense, ExpenseCategory, ExpensePeriod, PaymentMethod } from '@bakery/types';
 import { DataTable, Pagination, Button, Modal, Input, Select, Badge } from '@bakery/ui';
 import type { DataTableColumn, SelectOption } from '@bakery/ui';
 import { formatCurrency, can } from '@bakery/utils';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
+import { ExpenseCategoryCards } from '../components/expenses/ExpenseCategoryCards';
 import styles from './ExpensesPage.module.css';
 
 const CATEGORY_OPTIONS: SelectOption[] = [
@@ -78,6 +79,38 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+function toISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Compute [from, to] (both YYYY-MM-DD) for the given period, anchored to today. */
+function rangeForPeriod(period: ExpensePeriod): { from: string; to: string } {
+  const today = new Date();
+  const to = toISO(today);
+  const from = new Date(today);
+  if (period === 'weekly') {
+    from.setDate(from.getDate() - 6);
+  } else if (period === 'monthly') {
+    from.setDate(1);
+  } else if (period === 'quarterly') {
+    const qStartMonth = Math.floor(today.getMonth() / 3) * 3;
+    from.setMonth(qStartMonth, 1);
+  } else {
+    // annual
+    from.setMonth(0, 1);
+  }
+  return { from: toISO(from), to };
+}
+
+/** Detect which preset (if any) matches the current dateFrom/dateTo. */
+function detectActivePeriod(from: string, to: string): ExpensePeriod | null {
+  for (const p of ['weekly', 'monthly', 'quarterly', 'annual'] as ExpensePeriod[]) {
+    const r = rangeForPeriod(p);
+    if (r.from === from && r.to === to) return p;
+  }
+  return null;
+}
+
 const EMPTY_FORM = {
   category: '' as ExpenseCategory | '',
   description: '',
@@ -100,6 +133,7 @@ export function ExpensesPage() {
   const [loading, setLoading] = useState(true);
   const [dateFrom, setDateFrom] = useState(getFirstOfMonth());
   const [dateTo, setDateTo] = useState(getToday());
+  const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
@@ -118,6 +152,7 @@ export function ExpensesPage() {
       let params = `/expenses?page=${page}&limit=${limit}`;
       if (dateFrom) params += `&from=${new Date(dateFrom).toISOString()}`;
       if (dateTo) params += `&to=${new Date(dateTo + 'T23:59:59').toISOString()}`;
+      if (categoryFilter) params += `&category=${categoryFilter}`;
       const res = await api.get<{ data: Expense[]; total: number }>(params);
       setExpenses(res.data);
       setTotal(res.total);
@@ -126,7 +161,21 @@ export function ExpensesPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, dateFrom, dateTo]);
+  }, [page, dateFrom, dateTo, categoryFilter]);
+
+  const handleSelectPeriod = (period: ExpensePeriod) => {
+    const { from, to } = rangeForPeriod(period);
+    setDateFrom(from);
+    setDateTo(to);
+    setPage(1);
+  };
+
+  const handleSelectCategory = (cat: ExpenseCategory | null) => {
+    setCategoryFilter(cat);
+    setPage(1);
+  };
+
+  const activePeriod = detectActivePeriod(dateFrom, dateTo);
 
   useEffect(() => {
     fetchExpenses();
@@ -213,8 +262,6 @@ export function ExpensesPage() {
     }
   };
 
-  const pageTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
-
   const setField = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [field]: e.target.value }));
   };
@@ -239,6 +286,15 @@ export function ExpensesPage() {
           </button>
         </div>
       </header>
+
+      <ExpenseCategoryCards
+        from={dateFrom}
+        to={dateTo}
+        activeCategory={categoryFilter}
+        onSelectCategory={handleSelectCategory}
+        activePeriod={activePeriod}
+        onSelectPeriod={handleSelectPeriod}
+      />
 
       <div className={styles.ledgerCard}>
         <div className={styles.filters}>
@@ -266,12 +322,6 @@ export function ExpensesPage() {
           emptyMessage="No expenses in this range."
         />
       </div>
-
-      {expenses.length > 0 && (
-        <div className={styles.totalRow}>
-          Page Total: {formatCurrency(pageTotal)}
-        </div>
-      )}
 
       {totalPages > 1 && (
         <div className={styles.pagerWrap}>
@@ -309,8 +359,6 @@ export function ExpensesPage() {
             placeholder="Select method"
           />
           <Input label="Date" type="date" value={form.expenseDate} onChange={setField('expenseDate')} />
-          <Input label="Receipt URL" value={form.receiptUrl} onChange={setField('receiptUrl')} />
-          <Input label="Notes" value={form.notes} onChange={setField('notes')} />
           <div className={styles.actions}>
             <Button variant="ghost" onClick={() => setShowAddModal(false)}>Cancel</Button>
             <Button onClick={handleAdd} loading={saving}>Save</Button>

@@ -225,6 +225,104 @@
   padding-top: 0.25rem;
 }
 
+/* Reuse the warm-cream/navy/amber language. The value card is the cashier's
+ * daily-target read-out — visually distinct from the table without shouting. */
+.priceCell {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #131b2e;
+}
+
+.valueCard {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.1rem 1.4rem;
+  border-radius: 16px;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(224, 123, 60, 0.12), transparent 45%),
+    linear-gradient(135deg, #fffefb 0%, #fdf6ea 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 12px 28px -22px rgba(19, 27, 46, 0.25);
+}
+
+.valueLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.valueEyebrow {
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #b45a1f;
+}
+
+.valueAmount {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.8rem, 2.6vw, 2.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #131b2e;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.valueSub {
+  font-size: 0.82rem;
+  color: rgba(19, 27, 46, 0.55);
+  font-style: italic;
+}
+
+.valueRight {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.valueStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.85rem;
+  border-left: 1px solid rgba(19, 27, 46, 0.08);
+  min-width: 95px;
+  text-align: right;
+}
+
+.valueStatLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.valueStatValue {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+}
+
+@media (max-width: 720px) {
+  .valueCard { flex-direction: column; gap: 0.85rem; padding: 1rem; }
+  .valueRight { gap: 0; flex-wrap: wrap; }
+  .valueStat {
+    flex: 1 1 30%;
+    text-align: left;
+    border-left: none;
+    border-top: 1px solid rgba(19, 27, 46, 0.08);
+    padding: 0.4rem 0.6rem 0.4rem 0;
+  }
+}
+
 @media (max-width: 720px) {
   .hero { flex-direction: column; padding: 1.25rem; }
   .heroMain { max-width: 100%; }

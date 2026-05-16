@@ -37,13 +37,6 @@ enum SalesOrderStatus {
   cancelled
 }
 
-enum PurchaseOrderStatus {
-  draft
-  submitted
-  received
-  cancelled
-}
-
 enum ExpenseCategory {
   utilities
   wages
@@ -61,6 +54,27 @@ enum DocumentTemplateType {
   label
 }
 
+enum AuditEntity {
+  sales_order
+  sales_order_item
+  payment
+  product
+  user
+}
+
+enum AuditAction {
+  create
+  update
+  delete
+  status_change
+  item_added
+  item_quantity_changed
+  item_removed
+  payment_added
+  payment_voided
+  password_reset
+}
+
 // ─── MODELS ─────────────────────────────────────────────
 
 model User {
@@ -75,8 +89,8 @@ model User {
 
   salesOrders       SalesOrder[]
   productionBatches ProductionBatch[]
-  purchaseOrders    PurchaseOrder[]
   expenses          Expense[]
+  auditLogs         AuditLog[]
 
   @@map("users")
 }
@@ -106,8 +120,7 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  salesOrders    SalesOrder[]
-  purchaseOrders PurchaseOrder[]
+  salesOrders SalesOrder[]
 
   @@map("customers")
 }
@@ -117,8 +130,11 @@ model Product {
   name           String
   sku            String   @unique
   category       String
-  price          Int
-  wholesalePrice Int      @default(0)
+  // sellingPrice = what the cashier charges at POS (stored in cents).
+  // costPrice    = what it costs the bakery to produce one unit (cents).
+  // Margin per unit = sellingPrice - costPrice.
+  sellingPrice   Int      @map("price")
+  costPrice      Int      @default(0) @map("wholesalePrice")
   unit           String   @default("pcs")
   description    String?
   imageUrl       String?
@@ -132,7 +148,6 @@ model Product {
   salesOrderItems    SalesOrderItem[]
   dailyTargets       DailyProductionTarget[]
   productionBatches  ProductionBatch[]
-  purchaseOrderItems PurchaseOrderLineItem[]
   stockAdjustments   ProductStockAdjustment[]
 
   @@map("products")
@@ -208,22 +223,26 @@ model DailyProductionTarget {
 }
 
 model SalesOrder {
-  id            String           @id @default(cuid())
-  orderSequence Int              @default(autoincrement()) @unique
-  orderNumber   String           @unique
-  customerId    String?
-  locationId    String
-  processedBy   String
-  status        SalesOrderStatus @default(draft)
-  subtotal      Int              @default(0)
-  taxTotal      Int              @default(0)
-  total         Int              @default(0)
-  amountPaid    Int              @default(0)
-  balanceDue    Int              @default(0)
-  notes         String?
-  completedAt   DateTime?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id             String           @id @default(cuid())
+  orderSequence  Int              @default(autoincrement()) @unique
+  orderNumber    String           @unique
+  customerId     String?
+  locationId     String
+  processedBy    String
+  status         SalesOrderStatus @default(draft)
+  subtotal       Int              @default(0)
+  taxTotal       Int              @default(0)
+  total          Int              @default(0)
+  amountPaid     Int              @default(0)
+  balanceDue     Int              @default(0)
+  notes          String?
+  completedAt    DateTime?
+  // Stamped whenever items are added/edited/removed after creation — drives
+  // the "Edited" badge in Sales Records and the audit-trail queries.
+  lastModifiedAt DateTime?
+  lastModifiedBy String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   customer Customer?       @relation(fields: [customerId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
@@ -238,15 +257,17 @@ model SalesOrder {
 }
 
 model SalesOrderItem {
-  id                 String @id @default(cuid())
-  salesOrderId       String
-  productId          String
-  variantId          String?
-  quantity           Int
-  unitPrice          Int
-  unitWholesalePrice Int    @default(0)
-  tax                Int    @default(0)
-  total              Int
+  id            String @id @default(cuid())
+  salesOrderId  String
+  productId     String
+  variantId     String?
+  quantity      Int
+  // unitPrice    = selling-price snapshot per unit at the time of sale.
+  // unitCostPrice = cost-price snapshot per unit at the time of sale.
+  unitPrice     Int
+  unitCostPrice Int    @default(0) @map("unitWholesalePrice")
+  tax           Int    @default(0)
+  total         Int
 
   salesOrder SalesOrder      @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   product    Product         @relation(fields: [productId], references: [id])
@@ -287,45 +308,6 @@ model Supplier {
   @@map("suppliers")
 }
 
-
-model PurchaseOrder {
-  id                   String              @id @default(cuid())
-  poSequence           Int                 @default(autoincrement()) @unique
-  poNumber             String              @unique
-  customerId           String?
-  totalAmount          Int                 @default(0)
-  status               PurchaseOrderStatus @default(draft)
-  orderedDate          DateTime            @default(now())
-  expectedDeliveryDate DateTime?
-  receivedDate         DateTime?
-  createdBy            String
-  notes                String?
-  createdAt            DateTime            @default(now())
-
-  customer Customer?               @relation(fields: [customerId], references: [id])
-  user     User                    @relation(fields: [createdBy], references: [id])
-  items    PurchaseOrderLineItem[]
-
-  @@index([customerId])
-  @@index([status])
-  @@map("purchase_orders")
-}
-
-model PurchaseOrderLineItem {
-  id               String @id @default(cuid())
-  purchaseOrderId  String
-  productId        String
-  quantityOrdered  Float
-  quantityReceived Float  @default(0)
-  unit             String
-  unitCost         Int
-  lineTotal        Int
-
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  product       Product       @relation(fields: [productId], references: [id])
-
-  @@map("purchase_order_line_items")
-}
 
 model Expense {
   id              String          @id @default(cuid())
@@ -387,4 +369,25 @@ model DailyProfitLoss {
   createdAt       DateTime @default(now())
 
   @@map("daily_profit_losses")
+}
+
+// Append-only audit log. Every mutation that touches money, stock, users, or
+// security writes a row here so the admin/owner has a tamper-evident trail.
+model AuditLog {
+  id         String      @id @default(cuid())
+  entity     AuditEntity
+  entityId   String
+  action     AuditAction
+  userId     String
+  reason     String?
+  beforeJson Json?
+  afterJson  Json?
+  createdAt  DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
 }

@@ -5,7 +5,8 @@ import type { DataTableColumn } from '@bakery/ui';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
-import { can } from '@bakery/utils';
+import { can, formatCurrency } from '@bakery/utils';
+import { getSocket } from '../lib/socket';
 import styles from './InventoryPage.module.css';
 
 const LOW_STOCK_THRESHOLD = 10;
@@ -16,6 +17,20 @@ const stockClass = (qty: number) => {
   return styles.num;
 };
 
+/** Pull selling price from either the new or legacy field. */
+function sellingPriceOf(p: Product): number {
+  return (p as { sellingPrice?: number; price?: number }).sellingPrice
+    ?? (p as { price?: number }).price
+    ?? 0;
+}
+
+interface InventoryValue {
+  totalValue: number;
+  totalCostValue: number;
+  totalUnits: number;
+  productCount: number;
+}
+
 const columns: DataTableColumn<Product>[] = [
   { key: 'name', label: 'Product Name', sortable: true },
   { key: 'category', label: 'Category' },
@@ -24,6 +39,22 @@ const columns: DataTableColumn<Product>[] = [
     label: 'Current Stock',
     sortable: true,
     render: (row) => <span className={stockClass(row.stockQuantity)}>{row.stockQuantity}</span>,
+  },
+  {
+    key: 'sellingPrice',
+    label: 'Selling Price',
+    render: (row) => (
+      <span className={styles.priceCell}>{formatCurrency(sellingPriceOf(row))}</span>
+    ),
+  },
+  {
+    key: 'lineValue',
+    label: 'Line Value',
+    render: (row) => (
+      <span className={styles.priceCell}>
+        {formatCurrency(Math.round(row.stockQuantity * sellingPriceOf(row)))}
+      </span>
+    ),
   },
   {
     key: 'isAvailable',
@@ -44,6 +75,9 @@ export function InventoryPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+
+  // Total selling-price worth of all in-stock items (spans every page).
+  const [value, setValue] = useState<InventoryValue | null>(null);
 
   // Detail modal
   const [selectedItem, setSelectedItem] = useState<Product | null>(null);
@@ -78,6 +112,37 @@ export function InventoryPage() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  /** Fetch the global stock-value rollup (independent of pagination). */
+  const fetchValue = useCallback(async () => {
+    try {
+      const res = await api.get<InventoryValue>('/inventory/value');
+      setValue(res);
+    } catch {
+      setValue(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchValue();
+  }, [fetchValue]);
+
+  // Refresh the total whenever stock changes anywhere in the app (sales, adjusts).
+  useEffect(() => {
+    const socket = getSocket();
+    const refresh = () => {
+      fetchValue();
+      fetchItems();
+    };
+    socket.on('inventory:update', refresh);
+    socket.on('sale:created', refresh);
+    socket.on('sale:updated', refresh);
+    return () => {
+      socket.off('inventory:update', refresh);
+      socket.off('sale:created', refresh);
+      socket.off('sale:updated', refresh);
+    };
+  }, [fetchValue, fetchItems]);
 
   useEffect(() => {
     if (detailTab === 'history' && selectedItem) {
@@ -150,6 +215,41 @@ export function InventoryPage() {
         />
       </div>
 
+      {/* Global stock-value summary — recomputes on every sale via socket. */}
+      <section className={styles.valueCard} aria-label="Total inventory value">
+        <div className={styles.valueLeft}>
+          <span className={styles.valueEyebrow}>Sellable stock value</span>
+          <span className={styles.valueAmount}>
+            {value ? formatCurrency(value.totalValue) : '—'}
+          </span>
+          <span className={styles.valueSub}>
+            If every unit on the shelf sells today, this is your ceiling.
+          </span>
+        </div>
+        <div className={styles.valueRight}>
+          <div className={styles.valueStat}>
+            <span className={styles.valueStatLabel}>Units in stock</span>
+            <span className={styles.valueStatValue}>
+              {value ? value.totalUnits.toLocaleString() : '—'}
+            </span>
+          </div>
+          <div className={styles.valueStat}>
+            <span className={styles.valueStatLabel}>Products</span>
+            <span className={styles.valueStatValue}>
+              {value ? value.productCount : '—'}
+            </span>
+          </div>
+          {isAdmin && value && value.totalCostValue > 0 && (
+            <div className={styles.valueStat}>
+              <span className={styles.valueStatLabel}>Cost basis</span>
+              <span className={styles.valueStatValue}>
+                {formatCurrency(value.totalCostValue)}
+              </span>
+            </div>
+          )}
+        </div>
+      </section>
+
       {totalPages > 1 && (
         <div className={styles.pagerWrap}>
           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
@@ -172,12 +272,15 @@ export function InventoryPage() {
               >
                 Stock Details
               </button>
-              <button
-                className={`${styles.tab} ${detailTab === 'history' ? styles.tabActive : ''}`}
-                onClick={() => setDetailTab('history')}
-              >
-                Stock History
-              </button>
+              {/* Stock history endpoint is admin/owner-only — hide tab for cashier. */}
+              {isAdmin && (
+                <button
+                  className={`${styles.tab} ${detailTab === 'history' ? styles.tabActive : ''}`}
+                  onClick={() => setDetailTab('history')}
+                >
+                  Stock History
+                </button>
+              )}
             </div>
 
             {detailTab === 'details' && (

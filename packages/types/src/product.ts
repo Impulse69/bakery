@@ -5,7 +5,10 @@ export type Product = Timestamps & {
   name: string;
   sku: string;
   category: string;
-  price: number;
+  /** Selling price in minor units (cents) — what cashier charges at POS. */
+  sellingPrice: number;
+  /** Cost price in minor units (cents) — what it costs to produce one unit. */
+  costPrice: number;
   description?: string;
   imageUrl?: string;
   isAvailable: boolean;
@@ -19,6 +22,7 @@ export type ProductVariant = Timestamps & {
   productId: string;
   name: string;
   sku: string;
+  /** Variant override of the selling price. */
   price: number;
   isActive: boolean;
 };

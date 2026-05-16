@@ -84,8 +84,12 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     
     return data;
   } catch (err) {
-    const isOffline = err instanceof TypeError || (err instanceof ApiError && err.status >= 500);
-    
+    // Only treat true network failures as "offline" — never server-returned 5xx.
+    // Previously, a server 500 (e.g. Prisma crash) was silently swallowed and a
+    // fake "success" object was returned to the client, making sales look like
+    // they recorded when they didn't. Surface real server errors as errors.
+    const isOffline = err instanceof TypeError;
+
     if (isOffline) {
       console.warn(`[Offline Fallback] Intercepted failed request to ${path}`);
       
@@ -99,8 +103,11 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         } else if (path.startsWith('/auth/me')) {
           const auth = await db.users.toArray();
           if (auth.length > 0) return auth[0].user as any;
+        } else if (path.startsWith('/production/history')) {
+          // Batch history expects { days, nextCursor } — empty paginated shape would crash render.
+          return { days: [], nextCursor: null } as any;
         }
-        
+
         // Return empty paginated structure to prevent crash
         if (path.includes('?')) return { data: [], total: 0 } as any;
         return [] as any;

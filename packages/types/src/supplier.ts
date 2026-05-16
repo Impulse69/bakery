@@ -1,6 +1,9 @@
 import type { Timestamps } from './common';
 
-export type PurchaseOrderStatus = 'draft' | 'submitted' | 'received' | 'cancelled';
+// PurchaseOrder + PurchaseOrderLineItem types removed — the concept was
+// retired in favour of the "Purchase Order" sidebar entry now pointing at
+// the production page. Supplier type retained on the off-chance the client
+// adds a supplier workflow later.
 
 export type Supplier = Timestamps & {
   id: string;
@@ -14,32 +17,4 @@ export type Supplier = Timestamps & {
   country?: string;
   paymentTerms?: string;
   isActive: boolean;
-};
-
-export type PurchaseOrder = {
-  id: string;
-  poNumber: string;
-  supplierId: string;
-  totalAmount: number;
-  status: PurchaseOrderStatus;
-  orderedDate: string;
-  expectedDeliveryDate?: string;
-  receivedDate?: string;
-  createdBy: string;
-  notes?: string;
-  createdAt: string;
-  supplier?: Supplier;
-  items?: PurchaseOrderLineItem[];
-};
-
-export type PurchaseOrderLineItem = {
-  id: string;
-  purchaseOrderId: string;
-  productId: string;
-  quantityOrdered: number;
-  quantityReceived: number;
-  unit: string;
-  unitCost: number;
-  lineTotal: number;
-  product?: { id: string; name: string };
 };

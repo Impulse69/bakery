@@ -6,8 +6,15 @@ export type { Customer } from './customer';
 export type { ProductStockAdjustment } from './inventory';
 export type { ProductionBatch, ProductionBatchStatus, DailyProductionTarget } from './production';
 export type { SalesOrder, SalesOrderItem, SalesOrderStatus, Payment } from './order';
-export type { Supplier, PurchaseOrder, PurchaseOrderLineItem, PurchaseOrderStatus } from './supplier';
-export type { Expense, ExpenseCategory } from './expense';
+export type { Supplier } from './supplier';
+export type {
+  Expense,
+  ExpenseCategory,
+  ExpensePeriod,
+  ExpenseCategorySummary,
+  ExpenseSummaryResponse,
+} from './expense';
 export type { DocumentTemplate, DocumentTemplateType } from './document';
 export type { DailySalesSummary, DailyProfitLoss, DailySummary } from './report';
 export type { WsEvents } from './ws-events';
+export type { AuditEntity, AuditAction, AuditLog } from './audit';

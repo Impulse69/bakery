@@ -1,0 +1,98 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  background: rgba(19, 27, 46, 0.03);
+  border: 1px dashed rgba(19, 27, 46, 0.15);
+  border-radius: 12px;
+  margin-top: 1rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.preview {
+  font-size: 0.85rem;
+  color: rgba(19, 27, 46, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 8px;
+  padding: 0.35rem;
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.7rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.88rem;
+  cursor: pointer;
+  text-align: left;
+  color: #131b2e;
+}
+
+.item:hover {
+  background: rgba(224, 123, 60, 0.08);
+}
+
+.itemActive {
+  background: #131b2e;
+  color: #fffefb;
+}
+
+.itemActive:hover {
+  background: #131b2e;
+}
+
+.itemPrice {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(19, 27, 46, 0.5);
+  padding: 0.5rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.reasonField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.reasonLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(19, 27, 46, 0.75);
+  letter-spacing: 0.01em;
+}
