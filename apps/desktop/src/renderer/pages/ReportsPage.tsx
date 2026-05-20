@@ -5,9 +5,11 @@ import type { DataTableColumn, SelectOption } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../store/AuthContext';
+import { CustomerAnalyticsPanel } from '../components/reports/CustomerAnalyticsPanel';
 import styles from './ReportsPage.module.css';
 
-type Tab = 'daily' | 'stock' | 'sales';
+type Tab = 'daily' | 'stock' | 'sales' | 'customers';
 
 interface DailyReport {
   date: string;
@@ -76,6 +78,8 @@ const salesColumns: DataTableColumn<SalesProduct>[] = [
 
 export function ReportsPage() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const canSeeCustomers = user?.role === 'admin' || user?.role === 'owner';
   const [activeTab, setActiveTab] = useState<Tab>('daily');
 
   const [reportDate, setReportDate] = useState(getToday());
@@ -161,7 +165,7 @@ export function ReportsPage() {
     <div className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.heroMain}>
-          <span className={styles.eyebrow}>Analytics</span>
+          <span className={styles.eyebrow}>Reports</span>
           <h1 className={styles.heading}>Reports</h1>
           <p className={styles.heroQuote}>
             <em>Daily totals, stock movements, product performance.</em>
@@ -189,8 +193,18 @@ export function ReportsPage() {
           >
             Sales by Product
           </button>
+          {canSeeCustomers && (
+            <button
+              className={`${styles.tab} ${activeTab === 'customers' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('customers')}
+            >
+              Customers
+            </button>
+          )}
         </div>
       </div>
+
+      {activeTab === 'customers' && canSeeCustomers && <CustomerAnalyticsPanel />}
 
       {activeTab === 'daily' && (
         <>

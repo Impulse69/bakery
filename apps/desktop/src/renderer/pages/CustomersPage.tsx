@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Customer, SalesOrder, Payment } from '@bakery/types';
 import {
-  DataTable, Pagination, Button, Modal, Input, SearchInput, OrderStatusBadge, StatCard,
+  DataTable, Pagination, Button, Modal, Input, SearchInput, OrderStatusBadge,
 } from '@bakery/ui';
 import type { DataTableColumn } from '@bakery/ui';
 import { formatCurrency, can } from '@bakery/utils';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
 import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
@@ -26,10 +26,6 @@ function formatShortDate(d: string | Date | undefined): string {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
-
-const PIE_COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6'];
-const BAR_COLORS = ['#0ea5e9', '#ec4899', '#10b981', '#f59e0b', '#6366f1', '#f43f5e'];
-const ORDERS_PRIMARY = '#6366f1';
 
 const columns: DataTableColumn<Customer>[] = [
   { key: 'name', label: 'Name', sortable: true },
@@ -101,23 +97,15 @@ interface CustomerStats {
   topProducts: Array<{ name: string; quantity: number }>;
 }
 
-interface CustomerAnalytics {
-  summary: { activeCustomers: number; avgOrderValue: number; active30d: number; churned: number };
-  revenueShare: Array<{ name: string; revenue: number }>;
-  ordersPerMonth: Array<{ period: string; orders: number; revenue: number }>;
-  topProducts: Array<{ name: string; quantity: number }>;
-}
-
 export function CustomersPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const canDeactivate = user ? can(user.role, 'customers:delete') : false;
-  // Cashier can't see the Leaderboard/Analytics tabs — they hit admin/owner-only endpoints.
-  const canSeeAnalytics = user ? can(user.role, 'customers:view') && (user.role === 'admin' || user.role === 'owner') : false;
-  const [activeTab, setActiveTab] = useState<'all' | 'leaderboard' | 'analytics'>('all');
+  // Cashier can't see the Leaderboard tab — it hits an admin/owner-only endpoint.
+  const canSeeLeaderboard = user ? can(user.role, 'customers:view') && (user.role === 'admin' || user.role === 'owner') : false;
+  const [activeTab, setActiveTab] = useState<'all' | 'leaderboard'>('all');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [analytics, setAnalytics] = useState<CustomerAnalytics | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -157,9 +145,6 @@ export function CustomersPage() {
       } else if (activeTab === 'leaderboard') {
         const res = await api.get<any[]>('/customers/leaderboard');
         setLeaderboard(res);
-      } else {
-        const res = await api.get<CustomerAnalytics>('/customers/analytics');
-        setAnalytics(res);
       }
     } catch {
       setCustomers([]);
@@ -295,21 +280,13 @@ export function CustomersPage() {
           >
             All
           </button>
-          {canSeeAnalytics && (
-            <>
-              <button
-                className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab('leaderboard')}
-              >
-                Leaderboard
-              </button>
-              <button
-                className={`${styles.tab} ${activeTab === 'analytics' ? styles.tabActive : ''}`}
-                onClick={() => setActiveTab('analytics')}
-              >
-                Analytics
-              </button>
-            </>
+          {canSeeLeaderboard && (
+            <button
+              className={`${styles.tab} ${activeTab === 'leaderboard' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('leaderboard')}
+            >
+              Leaderboard
+            </button>
           )}
         </div>
       </div>
@@ -340,7 +317,7 @@ export function CustomersPage() {
             </div>
           )}
         </>
-      ) : activeTab === 'leaderboard' ? (
+      ) : (
         <div className={styles.tableCard}>
           <DataTable
             columns={[
@@ -354,73 +331,6 @@ export function CustomersPage() {
             onRowClick={openDetail}
           />
         </div>
-      ) : (
-        analytics && (
-          <div className={styles.analyticsGrid}>
-            <div className={styles.statsRow}>
-              <StatCard label="Active Customers" value={analytics.summary.activeCustomers} />
-              <StatCard label="Avg Order Value" value={formatCurrency(analytics.summary.avgOrderValue)} />
-              <StatCard label="Active (30d)" value={analytics.summary.active30d} />
-              <StatCard label="Churned (>30d)" value={analytics.summary.churned} />
-            </div>
-
-            <div className={styles.ledgerCard}>
-              <div className={styles.chartTitle}>Revenue Share — Top 5 Customers</div>
-              <div style={{ height: 280, width: '100%' }}>
-                <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={analytics.revenueShare}
-                      dataKey="revenue"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                    >
-                      {analytics.revenueShare.map((_, i) => (
-                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(val) => formatCurrency(Number(val))} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className={styles.ledgerCard}>
-              <div className={styles.chartTitle}>Orders Per Month (last 6 months)</div>
-              <div style={{ height: 280, width: '100%' }}>
-                <ResponsiveContainer>
-                  <BarChart data={analytics.ordersPerMonth}>
-                    <XAxis dataKey="period" fontSize={12} />
-                    <YAxis fontSize={12} />
-                    <Tooltip />
-                    <Bar dataKey="orders" fill={ORDERS_PRIMARY} radius={[6, 6, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className={`${styles.ledgerCard} ${styles.fullWidth}`}>
-              <div className={styles.chartTitle}>Top Products (by quantity sold)</div>
-              <div style={{ height: 280, width: '100%' }}>
-                <ResponsiveContainer>
-                  <BarChart data={analytics.topProducts} layout="vertical">
-                    <XAxis type="number" fontSize={12} />
-                    <YAxis type="category" dataKey="name" fontSize={12} width={120} />
-                    <Tooltip />
-                    <Bar dataKey="quantity" radius={[0, 6, 6, 0]}>
-                      {analytics.topProducts.map((_, i) => (
-                        <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-        )
       )}
 
       {/* Add Modal */}

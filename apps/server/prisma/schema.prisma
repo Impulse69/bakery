@@ -78,14 +78,17 @@ enum AuditAction {
 // ─── MODELS ─────────────────────────────────────────────
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         UserRole
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  passwordHash        String
+  role                UserRole
+  isActive            Boolean  @default(true)
+  // Set true after an admin resets a staff password. The next login forces a
+  // change-password prompt before any other route loads. Cleared on success.
+  mustChangePassword  Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   salesOrders       SalesOrder[]
   productionBatches ProductionBatch[]

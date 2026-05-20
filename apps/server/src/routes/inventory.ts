@@ -14,6 +14,10 @@ const adjustSchema = z.object({
   reason: z.string().min(1),
 });
 
+const liquidateSchema = z.object({
+  reason: z.string().min(1).max(200),
+});
+
 // GET /api/inventory  — paginated product list with stock
 router.get(
   '/',
@@ -109,6 +113,66 @@ router.get(
       orderBy: { name: 'asc' },
     });
     res.json(products);
+  }),
+);
+
+// POST /api/inventory/liquidate
+// Bread expires fast — at end of day (or whenever shelf life lapses) the admin
+// writes off remaining stock in one stroke. We record a negative adjustment
+// per product so the loss flows into stock history and cost-basis reports,
+// then zero out every product's stockQuantity in a single transaction.
+//
+// Declared BEFORE `/:id/adjust` so Express never tries to interpret
+// "liquidate" as a product id under any future route shape.
+router.post(
+  '/liquidate',
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const { reason } = liquidateSchema.parse(req.body);
+
+    const result = await prisma.$transaction(async (tx) => {
+      const inStock = await tx.product.findMany({
+        where: { stockQuantity: { gt: 0 } },
+        select: { id: true, stockQuantity: true, costPrice: true },
+      });
+
+      if (inStock.length === 0) {
+        return { productsAffected: 0, unitsWrittenOff: 0, costWrittenOff: 0, affectedIds: [] as string[] };
+      }
+
+      // One adjustment row per product = trail in /reports/stock-adjustment.
+      await tx.productStockAdjustment.createMany({
+        data: inStock.map((p) => ({
+          productId: p.id,
+          quantityChange: -p.stockQuantity,
+          reason,
+        })),
+      });
+
+      // Zero everything in one update — safe because we filtered to qty>0.
+      await tx.product.updateMany({
+        where: { stockQuantity: { gt: 0 } },
+        data: { stockQuantity: 0, isAvailable: false },
+      });
+
+      const unitsWrittenOff = inStock.reduce((s, p) => s + p.stockQuantity, 0);
+      const costWrittenOff = inStock.reduce(
+        (s, p) => s + Math.round(p.stockQuantity * (p.costPrice ?? 0)),
+        0,
+      );
+
+      return {
+        productsAffected: inStock.length,
+        unitsWrittenOff,
+        costWrittenOff,
+        affectedIds: inStock.map((p) => p.id),
+      };
+    });
+
+    // Tell every connected client to refresh — one event covers all products.
+    getIO().emit('inventory:update', { liquidated: true });
+
+    res.json(result);
   }),
 );
 

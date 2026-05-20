@@ -38,3 +38,17 @@ export class BakeryDB extends Dexie {
 }
 
 export const db = new BakeryDB();
+
+/**
+ * Wipe every cached table (products, customers, sales orders, sync queue).
+ * Auth cache is preserved so the user stays signed in. Use when the server
+ * regenerated IDs and local rows now look like phantom duplicates.
+ */
+export async function clearLocalCache(): Promise<void> {
+  await Promise.all([
+    db.products.clear(),
+    db.customers.clear(),
+    db.salesOrders.clear(),
+    db.syncQueue.clear(),
+  ]);
+}

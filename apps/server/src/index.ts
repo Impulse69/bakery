@@ -21,6 +21,8 @@ import supplierRoutes from './routes/suppliers.js';
 import expenseRoutes from './routes/expenses.js';
 import reportRoutes from './routes/reports.js';
 import auditRoutes from './routes/audit.js';
+import userRoutes from './routes/users.js';
+import devResetRoutes from './routes/dev-reset.js';
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
@@ -68,6 +70,12 @@ app.use('/api/suppliers', authMiddleware, supplierRoutes);
 app.use('/api/expenses', authMiddleware, expenseRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
 app.use('/api/audit', authMiddleware, auditRoutes);
+app.use('/api/users', authMiddleware, userRoutes);
+
+// Dev-only data reset (route itself returns 403 in production).
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/dev', authMiddleware, devResetRoutes);
+}
 
 // Error handler (must be last)
 app.use(globalErrorHandler);

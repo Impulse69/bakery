@@ -40,7 +40,7 @@ const MENU_ITEMS: MenuItem[] = [
   { path: '/inventory', label: 'Inventory Stock', permission: 'inventory:view', icon: <IconBox /> },
   { path: '/production', label: 'Purchase Order', permission: 'production:view', icon: <IconFactory /> },
   { path: '/expenses', label: 'Accounts Payable', permission: 'expenses:view', icon: <IconMoney /> },
-  { path: '/reports', label: 'Analytics', permission: 'reports:view', icon: <IconChart /> },
+  { path: '/reports', label: 'Reports', permission: 'reports:view', icon: <IconChart /> },
   // Cashier Activity: admin/owner only. Permission `audit:view` is granted to
   // admin (via wildcard) and owner (explicit).
   { path: '/cashier-activity', label: 'Cashier Activity', permission: 'audit:view', icon: <IconShield /> },

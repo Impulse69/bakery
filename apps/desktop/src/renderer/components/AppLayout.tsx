@@ -4,6 +4,7 @@ import { useAuth } from '../store/AuthContext';
 import { Sidebar } from './Sidebar';
 import { LowStockBell } from './LowStockBell';
 import { RoleSwitcher } from './RoleSwitcher';
+import { ForceChangePasswordGate } from './ForceChangePasswordGate';
 import styles from './AppLayout.module.css';
 import logo from '../assets/logo.png';
 
@@ -73,7 +74,9 @@ export function AppLayout() {
         </header>
 
         <main className={styles.content}>
-          <Outlet />
+          <ForceChangePasswordGate>
+            <Outlet />
+          </ForceChangePasswordGate>
         </main>
       </div>
     </div>

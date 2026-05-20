@@ -91,6 +91,11 @@ export function InventoryPage() {
   const [adjustReason, setAdjustReason] = useState('');
   const [adjusting, setAdjusting] = useState(false);
 
+  // Liquidation (end-of-day write-off — bread expires)
+  const [showLiquidate, setShowLiquidate] = useState(false);
+  const [liquidateReason, setLiquidateReason] = useState('Shelf life expired — end-of-day liquidation');
+  const [liquidating, setLiquidating] = useState(false);
+
   const limit = 20;
   const totalPages = Math.ceil(total / limit);
 
@@ -165,6 +170,35 @@ export function InventoryPage() {
 
   const closeDetail = () => {
     setSelectedItem(null);
+  };
+
+  const handleLiquidate = async () => {
+    if (!liquidateReason.trim()) {
+      showToast('Reason is required', 'error');
+      return;
+    }
+    setLiquidating(true);
+    try {
+      const res = await api.post<{ productsAffected: number; unitsWrittenOff: number; costWrittenOff: number }>(
+        '/inventory/liquidate',
+        { reason: liquidateReason.trim() },
+      );
+      if (res.productsAffected === 0) {
+        showToast('Nothing to liquidate — stock is already at zero.', 'success');
+      } else {
+        showToast(
+          `Liquidated ${res.unitsWrittenOff.toLocaleString()} units across ${res.productsAffected} products.`,
+          'success',
+        );
+      }
+      setShowLiquidate(false);
+      fetchItems();
+      fetchValue();
+    } catch (err: any) {
+      showToast(err.message || 'Liquidation failed', 'error');
+    } finally {
+      setLiquidating(false);
+    }
   };
 
   const handleAdjust = async () => {
@@ -247,8 +281,68 @@ export function InventoryPage() {
               </span>
             </div>
           )}
+          {isAdmin && (
+            <div className={styles.valueAction}>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setShowLiquidate(true)}
+                disabled={!value || value.totalUnits === 0}
+              >
+                Liquidate Stock
+              </Button>
+            </div>
+          )}
         </div>
       </section>
+
+      {/* Liquidation confirm — wipes all in-stock quantities to zero with a written-off audit row per product. */}
+      <Modal
+        isOpen={showLiquidate}
+        onClose={() => !liquidating && setShowLiquidate(false)}
+        title="Liquidate Stock"
+        size="md"
+      >
+        <div className={styles.liquidateBody}>
+          <p className={styles.liquidateLead}>
+            Bread doesn&rsquo;t keep. This zeroes every product&rsquo;s stock and records a write-off
+            so the loss shows up in stock history and cost reports.
+          </p>
+          {value && (
+            <div className={styles.liquidateStats}>
+              <div>
+                <span className={styles.liquidateStatLabel}>Units written off</span>
+                <span className={styles.liquidateStatValue}>{value.totalUnits.toLocaleString()}</span>
+              </div>
+              <div>
+                <span className={styles.liquidateStatLabel}>Products affected</span>
+                <span className={styles.liquidateStatValue}>{value.productCount}</span>
+              </div>
+              {value.totalCostValue > 0 && (
+                <div>
+                  <span className={styles.liquidateStatLabel}>Cost basis lost</span>
+                  <span className={styles.liquidateStatValue}>{formatCurrency(value.totalCostValue)}</span>
+                </div>
+              )}
+            </div>
+          )}
+          <Input
+            label="Reason (recorded against every product)"
+            value={liquidateReason}
+            onChange={(e) => setLiquidateReason(e.target.value)}
+            placeholder="e.g. Shelf life expired — end-of-day liquidation"
+          />
+          <p className={styles.liquidateWarn}>This cannot be undone from the UI.</p>
+          <div className={styles.actions}>
+            <Button variant="ghost" size="sm" onClick={() => setShowLiquidate(false)} disabled={liquidating}>
+              Cancel
+            </Button>
+            <Button variant="danger" size="sm" onClick={handleLiquidate} loading={liquidating}>
+              Yes, liquidate
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {totalPages > 1 && (
         <div className={styles.pagerWrap}>

@@ -215,7 +215,12 @@ export function DashboardPage() {
       if (canSeeSales) {
         const [, , reportRes, weeklyRes, ordersRes] = results as PromiseSettledResult<unknown>[];
         if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
-        if (weeklyRes?.status === 'fulfilled') setWeeklyData(weeklyRes.value as WeeklyEntry[]);
+        if (weeklyRes?.status === 'fulfilled') {
+          // Server returns a bare array; guard against any caller (e.g. offline
+          // fallback) handing back a non-array so the page never crashes here.
+          const v = weeklyRes.value;
+          setWeeklyData(Array.isArray(v) ? (v as WeeklyEntry[]) : []);
+        }
         if (ordersRes?.status === 'fulfilled') setOrders((ordersRes.value as { data: RecentOrder[] }).data ?? []);
       } else if (canSeeExpenses) {
         const reportRes = results[2];
@@ -282,7 +287,7 @@ export function DashboardPage() {
             </article>
           )}
 
-          {canSeeSales && stockValue && stockValue.totalValue > 0 && (
+          {canSeeSales && role !== 'admin' && stockValue && stockValue.totalValue > 0 && (
             <article className={styles.statCard} style={{ animationDelay: '90ms' }}>
               <div className={styles.statTop}>
                 <span className={styles.statIcon}><IconShelf /></span>

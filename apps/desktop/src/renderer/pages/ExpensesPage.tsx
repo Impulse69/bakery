@@ -7,6 +7,7 @@ import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
 import { ExpenseCategoryCards } from '../components/expenses/ExpenseCategoryCards';
+import { MoneyInput } from '../components/MoneyInput';
 import styles from './ExpensesPage.module.css';
 
 const CATEGORY_OPTIONS: SelectOption[] = [
@@ -241,7 +242,7 @@ export function ExpensesPage() {
     setForm({
       category: expense.category,
       description: expense.description,
-      amountDisplay: String(expense.amount / 100),
+      amountDisplay: (expense.amount / 100).toFixed(2),
       paymentMethod: expense.paymentMethod,
       expenseDate: expense.expenseDate.split('T')[0],
       receiptUrl: expense.receiptUrl || '',
@@ -344,12 +345,10 @@ export function ExpensesPage() {
             placeholder="Select category"
           />
           <Input label="Description" value={form.description} onChange={setField('description')} />
-          <Input
-            label="Amount (GH₵)"
-            type="number"
+          <MoneyInput
+            label="Amount"
             value={form.amountDisplay}
-            onChange={setField('amountDisplay')}
-            placeholder="0.00"
+            onChange={(v) => setForm((f) => ({ ...f, amountDisplay: v }))}
           />
           <Select
             label="Payment Method"

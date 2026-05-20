@@ -1,0 +1,138 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: rgba(19, 27, 46, 0.65);
+  cursor: pointer;
+}
+
+.nameCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.name {
+  font-weight: 600;
+  color: #131b2e;
+}
+
+.youChip {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border-radius: 9999px;
+  background: rgba(19, 27, 46, 0.07);
+  color: rgba(19, 27, 46, 0.7);
+}
+
+.mustChip {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.12rem 0.4rem;
+  border-radius: 9999px;
+  background: rgba(224, 123, 60, 0.15);
+  color: #b45a1f;
+}
+
+.rolePill {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(19, 27, 46, 0.06);
+  color: rgba(19, 27, 46, 0.75);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rowActions {
+  display: inline-flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.actionBtn,
+.actionBtnDanger {
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.actionBtn {
+  border: 1px solid rgba(19, 27, 46, 0.15);
+  background: #fffefb;
+  color: #131b2e;
+}
+
+.actionBtn:hover:not(:disabled) {
+  border-color: rgba(19, 27, 46, 0.35);
+  background: rgba(19, 27, 46, 0.03);
+}
+
+.actionBtnDanger {
+  border: 1px solid rgba(197, 48, 48, 0.28);
+  background: rgba(197, 48, 48, 0.06);
+  color: #9b2424;
+}
+
+.actionBtnDanger:hover {
+  background: rgba(197, 48, 48, 0.12);
+}
+
+.actionBtn:disabled,
+.actionBtnDanger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagerWrap {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.formNote {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(19, 27, 46, 0.55);
+  line-height: 1.4;
+  font-style: italic;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid rgba(19, 27, 46, 0.06);
+  margin-top: 0.2rem;
+}

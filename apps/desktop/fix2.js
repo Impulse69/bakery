@@ -1,0 +1,1 @@
+const fs = require('fs'); let c = fs.readFileSync('apps/desktop/src/renderer/components/pos/CartPanel.tsx', 'utf8'); c = c.split('User modified')[0].split('Here is the updated code')[0].trim(); if (c.endsWith('.')) c = c.slice(0, -1).trim(); fs.writeFileSync('apps/desktop/src/renderer/components/pos/CartPanel.tsx', c);

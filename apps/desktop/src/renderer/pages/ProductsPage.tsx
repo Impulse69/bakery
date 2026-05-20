@@ -15,6 +15,7 @@ import { formatCurrency, can } from "@bakery/utils";
 import { api } from "../lib/api";
 import { useToast } from "../components/Toast";
 import { useAuth } from "../store/AuthContext";
+import { MoneyInput, formatMoney } from "../components/MoneyInput";
 import styles from "./ProductsPage.module.css";
 
 // Only one product category in this bakery — kept as a typed constant so the
@@ -429,20 +430,16 @@ export function ProductsPage() {
               onChange={setSelectField("category")}
             />
           )}
-          <Input
-            label="Selling Price (GH₵)"
-            type="number"
+          <MoneyInput
+            label="Selling Price"
             value={form.sellingPriceDisplay}
-            onChange={setField("sellingPriceDisplay")}
-            placeholder="0.00"
+            onChange={(v) => setForm((f) => ({ ...f, sellingPriceDisplay: v }))}
           />
           {canSeeCost && (
-            <Input
-              label="Cost Price (GH₵)"
-              type="number"
+            <MoneyInput
+              label="Cost Price"
               value={form.costPriceDisplay}
-              onChange={setField("costPriceDisplay")}
-              placeholder="0.00"
+              onChange={(v) => setForm((f) => ({ ...f, costPriceDisplay: v }))}
             />
           )}
           {editingProduct && (

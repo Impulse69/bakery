@@ -124,10 +124,55 @@
   color: #e27e12;
   text-decoration: none;
   transition: color 0.2s;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .forgotPassword:hover {
   color: #2e1400;
+}
+
+.forgotBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: rgba(19, 27, 46, 0.75);
+}
+
+.forgotBody p {
+  margin: 0;
+}
+
+.forgotMuted {
+  color: rgba(19, 27, 46, 0.55) !important;
+  font-size: 0.82rem !important;
+}
+
+.forgotActions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.4rem;
+}
+
+.forgotBtn {
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: none;
+  background: #131b2e;
+  color: #fffefb;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+}
+
+.forgotBtn:hover {
+  background: #1f2a47;
 }
 
 .error {

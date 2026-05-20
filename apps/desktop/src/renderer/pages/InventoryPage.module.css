@@ -285,6 +285,63 @@
   align-items: stretch;
 }
 
+.valueAction {
+  display: flex;
+  align-items: center;
+  padding-left: 0.85rem;
+  border-left: 1px solid rgba(19, 27, 46, 0.08);
+}
+
+.liquidateBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.liquidateLead {
+  margin: 0;
+  color: rgba(19, 27, 46, 0.75);
+  font-size: 0.9rem;
+}
+
+.liquidateStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.5rem;
+  background: rgba(244, 63, 94, 0.06);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+}
+
+.liquidateStats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.liquidateStatLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.liquidateStatValue {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #131b2e;
+}
+
+.liquidateWarn {
+  margin: 0;
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
 .valueStat {
   display: flex;
   flex-direction: column;

@@ -15,6 +15,8 @@ const PERMISSIONS: Record<UserRole, string[]> = {
     // the "Deactivate" button from showing for cashiers in the first place.
     'inventory:view',
     'products:view',
+    // Settings shows only the Profile tab for non-admin/owner — change own password.
+    'settings:view',
   ],
   baker: [
     'dashboard:view',
@@ -22,6 +24,7 @@ const PERMISSIONS: Record<UserRole, string[]> = {
     'production:view',
     'production:create',
     'products:view',
+    'settings:view',
   ],
   // Owner has the same operational power as admin (per user direction) without
   // granting wildcard ('*'). Spell out every action the bakery owner needs.

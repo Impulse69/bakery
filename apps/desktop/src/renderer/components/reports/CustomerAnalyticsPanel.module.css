@@ -1,0 +1,36 @@
+.analyticsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.analyticsGrid > .statsRow,
+.analyticsGrid > .fullWidth {
+  grid-column: 1 / -1;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.ledgerCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 18px -14px rgba(19, 27, 46, 0.25);
+}
+
+.chartTitle {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: #131b2e;
+  letter-spacing: -0.01em;
+}
+
+.fullWidth { width: 100%; }

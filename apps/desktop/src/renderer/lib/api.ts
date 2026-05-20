@@ -48,18 +48,26 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     // Manage cache on success
     try {
       if (method === 'GET') {
+        // A page=1 GET with no search filter is a "full refresh" — clear the
+        // local table first so rows the server no longer has (e.g. records
+        // deleted via dev reset) disappear from the cache instead of lingering
+        // as ghost duplicates next time the offline fallback fires.
+        const qIdx = path.indexOf('?');
+        const params = new URLSearchParams(qIdx >= 0 ? path.slice(qIdx + 1) : '');
+        const isFullRefresh =
+          (params.get('page') ?? '1') === '1' && !params.get('search');
+
+        const writeRows = async (table: { clear: () => Promise<unknown>; bulkPut: (rows: any[]) => Promise<unknown> }, rows: any[]) => {
+          if (isFullRefresh) await table.clear();
+          if (rows.length > 0) await table.bulkPut(rows);
+        };
+
         if (path.startsWith('/products')) {
-           if (Array.isArray(data)) {
-               await db.products.bulkPut(data);
-           } else if (data.data && Array.isArray(data.data)) {
-               await db.products.bulkPut(data.data);
-           }
+          const rows = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : null;
+          if (rows) await writeRows(db.products as any, rows);
         } else if (path.startsWith('/customers')) {
-           if (Array.isArray(data)) {
-               await db.customers.bulkPut(data);
-           } else if (data.data && Array.isArray(data.data)) {
-               await db.customers.bulkPut(data.data);
-           }
+          const rows = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : null;
+          if (rows) await writeRows(db.customers as any, rows);
         }
       } else {
         // Mutations: POST, PATCH, PUT, DELETE
@@ -106,10 +114,25 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         } else if (path.startsWith('/production/history')) {
           // Batch history expects { days, nextCursor } — empty paginated shape would crash render.
           return { days: [], nextCursor: null } as any;
+        } else if (path.startsWith('/reports/daily')) {
+          // Daily report is an object, not an array. Returning [] would crash readers
+          // that do `report.totalRevenue` etc.
+          return { date: '', totalOrders: 0, totalRevenue: 0, totalTax: 0, totalExpenses: 0, profit: 0 } as any;
+        } else if (path.startsWith('/reports/')) {
+          // All other /reports/* endpoints (weekly, stock-adjustment, sales-by-product,
+          // customer analytics is under /customers) return bare arrays.
+          return [] as any;
+        } else if (path.startsWith('/inventory/value')) {
+          return { totalValue: 0, totalCostValue: 0, totalUnits: 0, productCount: 0, breakdown: [] } as any;
+        } else if (path.startsWith('/sales-orders')) {
+          // Paginated list endpoint.
+          return { data: [], total: 0 } as any;
         }
 
-        // Return empty paginated structure to prevent crash
-        if (path.includes('?')) return { data: [], total: 0 } as any;
+        // Unknown GET: prefer the safer bare-array shape. Paginated endpoints are
+        // handled explicitly above. The previous `path.includes('?')` heuristic
+        // was wrong — it returned a paginated wrapper for non-paginated queries
+        // like /reports/weekly?endDate=... and crashed callers doing .reduce/.map.
         return [] as any;
       } else {
          // Mutation Queue

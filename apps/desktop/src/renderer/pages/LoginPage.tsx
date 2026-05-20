@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Modal } from '@bakery/ui';
 import { useAuth } from '../store/AuthContext';
 import styles from './LoginPage.module.css';
 import logo from '../assets/logo.png';
@@ -15,6 +16,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -67,7 +69,13 @@ export function LoginPage() {
             <div className={styles.formGroup}>
               <div className={styles.labelContainer}>
                 <label className={styles.label} htmlFor="password">Password</label>
-                <a href="#" className={styles.forgotPassword}>Forgot Password</a>
+                <button
+                  type="button"
+                  className={styles.forgotPassword}
+                  onClick={() => setShowForgotModal(true)}
+                >
+                  Forgot Password
+                </button>
               </div>
               <input 
                 id="password"
@@ -110,6 +118,35 @@ export function LoginPage() {
           <div className={styles.glassOverlay}></div>
         </div>
       </section>
+
+      {/* Forgot-password modal — admin-reset path until email is wired up. */}
+      <Modal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        title="Forgot password?"
+        size="sm"
+      >
+        <div className={styles.forgotBody}>
+          <p>
+            Self-serve password reset isn&rsquo;t available yet. Please contact your
+            shop&rsquo;s admin or owner and ask them to reset your password from
+            <strong> Settings → Users</strong>.
+          </p>
+          <p className={styles.forgotMuted}>
+            After they reset it, sign in with the temporary password and you&rsquo;ll be
+            prompted to set a new one.
+          </p>
+          <div className={styles.forgotActions}>
+            <button
+              type="button"
+              className={styles.forgotBtn}
+              onClick={() => setShowForgotModal(false)}
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      </Modal>
     </main>
   );
 }
