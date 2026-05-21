@@ -214,12 +214,12 @@ export function POSPage() {
     setLoading(true);
     try {
       const order = await createOrder();
-      showToast(`Draft saved! Order ${order.orderNumber}`);
+      showToast(`Order ${order.orderNumber} saved as open`);
       setIsCheckoutModalOpen(false);
       resetCart();
       fetchProducts();
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to save draft', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to save order', 'error');
     } finally {
       setLoading(false);
     }

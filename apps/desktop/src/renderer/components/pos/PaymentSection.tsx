@@ -176,7 +176,7 @@ export function PaymentSection({
             onClick={onSaveDraft}
             disabled={cartEmpty || loading || isInvalid}
           >
-            Save Draft
+            Save as Open
           </button>
           <button
             type="button"

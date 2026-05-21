@@ -10,7 +10,7 @@ import styles from './SalesOrdersPage.module.css';
 
 const STATUS_TABS: { label: string; value: SalesOrderStatus | '' }[] = [
   { label: 'All', value: '' },
-  { label: 'Draft', value: 'draft' },
+  { label: 'Open', value: 'draft' },
   { label: 'Confirmed', value: 'confirmed' },
   { label: 'Invoiced', value: 'invoiced' },
   { label: 'Paid', value: 'paid' },

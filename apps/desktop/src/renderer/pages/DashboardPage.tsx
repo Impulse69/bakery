@@ -153,7 +153,7 @@ function WeeklyBar({ weeklyData }: { weeklyData: WeeklyEntry[] }) {
 
 const STATUS_STYLE: Record<string, { color: string; bg: string; label: string }> = {
   paid:      { color: '#15803d', bg: 'rgba(21, 128, 61, 0.12)',  label: 'Paid' },
-  draft:     { color: '#57534e', bg: 'rgba(87, 83, 78, 0.12)',   label: 'Draft' },
+  draft:     { color: '#57534e', bg: 'rgba(87, 83, 78, 0.12)',   label: 'Open' },
   confirmed: { color: '#1d4ed8', bg: 'rgba(29, 78, 216, 0.12)',  label: 'Confirmed' },
   invoiced:  { color: '#b45309', bg: 'rgba(180, 83, 9, 0.14)',   label: 'Invoiced' },
   cancelled: { color: '#b91c1c', bg: 'rgba(185, 28, 28, 0.12)',  label: 'Cancelled' },

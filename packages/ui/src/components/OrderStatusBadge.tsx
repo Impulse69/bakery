@@ -8,7 +8,7 @@ export interface OrderStatusBadgeProps {
 }
 
 const STATUS_MAP: Record<SalesOrderStatus, { variant: BadgeVariant; label: string }> = {
-  draft: { variant: 'neutral', label: 'Draft' },
+  draft: { variant: 'neutral', label: 'Open' },
   confirmed: { variant: 'info', label: 'Confirmed' },
   picked: { variant: 'info', label: 'Picked' },
   invoiced: { variant: 'warning', label: 'Invoiced' },
