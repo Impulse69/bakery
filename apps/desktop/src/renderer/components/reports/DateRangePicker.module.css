@@ -1,0 +1,50 @@
+.wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.1rem;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.chips {
+  display: inline-flex;
+  gap: 0.35rem;
+  background: rgba(19, 27, 46, 0.04);
+  padding: 0.25rem;
+  border-radius: 9999px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: rgba(19, 27, 46, 0.65);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip:hover {
+  color: #131b2e;
+}
+
+.chipActive {
+  background: #131b2e;
+  color: #fffefb;
+}
+
+.chipActive:hover {
+  color: #fffefb;
+}
+
+.dateRow {
+  display: flex;
+  gap: 0.6rem;
+}
