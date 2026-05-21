@@ -1,8 +1,14 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
 .analyticsGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
-  margin-top: 1rem;
 }
 
 .analyticsGrid > .statsRow,
@@ -34,3 +40,143 @@
 }
 
 .fullWidth { width: 100%; }
+
+/* ── Aging buckets card ─────────────────────────────────────────── */
+
+.agingHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.agingSub {
+  font-size: 0.8rem;
+  color: rgba(19, 27, 46, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+.agingOver1y {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(122, 31, 31, 0.08), rgba(196, 69, 69, 0.05));
+  border: 1px solid rgba(122, 31, 31, 0.18);
+}
+
+.agingOver1yLabel {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #7a1f1f;
+}
+
+.agingOver1yValue {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #7a1f1f;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+.agingOver1yMeta {
+  font-size: 0.7rem;
+  color: rgba(122, 31, 31, 0.7);
+  margin-top: 2px;
+}
+
+.agingBar {
+  display: flex;
+  height: 16px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(19, 27, 46, 0.06);
+}
+
+.agingSeg {
+  height: 100%;
+  min-width: 0;
+  transition: filter 0.15s ease;
+}
+
+.agingSeg:hover {
+  filter: brightness(1.08);
+}
+
+.agingEmpty {
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(47, 158, 106, 0.85);
+  background: rgba(47, 158, 106, 0.08);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.agingLegend {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.agingLegendItem {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+}
+
+.agingDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-top: 4px;
+  flex-shrink: 0;
+}
+
+.agingLegendCol {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.agingLegendLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.6);
+}
+
+.agingLegendAmount {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.agingLegendCount {
+  font-size: 0.72rem;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+@media (max-width: 900px) {
+  .agingLegend {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .analyticsGrid {
+    grid-template-columns: 1fr;
+  }
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
