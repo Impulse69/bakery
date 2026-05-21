@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reports redesign — Brainstorm</title>
+<style>
+  :root {
+    --cream: #fdf8f1;
+    --cream-2: #f7ecdc;
+    --paper: #fffefb;
+    --ink: #131b2e;
+    --ink-60: rgba(19,27,46,.6);
+    --line: rgba(19,27,46,.1);
+    --orange: #e07b3c;
+    --green: #2f9e6a;
+    --red: #c44545;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #efe6d6; color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    padding: 40px 24px 60px;
+  }
+  .frame { max-width: 1080px; margin: 0 auto; }
+
+  .hero {
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(19,27,46,.08); border-radius: 20px;
+    padding: 28px 32px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(224,123,60,.16), transparent 55%),
+      linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 14px 36px -20px rgba(19,27,46,.28);
+    margin-bottom: 22px;
+  }
+  .eyebrow {
+    font-size: 11px; font-weight: 800; letter-spacing: .24em;
+    text-transform: uppercase; color: var(--orange);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 22px; height: 2px; background: var(--orange); border-radius: 999px; }
+  h1 {
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    font-size: 30px; font-weight: 800; letter-spacing: -.025em;
+    margin: 8px 0 6px;
+  }
+  .lede { color: var(--ink-60); font-size: 14px; margin: 0; max-width: 64ch; line-height: 1.55; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-bottom: 28px; }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid rgba(19,27,46,.08);
+    border-radius: 16px;
+    padding: 22px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px -14px rgba(19,27,46,.22);
+    text-decoration: none; color: inherit;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: var(--orange);
+    box-shadow: 0 12px 32px -18px rgba(224,123,60,.45);
+  }
+
+  .badge {
+    display: inline-block; padding: 4px 10px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+    border-radius: 999px;
+    background: var(--cream-2); color: var(--ink-60);
+    align-self: flex-start;
+  }
+  .card h2 {
+    font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800;
+    letter-spacing: -.015em; margin: 0;
+  }
+  .card p { font-size: 13px; color: var(--ink-60); line-height: 1.55; margin: 0; flex: 1; }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    font-size: 10.5px; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px;
+    background: var(--cream); color: var(--ink-60);
+    border: 1px solid var(--line);
+  }
+  .tag.win { background: rgba(47,158,106,.10); color: var(--green); border-color: rgba(47,158,106,.25); }
+  .tag.trade { background: rgba(196,69,69,.08); color: var(--red); border-color: rgba(196,69,69,.18); }
+
+  .cta {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 700; color: var(--orange);
+    margin-top: 4px;
+  }
+
+  /* preview thumb (mini schematic) */
+  .thumb {
+    height: 92px; border-radius: 10px; padding: 10px;
+    background: linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+    border: 1px solid var(--line);
+    display: grid; gap: 4px;
+  }
+  .thumb .row { display: flex; gap: 4px; }
+  .thumb .b {
+    height: 8px; border-radius: 3px; background: rgba(19,27,46,.10);
+  }
+  .thumb .b.dark { background: var(--ink); }
+  .thumb .b.orange { background: var(--orange); }
+  .thumb .b.tall { height: 18px; }
+  .thumb .b.taller { height: 36px; }
+  .thumb .col { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+  /* notes */
+  .notes {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px 22px; font-size: 13px; color: var(--ink-60); line-height: 1.6;
+  }
+  .notes b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <header class="hero">
+    <span class="eyebrow">Brainstorm · Reports redesign</span>
+    <h1>Three directions, one goal</h1>
+    <p class="lede">Each direction kills the 4-tab pattern (Daily / Stock / Sales / Customers) and uses a single global date range. They differ in how they organize the data. Click any card to open the live mockup.</p>
+  </header>
+
+  <div class="grid">
+
+    <a class="card" href="mockup-a.html">
+      <span class="badge">Mockup A</span>
+
+      <div class="thumb">
+        <div class="b dark tall" style="width:100%"></div>
+        <div class="row">
+          <div class="b" style="width:16%"></div>
+          <div class="b" style="width:16%"></div>
+          <div class="b orange" style="width:16%"></div>
+          <div class="b" style="width:16%"></div>
+          <div class="b" style="width:16%"></div>
+          <div class="b" style="width:16%"></div>
+        </div>
+        <div class="row">
+          <div class="b taller" style="width:65%"></div>
+          <div class="b taller" style="width:33%"></div>
+        </div>
+        <div class="row">
+          <div class="b" style="width:49%"></div>
+          <div class="b" style="width:49%"></div>
+        </div>
+      </div>
+
+      <h2>Command Center</h2>
+      <p>One scrollable page. KPI strip, revenue trend, payment mix, top products, top customers, stock movement, cashier activity — all visible, all driven by one date picker.</p>
+
+      <div class="tag-row">
+        <span class="tag win">No tab switching</span>
+        <span class="tag win">All data visible</span>
+        <span class="tag trade">Long scroll</span>
+      </div>
+      <span class="cta">Open mockup →</span>
+    </a>
+
+    <a class="card" href="mockup-b.html">
+      <span class="badge">Mockup B</span>
+
+      <div class="thumb">
+        <div class="b dark tall" style="width:100%"></div>
+        <div class="row" style="flex:1">
+          <div class="col" style="max-width:34%">
+            <div class="b taller"></div>
+            <div class="b" style="height:16px"></div>
+          </div>
+          <div class="col">
+            <div class="b orange taller"></div>
+            <div class="row">
+              <div class="b" style="width:50%; height:16px"></div>
+              <div class="b" style="width:50%; height:16px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h2>Two-Column Workspace</h2>
+      <p>Dashboard density. Left rail is "at a glance" + condensed lists. Right column holds charts, stock, and cashier tables. Long lists open in a side drawer.</p>
+
+      <div class="tag-row">
+        <span class="tag win">Fits without scroll</span>
+        <span class="tag win">Glanceable</span>
+        <span class="tag trade">Smaller panels</span>
+      </div>
+      <span class="cta">Open mockup →</span>
+    </a>
+
+    <a class="card" href="mockup-c.html">
+      <span class="badge">Mockup C</span>
+
+      <div class="thumb">
+        <div class="b dark tall" style="width:100%"></div>
+        <div class="row">
+          <div class="b" style="width:19%"></div>
+          <div class="b" style="width:19%"></div>
+          <div class="b orange" style="width:19%; height:12px"></div>
+          <div class="b" style="width:19%"></div>
+          <div class="b" style="width:19%"></div>
+        </div>
+        <div class="b orange taller" style="width:100%"></div>
+        <div class="row">
+          <div class="b" style="width:100%; height:6px"></div>
+        </div>
+        <div class="row">
+          <div class="b" style="width:100%; height:6px"></div>
+        </div>
+      </div>
+
+      <h2>Headline + Drill-In</h2>
+      <p>Top row is the 5 KPIs — clickable. The panel below morphs to that metric (chart + breakdown). Other sections live as collapsible accordions below.</p>
+
+      <div class="tag-row">
+        <span class="tag win">Focused detail</span>
+        <span class="tag win">Less scroll</span>
+        <span class="tag trade">Mode-switch feel</span>
+      </div>
+      <span class="cta">Open mockup →</span>
+    </a>
+
+  </div>
+
+  <div class="notes">
+    <b>All three surface data the current Reports tab hides today:</b> a revenue trend chart (server already exposes <code>/reports/weekly</code>), a cashier activity table (<code>/reports/cashier-activity</code>), profit-per-product (<code>/reports/profit-analysis</code>), and a payment-method breakdown (would need a small new endpoint — the <code>Order.paymentMethod</code> enum already has cash / momo / card / credit).
+  </div>
+
+</div>
+</body>
+</html>

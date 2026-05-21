@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reports Redesign — Mockups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #131b2e;
+      --orange: #e07b3c;
+      --cream-1: #fdf8f1;
+      --cream-2: #f7ecdc;
+      --surface: #fffefb;
+      --border: rgba(19, 27, 46, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 3rem 2rem;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--cream-1) 0%, var(--cream-2) 100%);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--orange);
+      display: inline-flex;
+      gap: 0.55rem;
+      align-items: center;
+    }
+    .eyebrow::before { content: ''; width: 22px; height: 2px; background: var(--orange); border-radius: 999px; }
+    h1 {
+      font-family: 'Manrope', sans-serif;
+      font-size: clamp(2rem, 3vw, 2.6rem);
+      margin: 0.4rem 0 0.5rem;
+      letter-spacing: -0.03em;
+    }
+    p.lede { color: rgba(19, 27, 46, 0.6); max-width: 60ch; font-size: 14.5px; line-height: 1.6; }
+    .grid {
+      margin-top: 2.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--ink);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 6px 18px -14px rgba(19,27,46,0.25);
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 18px 36px -20px rgba(19,27,46,0.3);
+      border-color: rgba(224, 123, 60, 0.35);
+    }
+    .card .tag {
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      color: var(--orange);
+      text-transform: uppercase;
+    }
+    .card h2 { font-family: 'Manrope', sans-serif; font-size: 1.25rem; margin: 0; letter-spacing: -0.01em; }
+    .card p { margin: 0; font-size: 13.5px; line-height: 1.55; color: rgba(19,27,46,0.65); }
+    .card .meta { margin-top: auto; font-size: 12px; color: var(--orange); font-weight: 700; }
+    .note {
+      margin-top: 2.5rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      font-size: 13px;
+      color: rgba(19,27,46,0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="eyebrow">Reports redesign</span>
+    <h1>Three directions for the Reports tab</h1>
+    <p class="lede">
+      You said: switching between Daily Summary, Stock Movement, Sales by Product and Customers is annoying.
+      Below are three different ways to fix that — same data, three different layouts. Open each, click around, then tell me which one feels right.
+    </p>
+
+    <div class="grid">
+      <a class="card" href="./option-a-command-center.html">
+        <span class="tag">Option A</span>
+        <h2>Command Center</h2>
+        <p>One long scrollable page. One global date range drives every section. Everything visible without tab switching. Charts on every panel.</p>
+        <span class="meta">Open mockup →</span>
+      </a>
+
+      <a class="card" href="./option-b-two-column.html">
+        <span class="tag">Option B</span>
+        <h2>Two-Column Dashboard</h2>
+        <p>No scrolling needed on desktop. Bento-grid layout — six panels visible at once. Click "see all" to drill into any panel.</p>
+        <span class="meta">Open mockup →</span>
+      </a>
+
+      <a class="card" href="./option-c-drilldown.html">
+        <span class="tag">Option C</span>
+        <h2>Headline + Drill-In</h2>
+        <p>Click any KPI at the top to reveal its detail below. Collapsible sections for Top Products / Customers / Stock / Cashiers underneath.</p>
+        <span class="meta">Open mockup →</span>
+      </a>
+    </div>
+
+    <div class="note">
+      Mockups use dummy data. Cream/orange palette and rounded ledger cards match the existing <code>ReportsPage.module.css</code> design tokens.
+    </div>
+  </div>
+</body>
+</html>

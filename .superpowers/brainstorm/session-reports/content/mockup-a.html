@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reports — Command Center (A)</title>
+<style>
+  :root {
+    --cream: #fdf8f1;
+    --cream-2: #f7ecdc;
+    --paper: #fffefb;
+    --ink: #131b2e;
+    --ink-60: rgba(19,27,46,.6);
+    --ink-40: rgba(19,27,46,.4);
+    --line: rgba(19,27,46,.1);
+    --hairline: rgba(19,27,46,.06);
+    --orange: #e07b3c;
+    --orange-soft: rgba(224,123,60,.12);
+    --green: #2f9e6a;
+    --red: #c44545;
+    --gold: #c89a3c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: #efe6d6;
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'tnum' 1;
+    padding: 28px 24px 48px;
+  }
+  .frame { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* HERO */
+  .hero {
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(19,27,46,.08); border-radius: 20px;
+    padding: 28px 32px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(224,123,60,.16), transparent 55%),
+      linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 14px 36px -20px rgba(19,27,46,.28);
+  }
+  .hero-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .eyebrow {
+    font-size: 11px; font-weight: 800; letter-spacing: .24em;
+    text-transform: uppercase; color: var(--orange);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 22px; height: 2px; background: var(--orange); border-radius: 999px; }
+  .h1 {
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    font-size: 30px; font-weight: 800; letter-spacing: -.025em;
+    margin: 8px 0 4px;
+  }
+  .hero-quote { color: var(--ink-60); font-size: 13.5px; margin: 0; font-style: italic; }
+
+  /* Range picker */
+  .controls { display: flex; align-items: center; gap: 10px; }
+  .range-pill {
+    display: inline-flex; align-items: center;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 6px 18px -14px rgba(19,27,46,.25);
+  }
+  .range-chip {
+    padding: 8px 14px; font-size: 12px; font-weight: 700;
+    background: transparent; border: 0; border-radius: 8px; cursor: pointer;
+    color: var(--ink-60); font-family: inherit;
+  }
+  .range-chip.active { background: var(--ink); color: var(--cream); }
+  .range-custom {
+    padding: 0 12px; border-left: 1px solid var(--line); margin-left: 4px;
+    font-size: 12.5px; color: var(--ink-60); height: 22px; display: flex; align-items: center;
+  }
+  .btn-ghost {
+    padding: 9px 14px; font-size: 12px; font-weight: 700;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+    color: var(--ink); cursor: pointer; font-family: inherit;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--paper); border: 1px solid rgba(19,27,46,.08);
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px -14px rgba(19,27,46,.2);
+  }
+  .card-pad { padding: 22px 22px 20px; }
+  .card-title {
+    font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 800;
+    letter-spacing: .16em; text-transform: uppercase; color: var(--ink-60);
+    margin: 0 0 16px;
+  }
+  .section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .section-head .card-title { margin: 0; }
+
+  /* KPI strip */
+  .kpi-strip {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 1px; background: var(--line);
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 6px 18px -14px rgba(19,27,46,.2);
+  }
+  .kpi { background: linear-gradient(135deg, #fdf8f1 0%, #fffefb 80%); padding: 20px 22px; }
+  .kpi-label {
+    font-size: 10.5px; font-weight: 800; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-60);
+  }
+  .kpi-value {
+    font-family: 'Manrope', sans-serif; font-size: 26px; font-weight: 800;
+    letter-spacing: -.02em; margin-top: 8px; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .kpi-meta { font-size: 11.5px; color: var(--ink-60); margin-top: 8px; }
+  .delta-up { color: var(--green); font-weight: 700; }
+  .delta-down { color: var(--red); font-weight: 700; }
+
+  /* Grid */
+  .grid { display: grid; gap: 18px; }
+  .cols-12 { grid-template-columns: repeat(12, 1fr); }
+  .span-8 { grid-column: span 8; } .span-7 { grid-column: span 7; }
+  .span-6 { grid-column: span 6; } .span-5 { grid-column: span 5; }
+  .span-4 { grid-column: span 4; }
+
+  /* Bars chart */
+  .bars-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; font-size: 13.5px; }
+  .bars-row:last-child { margin-bottom: 0; }
+  .bars-row .name { width: 150px; color: var(--ink); }
+  .bars-row .bar-track { flex: 1; height: 10px; background: var(--cream-2); border-radius: 999px; overflow: hidden; }
+  .bars-row .bar-fill { height: 100%; background: var(--orange); border-radius: 999px; }
+  .bars-row .val { width: 76px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* Donut */
+  .donut-wrap { display: flex; align-items: center; gap: 22px; }
+  .donut {
+    width: 120px; height: 120px; border-radius: 50%;
+    position: relative; flex-shrink: 0;
+    background: conic-gradient(
+      var(--orange) 0 62%,
+      var(--ink) 62% 86%,
+      var(--gold) 86% 94%,
+      var(--green) 94% 100%
+    );
+  }
+  .donut::after {
+    content: ''; position: absolute; inset: 22%;
+    background: var(--paper); border-radius: 50%;
+  }
+  .donut-center {
+    position: absolute; inset: 0; display: grid; place-content: center;
+    text-align: center; z-index: 1;
+  }
+  .donut-center small {
+    display: block; font-size: 9.5px; letter-spacing: .16em; color: var(--ink-60);
+    text-transform: uppercase; font-weight: 800; margin-bottom: 2px;
+  }
+  .donut-center b { font-family: 'Manrope', sans-serif; font-size: 17px; }
+  .legend { font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend b { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  /* Line chart */
+  .chart { width: 100%; height: 180px; display: block; }
+
+  /* Table */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .tbl thead th {
+    text-align: left; font-size: 10.5px; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-60);
+    padding: 12px 14px;
+    background: linear-gradient(180deg, #f9efdd, #f4e6cf);
+    border-bottom: 1px solid var(--line);
+  }
+  .tbl tbody td { padding: 12px 14px; border-bottom: 1px solid var(--hairline); font-variant-numeric: tabular-nums; }
+  .tbl tbody tr:hover { background: var(--orange-soft); }
+  .pos { color: var(--green); font-weight: 700; }
+  .neg { color: var(--red); font-weight: 700; }
+  .right { text-align: right; }
+
+  .chip {
+    display: inline-block; padding: 3px 9px; font-size: 11px; font-weight: 700;
+    border-radius: 999px; background: var(--cream-2); color: var(--ink-60);
+  }
+  .chip-up { background: rgba(47,158,106,.14); color: var(--green); }
+  .chip-down { background: rgba(196,69,69,.12); color: var(--red); }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--paper); }
+  .seg button {
+    background: transparent; border: 0; padding: 8px 14px; font-size: 12px; font-weight: 700;
+    color: var(--ink-60); cursor: pointer; border-right: 1px solid var(--line); font-family: inherit;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button.active { background: var(--ink); color: var(--cream); }
+</style>
+</head>
+<body>
+<div class="frame">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-row">
+      <div>
+        <span class="eyebrow">Reports · Mockup A</span>
+        <h1 class="h1">Reports</h1>
+        <p class="hero-quote"><em>One page, one date range. Everything flows together.</em></p>
+      </div>
+      <div class="controls">
+        <div class="range-pill">
+          <button class="range-chip">Today</button>
+          <button class="range-chip active">7 days</button>
+          <button class="range-chip">30 days</button>
+          <button class="range-chip">90 days</button>
+          <div class="range-custom">Apr 20 – May 20, 2026</div>
+        </div>
+        <button class="btn-ghost">⤓ Export</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi">
+      <div class="kpi-label">Orders</div>
+      <div class="kpi-value">142</div>
+      <div class="kpi-meta"><span class="delta-up">↑ 12%</span> vs prev. 7d</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Revenue</div>
+      <div class="kpi-value">₵28,450</div>
+      <div class="kpi-meta"><span class="delta-up">↑ 9%</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Profit</div>
+      <div class="kpi-value">₵9,820</div>
+      <div class="kpi-meta"><span class="delta-up">↑ 14%</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Expenses</div>
+      <div class="kpi-value">₵3,200</div>
+      <div class="kpi-meta"><span class="delta-down">↓ 4%</span></div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Margin</div>
+      <div class="kpi-value">34.5%</div>
+      <div class="kpi-meta">Healthy band</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Tax</div>
+      <div class="kpi-value">₵1,420</div>
+      <div class="kpi-meta">Collected</div>
+    </div>
+  </div>
+
+  <!-- Trend + payment mix -->
+  <div class="grid cols-12">
+    <div class="card card-pad span-8">
+      <div class="section-head">
+        <h3 class="card-title">Revenue trend</h3>
+        <div class="seg">
+          <button class="active">Daily</button>
+          <button>Weekly</button>
+        </div>
+      </div>
+      <svg class="chart" viewBox="0 0 800 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="fill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#e07b3c" stop-opacity=".35"/>
+            <stop offset="100%" stop-color="#e07b3c" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <g stroke="rgba(19,27,46,.06)">
+          <line x1="0" y1="40"  x2="800" y2="40"/>
+          <line x1="0" y1="90"  x2="800" y2="90"/>
+          <line x1="0" y1="140" x2="800" y2="140"/>
+        </g>
+        <path fill="url(#fill)" d="M0,120 C80,100 130,60 200,75 C270,90 320,140 400,110 C480,80 540,40 620,55 C700,70 740,100 800,80 L800,180 L0,180 Z"/>
+        <path fill="none" stroke="#e07b3c" stroke-width="2.5"
+              d="M0,120 C80,100 130,60 200,75 C270,90 320,140 400,110 C480,80 540,40 620,55 C700,70 740,100 800,80"/>
+        <g fill="rgba(19,27,46,.5)" font-size="10" font-family="Inter">
+          <text x="0" y="175">May 14</text>
+          <text x="260" y="175">May 16</text>
+          <text x="520" y="175">May 18</text>
+          <text x="755" y="175">May 20</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="card card-pad span-4">
+      <h3 class="card-title">Payment mix</h3>
+      <div class="donut-wrap">
+        <div class="donut">
+          <div class="donut-center"><small>Revenue</small><b>₵28.4k</b></div>
+        </div>
+        <div class="legend">
+          <span><i style="background:#e07b3c"></i>Cash <b>62%</b></span>
+          <span><i style="background:#131b2e"></i>MoMo <b>24%</b></span>
+          <span><i style="background:#c89a3c"></i>Card <b>8%</b></span>
+          <span><i style="background:#2f9e6a"></i>Credit <b>6%</b></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top products + Top customers -->
+  <div class="grid cols-12">
+    <div class="card card-pad span-6">
+      <h3 class="card-title">Top products by profit</h3>
+      <div class="bars-row"><span class="name">Whole Wheat Loaf</span><div class="bar-track"><div class="bar-fill" style="width:92%"></div></div><span class="val">₵2,600</span></div>
+      <div class="bars-row"><span class="name">Bagels</span><div class="bar-track"><div class="bar-fill" style="width:34%"></div></div><span class="val">₵900</span></div>
+      <div class="bars-row"><span class="name">Croissants</span><div class="bar-track"><div class="bar-fill" style="width:28%"></div></div><span class="val">₵720</span></div>
+      <div class="bars-row"><span class="name">Sourdough</span><div class="bar-track"><div class="bar-fill" style="width:22%"></div></div><span class="val">₵580</span></div>
+      <div class="bars-row"><span class="name">Banana Bread</span><div class="bar-track"><div class="bar-fill" style="width:16%"></div></div><span class="val">₵420</span></div>
+    </div>
+
+    <div class="card card-pad span-6">
+      <h3 class="card-title">Top customers</h3>
+      <table class="tbl">
+        <thead><tr><th>Customer</th><th class="right">Orders</th><th class="right">Revenue</th><th class="right">Last seen</th></tr></thead>
+        <tbody>
+          <tr><td>Joana Adjei</td><td class="right">14</td><td class="right">₵2,100</td><td class="right">May 19</td></tr>
+          <tr><td>Daniel Mensah</td><td class="right">11</td><td class="right">₵1,700</td><td class="right">May 18</td></tr>
+          <tr><td>Bread Faculty HQ</td><td class="right">9</td><td class="right">₵1,500</td><td class="right">May 20</td></tr>
+          <tr><td>Akua Boateng</td><td class="right">8</td><td class="right">₵1,200</td><td class="right">May 17</td></tr>
+          <tr><td>Kojo Nkrumah</td><td class="right">6</td><td class="right">₵920</td><td class="right">May 15</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Stock + cashier -->
+  <div class="grid cols-12">
+    <div class="card card-pad span-7">
+      <div class="section-head">
+        <h3 class="card-title">Stock movement</h3>
+        <select class="btn-ghost"><option>Whole Wheat Loaf</option><option>Bagels</option></select>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Date</th><th class="right">Qty</th><th>Reason</th><th>By</th></tr></thead>
+        <tbody>
+          <tr><td>May 20, 09:15</td><td class="right pos">+30</td><td>Production batch #225</td><td>Kwame</td></tr>
+          <tr><td>May 18, 16:01</td><td class="right neg">−3</td><td>Damaged</td><td>Ama</td></tr>
+          <tr><td>May 18, 14:32</td><td class="right pos">+50</td><td>Production batch #224</td><td>Kwame</td></tr>
+          <tr><td>May 17, 11:08</td><td class="right neg">−12</td><td>Liquidation (expired)</td><td>Admin</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card card-pad span-5">
+      <div class="section-head">
+        <h3 class="card-title">Cashier activity</h3>
+        <span class="chip">Admin only</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Cashier</th><th class="right">Orders</th><th class="right">Revenue</th><th class="right">Mods</th></tr></thead>
+        <tbody>
+          <tr><td>Kofi <span class="chip">admin</span></td><td class="right">87</td><td class="right">₵18,200</td><td class="right">2</td></tr>
+          <tr><td>Ama <span class="chip">cashier</span></td><td class="right">55</td><td class="right">₵10,250</td><td class="right">0</td></tr>
+          <tr><td>Kwabena <span class="chip">cashier</span></td><td class="right">22</td><td class="right">₵4,180</td><td class="right">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

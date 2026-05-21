@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reports — Workspace (B)</title>
+<style>
+  :root {
+    --cream: #fdf8f1;
+    --cream-2: #f7ecdc;
+    --paper: #fffefb;
+    --ink: #131b2e;
+    --ink-60: rgba(19,27,46,.6);
+    --ink-40: rgba(19,27,46,.4);
+    --line: rgba(19,27,46,.1);
+    --hairline: rgba(19,27,46,.06);
+    --orange: #e07b3c;
+    --orange-soft: rgba(224,123,60,.12);
+    --green: #2f9e6a;
+    --red: #c44545;
+    --gold: #c89a3c;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #efe6d6; color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'tnum' 1;
+    padding: 28px 24px 48px;
+  }
+  .frame { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+
+  /* hero (compact) */
+  .hero {
+    position: relative; overflow: hidden;
+    border: 1px solid rgba(19,27,46,.08); border-radius: 20px;
+    padding: 22px 28px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(224,123,60,.16), transparent 55%),
+      linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 14px 36px -20px rgba(19,27,46,.28);
+  }
+  .hero-row { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .eyebrow {
+    font-size: 11px; font-weight: 800; letter-spacing: .24em;
+    text-transform: uppercase; color: var(--orange);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ''; width: 22px; height: 2px; background: var(--orange); border-radius: 999px; }
+  .h1 {
+    font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+    font-size: 26px; font-weight: 800; letter-spacing: -.025em;
+    margin: 6px 0 2px;
+  }
+  .hero-quote { color: var(--ink-60); font-size: 13px; margin: 0; font-style: italic; max-width: 50ch; }
+  .range-pill {
+    display: inline-flex; align-items: center;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+    padding: 4px;
+    box-shadow: 0 6px 18px -14px rgba(19,27,46,.25);
+  }
+  .range-chip {
+    padding: 8px 14px; font-size: 12px; font-weight: 700;
+    background: transparent; border: 0; border-radius: 8px; cursor: pointer;
+    color: var(--ink-60); font-family: inherit;
+  }
+  .range-chip.active { background: var(--ink); color: var(--cream); }
+  .range-custom {
+    padding: 0 12px; border-left: 1px solid var(--line); margin-left: 4px;
+    font-size: 12.5px; color: var(--ink-60); height: 22px; display: flex; align-items: center;
+  }
+
+  /* layout */
+  .grid { display: grid; gap: 18px; }
+  .cols { grid-template-columns: 360px 1fr; align-items: start; }
+  .col-stack { display: flex; flex-direction: column; gap: 18px; }
+
+  /* card */
+  .card {
+    background: var(--paper); border: 1px solid rgba(19,27,46,.08);
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 6px 18px -14px rgba(19,27,46,.2);
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-bottom: 1px solid var(--hairline);
+  }
+  .panel-head h3 {
+    margin: 0; font-family: 'Manrope', sans-serif;
+    font-size: 11.5px; font-weight: 800; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-60);
+  }
+  .panel-body { padding: 16px 18px; }
+
+  /* at-a-glance list */
+  .ag { display: flex; flex-direction: column; }
+  .ag-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 11px 0; border-bottom: 1px dashed var(--hairline);
+  }
+  .ag-row:last-child { border-bottom: 0; }
+  .ag-label { font-size: 12.5px; color: var(--ink-60); font-weight: 600; }
+  .ag-val {
+    font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 17px;
+    font-variant-numeric: tabular-nums;
+  }
+  .ag-val small { font-size: 11px; margin-left: 6px; font-weight: 700; }
+  .delta-up { color: var(--green); }
+  .delta-down { color: var(--red); }
+
+  /* small list */
+  .small-list { font-size: 13.5px; display: flex; flex-direction: column; gap: 10px; }
+  .small-list .li { display: flex; justify-content: space-between; align-items: center; }
+  .small-list .nm { color: var(--ink); }
+  .small-list .vl { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip {
+    display: inline-block; padding: 2px 8px; font-size: 10.5px; font-weight: 700;
+    border-radius: 999px; background: var(--cream-2); color: var(--ink-60);
+    margin-left: 6px;
+  }
+  .chip-up { background: rgba(47,158,106,.14); color: var(--green); }
+  .seeall {
+    display: inline-block; margin-top: 12px;
+    font-size: 12px; color: var(--orange); text-decoration: none; font-weight: 700;
+  }
+
+  /* trend chart */
+  .chart { width: 100%; height: 170px; display: block; }
+
+  /* table */
+  .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .tbl thead th {
+    text-align: left; font-size: 10.5px; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--ink-60);
+    padding: 11px 16px;
+    background: linear-gradient(180deg, #f9efdd, #f4e6cf);
+    border-bottom: 1px solid var(--line);
+  }
+  .tbl tbody td { padding: 11px 16px; border-bottom: 1px solid var(--hairline); font-variant-numeric: tabular-nums; }
+  .tbl tbody tr:last-child td { border-bottom: 0; }
+  .tbl tbody tr:hover { background: var(--orange-soft); }
+  .pos { color: var(--green); font-weight: 700; }
+  .neg { color: var(--red); font-weight: 700; }
+  .right { text-align: right; }
+
+  /* donut */
+  .donut-wrap { display: flex; align-items: center; gap: 18px; height: 150px; }
+  .donut {
+    width: 120px; height: 120px; border-radius: 50%;
+    position: relative; flex-shrink: 0;
+    background: conic-gradient(
+      var(--orange) 0 62%,
+      var(--ink) 62% 86%,
+      var(--gold) 86% 94%,
+      var(--green) 94% 100%
+    );
+  }
+  .donut::after { content: ''; position: absolute; inset: 22%; background: var(--paper); border-radius: 50%; }
+  .donut-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; z-index: 1; }
+  .donut-center small { display: block; font-size: 9.5px; letter-spacing: .16em; color: var(--ink-60); text-transform: uppercase; font-weight: 800; }
+  .donut-center b { font-family: 'Manrope', sans-serif; font-size: 16px; }
+  .legend { font-size: 13px; display: flex; flex-direction: column; gap: 7px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend b { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--paper); }
+  .seg button {
+    background: transparent; border: 0; padding: 6px 11px; font-size: 11.5px; font-weight: 700;
+    color: var(--ink-60); cursor: pointer; border-right: 1px solid var(--line); font-family: inherit;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button.active { background: var(--ink); color: var(--cream); }
+
+  .nested-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+  .back {
+    display: inline-block; text-decoration: none; color: var(--ink-60);
+    font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    margin-bottom: -8px;
+  }
+  .back:hover { color: var(--orange); }
+</style>
+</head>
+<body>
+<div class="frame">
+  <a class="back" href="index.html">← All mockups</a>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-row">
+      <div>
+        <span class="eyebrow">Reports · Mockup B</span>
+        <h1 class="h1">Reports</h1>
+        <p class="hero-quote"><em>Workspace layout — everything on one screen, drawers for the long lists.</em></p>
+      </div>
+      <div class="range-pill">
+        <button class="range-chip">Today</button>
+        <button class="range-chip active">7 days</button>
+        <button class="range-chip">30 days</button>
+        <button class="range-chip">90 days</button>
+        <div class="range-custom">Apr 20 – May 20, 2026</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Two columns -->
+  <div class="grid cols">
+
+    <!-- LEFT COLUMN -->
+    <div class="col-stack">
+
+      <div class="card">
+        <div class="panel-head">
+          <h3>At a glance</h3>
+          <span class="chip chip-up">↑ 12%</span>
+        </div>
+        <div class="panel-body ag">
+          <div class="ag-row"><span class="ag-label">Orders</span><span class="ag-val">142</span></div>
+          <div class="ag-row"><span class="ag-label">Revenue</span><span class="ag-val">₵28,450 <small class="delta-up">↑9%</small></span></div>
+          <div class="ag-row"><span class="ag-label">Profit</span><span class="ag-val">₵9,820 <small class="delta-up">↑14%</small></span></div>
+          <div class="ag-row"><span class="ag-label">Expenses</span><span class="ag-val">₵3,200 <small class="delta-down">↓4%</small></span></div>
+          <div class="ag-row"><span class="ag-label">Margin</span><span class="ag-val">34.5%</span></div>
+          <div class="ag-row"><span class="ag-label">Tax collected</span><span class="ag-val">₵1,420</span></div>
+          <div class="ag-row"><span class="ag-label">Avg ticket</span><span class="ag-val">₵200</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h3>Top products</h3><span class="chip">by profit</span></div>
+        <div class="panel-body">
+          <div class="small-list">
+            <div class="li"><span class="nm">Whole Wheat Loaf</span><span class="vl">₵2,600</span></div>
+            <div class="li"><span class="nm">Bagels</span><span class="vl">₵900</span></div>
+            <div class="li"><span class="nm">Croissants</span><span class="vl">₵720</span></div>
+            <div class="li"><span class="nm">Sourdough</span><span class="vl">₵580</span></div>
+            <div class="li"><span class="nm">Banana Bread</span><span class="vl">₵420</span></div>
+          </div>
+          <a class="seeall" href="#">See all 18 products →</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h3>Top customers</h3></div>
+        <div class="panel-body">
+          <div class="small-list">
+            <div class="li"><span class="nm">Joana Adjei <span class="chip">14×</span></span><span class="vl">₵2,100</span></div>
+            <div class="li"><span class="nm">Daniel Mensah <span class="chip">11×</span></span><span class="vl">₵1,700</span></div>
+            <div class="li"><span class="nm">Bread Faculty HQ <span class="chip">9×</span></span><span class="vl">₵1,500</span></div>
+            <div class="li"><span class="nm">Akua Boateng <span class="chip">8×</span></span><span class="vl">₵1,200</span></div>
+          </div>
+          <a class="seeall" href="#">See all customers →</a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-stack">
+
+      <div class="card">
+        <div class="panel-head">
+          <h3>Revenue trend</h3>
+          <div class="seg"><button class="active">Daily</button><button>Weekly</button></div>
+        </div>
+        <div class="panel-body">
+          <svg class="chart" viewBox="0 0 800 170" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#e07b3c" stop-opacity=".30"/>
+                <stop offset="100%" stop-color="#e07b3c" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <g stroke="rgba(19,27,46,.06)">
+              <line x1="0" y1="40" x2="800" y2="40"/>
+              <line x1="0" y1="85" x2="800" y2="85"/>
+              <line x1="0" y1="130" x2="800" y2="130"/>
+            </g>
+            <path fill="url(#bg)" d="M0,120 C100,100 160,55 240,70 C320,85 380,140 460,110 C540,80 600,30 680,50 C760,65 780,95 800,80 L800,170 L0,170 Z"/>
+            <path fill="none" stroke="#e07b3c" stroke-width="2.5" d="M0,120 C100,100 160,55 240,70 C320,85 380,140 460,110 C540,80 600,30 680,50 C760,65 780,95 800,80"/>
+            <g fill="rgba(19,27,46,.5)" font-size="10" font-family="Inter">
+              <text x="0" y="165">May 14</text>
+              <text x="260" y="165">May 16</text>
+              <text x="520" y="165">May 18</text>
+              <text x="755" y="165">May 20</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="nested-grid">
+        <div class="card">
+          <div class="panel-head"><h3>Stock movement</h3>
+            <select style="border:1px solid var(--line); background:var(--paper); border-radius:6px; padding:5px 8px; font-size:11.5px; font-weight:700; color:var(--ink); font-family:inherit;"><option>Whole Wheat</option></select>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>Date</th><th class="right">Qty</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>May 20</td><td class="right pos">+30</td><td>Batch #225</td></tr>
+              <tr><td>May 18</td><td class="right neg">−3</td><td>Damaged</td></tr>
+              <tr><td>May 18</td><td class="right pos">+50</td><td>Batch #224</td></tr>
+              <tr><td>May 17</td><td class="right neg">−12</td><td>Expired</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="panel-head"><h3>Payment mix</h3></div>
+          <div class="panel-body donut-wrap">
+            <div class="donut">
+              <div class="donut-center"><small>Total</small><b>₵28.4k</b></div>
+            </div>
+            <div class="legend">
+              <span><i style="background:#e07b3c"></i>Cash <b>62%</b></span>
+              <span><i style="background:#131b2e"></i>MoMo <b>24%</b></span>
+              <span><i style="background:#c89a3c"></i>Card <b>8%</b></span>
+              <span><i style="background:#2f9e6a"></i>Credit <b>6%</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="panel-head"><h3>Cashier activity</h3><span class="chip">Admin only</span></div>
+        <table class="tbl">
+          <thead><tr><th>Cashier</th><th>Role</th><th class="right">Orders</th><th class="right">Revenue</th><th class="right">Profit</th><th class="right">Mods</th></tr></thead>
+          <tbody>
+            <tr><td>Kofi</td><td><span class="chip">admin</span></td><td class="right">87</td><td class="right">₵18,200</td><td class="right">₵6,420</td><td class="right">2</td></tr>
+            <tr><td>Ama</td><td><span class="chip">cashier</span></td><td class="right">55</td><td class="right">₵10,250</td><td class="right">₵3,400</td><td class="right">0</td></tr>
+            <tr><td>Kwabena</td><td><span class="chip">cashier</span></td><td class="right">22</td><td class="right">₵4,180</td><td class="right">₵1,160</td><td class="right">1</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

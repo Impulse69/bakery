@@ -7,9 +7,10 @@ import { api } from '../lib/api';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../store/AuthContext';
 import { CustomerAnalyticsPanel } from '../components/reports/CustomerAnalyticsPanel';
+import { CashierActivity } from '../components/reports/CashierActivity';
 import styles from './ReportsPage.module.css';
 
-type Tab = 'daily' | 'stock' | 'sales' | 'customers';
+type Tab = 'daily' | 'stock' | 'sales' | 'customers' | 'cashiers';
 
 interface DailyReport {
   date: string;
@@ -80,6 +81,8 @@ export function ReportsPage() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const canSeeCustomers = user?.role === 'admin' || user?.role === 'owner';
+  // Cashier Activity reuses the same admin/owner gate — backend enforces `audit:view`.
+  const canSeeCashiers = canSeeCustomers;
   const [activeTab, setActiveTab] = useState<Tab>('daily');
 
   const [reportDate, setReportDate] = useState(getToday());
@@ -201,10 +204,19 @@ export function ReportsPage() {
               Customers
             </button>
           )}
+          {canSeeCashiers && (
+            <button
+              className={`${styles.tab} ${activeTab === 'cashiers' ? styles.tabActive : ''}`}
+              onClick={() => setActiveTab('cashiers')}
+            >
+              Cashier Activity
+            </button>
+          )}
         </div>
       </div>
 
       {activeTab === 'customers' && canSeeCustomers && <CustomerAnalyticsPanel />}
+      {activeTab === 'cashiers' && canSeeCashiers && <CashierActivity />}
 
       {activeTab === 'daily' && (
         <>

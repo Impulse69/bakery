@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Option A — Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./_shared.css" />
+  <style>
+    .page { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+    .kpi-strip { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.85rem; }
+    .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; }
+    .grid-2-eq { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .chart-wrap { padding: 0.4rem 0 0.2rem; }
+    .legend { display: flex; gap: 1rem; font-size: 11.5px; color: var(--ink-soft); margin-top: 0.5rem; }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 0.35rem; vertical-align: middle; }
+    .pay-list { display: flex; flex-direction: column; gap: 0.55rem; }
+    .pay-row { display: grid; grid-template-columns: 70px 1fr 60px; align-items: center; gap: 0.7rem; font-size: 12.5px; }
+    .pay-row .name { font-weight: 600; }
+    .pay-row .bar { height: 8px; background: rgba(19,27,46,0.06); border-radius: 999px; overflow: hidden; }
+    .pay-row .bar > i { display: block; height: 100%; border-radius: 999px; }
+    .pay-row .val { text-align: right; font-weight: 700; }
+    @media (max-width: 1100px) { .kpi-strip { grid-template-columns: repeat(3, 1fr); } .grid-2, .grid-2-eq { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="./index.html">← All options</a>
+
+    <header class="hero">
+      <div class="hero-main">
+        <span class="eyebrow">Reports · Option A</span>
+        <h1>Command Center</h1>
+        <p class="sub">One scroll, one date range, everything reacts together.</p>
+      </div>
+      <div class="range-bar" role="tablist">
+        <button>Today</button>
+        <button>7 days</button>
+        <button class="active">30 days</button>
+        <button>Custom</button>
+        <span class="sep"></span>
+        <input class="date-input" type="date" value="2026-04-20" />
+        <span class="muted tiny">→</span>
+        <input class="date-input" type="date" value="2026-05-20" />
+      </div>
+    </header>
+
+    <!-- KPI STRIP -->
+    <section class="kpi-strip">
+      <div class="stat">
+        <div class="label">Orders</div>
+        <div class="value">3,184</div>
+        <div class="trend up">▲ 12% vs prev</div>
+      </div>
+      <div class="stat">
+        <div class="label">Revenue</div>
+        <div class="value">₵284,500</div>
+        <div class="trend up">▲ 8% vs prev</div>
+      </div>
+      <div class="stat">
+        <div class="label">Profit</div>
+        <div class="value">₵98,200</div>
+        <div class="trend up">▲ 11%</div>
+      </div>
+      <div class="stat">
+        <div class="label">Expenses</div>
+        <div class="value">₵32,000</div>
+        <div class="trend down">▲ 4%</div>
+      </div>
+      <div class="stat">
+        <div class="label">Margin</div>
+        <div class="value">34.5%</div>
+        <div class="trend up">▲ 1.2 pts</div>
+      </div>
+      <div class="stat">
+        <div class="label">Tax Collected</div>
+        <div class="value">₵14,200</div>
+        <div class="trend flat">— flat</div>
+      </div>
+    </section>
+
+    <!-- TREND + PAYMENT MIX -->
+    <section class="grid-2">
+      <div class="card">
+        <div class="card-title">Revenue Trend <span class="accent">DAILY</span></div>
+        <div class="chart-wrap">
+          <svg viewBox="0 0 700 220" width="100%" height="220" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="grad-a" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e07b3c" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#e07b3c" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <!-- gridlines -->
+            <g stroke="rgba(19,27,46,0.06)" stroke-width="1">
+              <line x1="0" y1="40"  x2="700" y2="40"  />
+              <line x1="0" y1="90"  x2="700" y2="90"  />
+              <line x1="0" y1="140" x2="700" y2="140" />
+              <line x1="0" y1="190" x2="700" y2="190" />
+            </g>
+            <!-- area -->
+            <path d="M0,160 L40,140 L80,120 L120,135 L160,100 L200,115 L240,80 L280,95 L320,70 L360,85 L400,60 L440,75 L480,55 L520,70 L560,40 L600,55 L640,35 L680,50 L700,40 L700,220 L0,220 Z"
+                  fill="url(#grad-a)" />
+            <!-- line -->
+            <path d="M0,160 L40,140 L80,120 L120,135 L160,100 L200,115 L240,80 L280,95 L320,70 L360,85 L400,60 L440,75 L480,55 L520,70 L560,40 L600,55 L640,35 L680,50 L700,40"
+                  fill="none" stroke="#e07b3c" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+            <!-- axis labels -->
+            <g fill="rgba(19,27,46,0.45)" font-size="10" font-family="Inter">
+              <text x="0"   y="215">Apr 20</text>
+              <text x="220" y="215">Apr 30</text>
+              <text x="450" y="215">May 10</text>
+              <text x="650" y="215">May 20</text>
+            </g>
+          </svg>
+        </div>
+        <div class="legend">
+          <span><i style="background:#e07b3c"></i>Revenue</span>
+          <span class="muted">Avg ₵9,480 / day · Best day ₵14,200 (May 17)</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Payment Mix</div>
+        <div class="pay-list">
+          <div class="pay-row">
+            <span class="name">Cash</span>
+            <span class="bar"><i style="width:62%;background:#131b2e"></i></span>
+            <span class="val">62%</span>
+          </div>
+          <div class="pay-row">
+            <span class="name">MoMo</span>
+            <span class="bar"><i style="width:24%;background:#e07b3c"></i></span>
+            <span class="val">24%</span>
+          </div>
+          <div class="pay-row">
+            <span class="name">Card</span>
+            <span class="bar"><i style="width:8%;background:#2f8a5e"></i></span>
+            <span class="val">8%</span>
+          </div>
+          <div class="pay-row">
+            <span class="name">Credit</span>
+            <span class="bar"><i style="width:6%;background:#c44545"></i></span>
+            <span class="val">6%</span>
+          </div>
+        </div>
+        <div class="legend">
+          <span class="muted">Outstanding credit balance: <strong style="color:var(--red)">₵4,820</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOP PRODUCTS + TOP CUSTOMERS -->
+    <section class="grid-2-eq">
+      <div class="card">
+        <div class="card-title">Top Products <span class="accent">BY PROFIT</span></div>
+        <table>
+          <thead><tr><th>Product</th><th>Qty</th><th>Revenue</th><th class="num">Profit</th></tr></thead>
+          <tbody>
+            <tr><td><div class="bar-cell"><span>Whole Wheat Loaf</span><span class="bar"><i style="width:100%"></i></span></div></td><td>1,240</td><td>₵48,200</td><td class="num">₵26,000</td></tr>
+            <tr><td><div class="bar-cell"><span>Bagels</span><span class="bar"><i style="width:35%"></i></span></div></td><td>890</td><td>₵21,400</td><td class="num">₵9,200</td></tr>
+            <tr><td><div class="bar-cell"><span>Croissants</span><span class="bar"><i style="width:28%"></i></span></div></td><td>670</td><td>₵19,800</td><td class="num">₵7,300</td></tr>
+            <tr><td><div class="bar-cell"><span>Sourdough</span><span class="bar"><i style="width:22%"></i></span></div></td><td>540</td><td>₵16,300</td><td class="num">₵5,800</td></tr>
+            <tr><td><div class="bar-cell"><span>Sweet Buns</span><span class="bar"><i style="width:15%"></i></span></div></td><td>410</td><td>₵9,800</td><td class="num">₵3,900</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Top Customers</div>
+        <table>
+          <thead><tr><th>Customer</th><th>Orders</th><th class="num">Spent</th></tr></thead>
+          <tbody>
+            <tr><td>Joana Adjei</td><td>14</td><td class="num">₵2,100</td></tr>
+            <tr><td>Daniel Mensah</td><td>11</td><td class="num">₵1,700</td></tr>
+            <tr><td>Bread Faculty HQ</td><td>9</td><td class="num">₵1,500</td></tr>
+            <tr><td>Akua Boateng</td><td>8</td><td class="num">₵1,200</td></tr>
+            <tr><td>Kwesi Owusu</td><td>7</td><td class="num">₵980</td></tr>
+            <tr><td>Yaa Asantewaa</td><td>6</td><td class="num">₵840</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STOCK MOVEMENT -->
+    <section class="card">
+      <div class="card-title">
+        Stock Movement
+        <select class="filter">
+          <option>Whole Wheat Loaf</option>
+          <option>Bagels</option>
+          <option>Croissants</option>
+        </select>
+      </div>
+      <div class="chart-wrap" style="margin-bottom:0.75rem;">
+        <svg viewBox="0 0 1200 120" width="100%" height="120" preserveAspectRatio="none">
+          <line x1="0" y1="60" x2="1200" y2="60" stroke="rgba(19,27,46,0.12)" stroke-dasharray="3 4" />
+          <!-- positive bars -->
+          <g fill="#2f8a5e">
+            <rect x="20"  y="20" width="14" height="40" />
+            <rect x="180" y="14" width="14" height="46" />
+            <rect x="360" y="22" width="14" height="38" />
+            <rect x="560" y="10" width="14" height="50" />
+            <rect x="760" y="18" width="14" height="42" />
+            <rect x="960" y="14" width="14" height="46" />
+          </g>
+          <!-- negative bars (sales/damage) -->
+          <g fill="#e07b3c">
+            <rect x="80"  y="60" width="14" height="35" />
+            <rect x="240" y="60" width="14" height="30" />
+            <rect x="420" y="60" width="14" height="40" />
+            <rect x="620" y="60" width="14" height="32" />
+            <rect x="820" y="60" width="14" height="38" />
+            <rect x="1020" y="60" width="14" height="28" />
+          </g>
+        </svg>
+      </div>
+      <table>
+        <thead><tr><th>When</th><th>Qty</th><th>Reason</th><th>By</th></tr></thead>
+        <tbody>
+          <tr><td>May 18, 14:32</td><td class="pos">+50</td><td>Production batch #224</td><td>Kwame</td></tr>
+          <tr><td>May 18, 16:01</td><td class="neg">−3</td><td>Damaged</td><td>Ama</td></tr>
+          <tr><td>May 19, 09:15</td><td class="pos">+30</td><td>Production batch #225</td><td>Kwame</td></tr>
+          <tr><td>May 19, 17:40</td><td class="neg">−42</td><td>Sales (auto)</td><td>System</td></tr>
+          <tr><td>May 20, 08:00</td><td class="pos">+60</td><td>Production batch #226</td><td>Kwame</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- CASHIER ACTIVITY -->
+    <section class="card">
+      <div class="card-title">Cashier Activity <span class="accent">ADMIN / OWNER</span></div>
+      <table>
+        <thead><tr><th>Cashier</th><th>Role</th><th>Orders</th><th>Revenue</th><th>Profit</th><th class="num">Mods</th></tr></thead>
+        <tbody>
+          <tr><td>Kofi Anane</td><td class="muted">admin</td><td>872</td><td>₵182,000</td><td>₵64,200</td><td class="num">2</td></tr>
+          <tr><td>Ama Serwaa</td><td class="muted">cashier</td><td>555</td><td>₵102,500</td><td>₵34,100</td><td class="num">0</td></tr>
+          <tr><td>Yaw Mensah</td><td class="muted">cashier</td><td>432</td><td>₵78,200</td><td>₵26,300</td><td class="num">1</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>

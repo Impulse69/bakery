@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Option C — Headline + Drill-In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./_shared.css" />
+  <style>
+    .page { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+    .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; }
+    .kpi {
+      cursor: pointer; user-select: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 6px 18px -14px rgba(19,27,46,0.2);
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+    }
+    .kpi:hover { border-color: rgba(224,123,60,0.35); transform: translateY(-2px); }
+    .kpi.active {
+      background: var(--ink); color: var(--cream-1);
+      border-color: var(--ink);
+      box-shadow: 0 14px 30px -16px rgba(19,27,46,0.6);
+    }
+    .kpi.active .label, .kpi.active .trend.flat, .kpi.active .trend.up, .kpi.active .trend.down { color: rgba(253,248,241,0.7); }
+    .kpi .label { font-size: 10.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.35rem; }
+    .kpi .value { font-family: 'Manrope', sans-serif; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; }
+    .kpi .trend { font-size: 11.5px; font-weight: 700; margin-top: 0.35rem; }
+    .kpi.active .trend.up { color: #7ddc9f; }
+    .kpi .pointer {
+      position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+      width: 16px; height: 16px; background: var(--ink); transform-origin: center;
+      transform: translateX(-50%) rotate(45deg); display: none;
+    }
+    .kpi.active .pointer { display: block; }
+
+    .drill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 10px 28px -20px rgba(19,27,46,0.22);
+      animation: rise 0.3s ease both;
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .drill-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      margin-bottom: 1rem; padding-bottom: 0.85rem; border-bottom: 1px solid var(--border);
+    }
+    .drill-head h2 { font-family: 'Manrope', sans-serif; font-size: 1.15rem; margin: 0; letter-spacing: -0.01em; }
+    .drill-head .ctx { font-size: 12px; color: var(--ink-mute); }
+    .drill-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; }
+    .breakdown-list { display: flex; flex-direction: column; gap: 0.55rem; font-size: 13px; }
+    .breakdown-row { display: grid; grid-template-columns: 120px 1fr 80px; align-items: center; gap: 0.7rem; }
+    .breakdown-row .bar { height: 7px; background: rgba(19,27,46,0.06); border-radius: 999px; overflow: hidden; }
+    .breakdown-row .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--orange), #f3a06a); border-radius: 999px; }
+    .breakdown-row .v { text-align: right; font-weight: 700; }
+
+    /* Accordion sections */
+    .acc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: box-shadow 0.15s;
+    }
+    .acc + .acc { margin-top: 0.75rem; }
+    .acc summary {
+      list-style: none; cursor: pointer;
+      padding: 0.85rem 1.25rem;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 800;
+      letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft);
+    }
+    .acc summary::-webkit-details-marker { display: none; }
+    .acc summary::after { content: '▾'; transition: transform 0.2s; color: var(--orange); font-size: 14px; }
+    .acc[open] summary::after { transform: rotate(180deg); }
+    .acc[open] { box-shadow: 0 6px 18px -14px rgba(19,27,46,0.2); }
+    .acc-body { padding: 0 1.25rem 1rem; }
+    .acc summary .count {
+      font-family: 'Inter', sans-serif; font-weight: 600; font-size: 11px;
+      color: var(--orange); background: var(--orange-soft);
+      padding: 0.18rem 0.5rem; border-radius: 999px; letter-spacing: 0;
+      text-transform: none; margin-left: 0.6rem;
+    }
+    @media (max-width: 1100px) {
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .drill-grid { grid-template-columns: 1fr; }
+    }
+
+    /* tiny inline JS-free toggle: use :target / :checked */
+    .kpi-radios { display: none; }
+    .kpi-row label { display: contents; }
+    .panel { display: none; }
+    #r-orders:checked   ~ .panels #p-orders   { display: block; }
+    #r-revenue:checked  ~ .panels #p-revenue  { display: block; }
+    #r-profit:checked   ~ .panels #p-profit   { display: block; }
+    #r-expenses:checked ~ .panels #p-expenses { display: block; }
+    #r-margin:checked   ~ .panels #p-margin   { display: block; }
+    #r-orders:checked   ~ .kpi-row .kpi[data-k="orders"],
+    #r-revenue:checked  ~ .kpi-row .kpi[data-k="revenue"],
+    #r-profit:checked   ~ .kpi-row .kpi[data-k="profit"],
+    #r-expenses:checked ~ .kpi-row .kpi[data-k="expenses"],
+    #r-margin:checked   ~ .kpi-row .kpi[data-k="margin"] { background: var(--ink); color: var(--cream-1); border-color: var(--ink); }
+    #r-orders:checked   ~ .kpi-row .kpi[data-k="orders"] .label,
+    #r-revenue:checked  ~ .kpi-row .kpi[data-k="revenue"] .label,
+    #r-profit:checked   ~ .kpi-row .kpi[data-k="profit"] .label,
+    #r-expenses:checked ~ .kpi-row .kpi[data-k="expenses"] .label,
+    #r-margin:checked   ~ .kpi-row .kpi[data-k="margin"] .label { color: rgba(253,248,241,0.7); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="./index.html">← All options</a>
+
+    <header class="hero">
+      <div class="hero-main">
+        <span class="eyebrow">Reports · Option C</span>
+        <h1>Headline + Drill-In</h1>
+        <p class="sub">Click a KPI to drill into its detail. Other sections stay collapsed below until you need them.</p>
+      </div>
+      <div class="range-bar">
+        <button>Today</button>
+        <button class="active">7 days</button>
+        <button>30 days</button>
+        <button>Custom</button>
+        <span class="sep"></span>
+        <input class="date-input" type="date" value="2026-05-13" />
+        <span class="muted tiny">→</span>
+        <input class="date-input" type="date" value="2026-05-20" />
+      </div>
+    </header>
+
+    <input type="radio" name="kpi" id="r-orders" class="kpi-radios" />
+    <input type="radio" name="kpi" id="r-revenue" class="kpi-radios" checked />
+    <input type="radio" name="kpi" id="r-profit" class="kpi-radios" />
+    <input type="radio" name="kpi" id="r-expenses" class="kpi-radios" />
+    <input type="radio" name="kpi" id="r-margin" class="kpi-radios" />
+
+    <div class="kpi-row">
+      <label for="r-orders"><div class="kpi" data-k="orders">
+        <div class="label">Orders</div>
+        <div class="value">742</div>
+        <div class="trend up">▲ 12%</div>
+      </div></label>
+      <label for="r-revenue"><div class="kpi active" data-k="revenue">
+        <div class="label">Revenue</div>
+        <div class="value">₵68,450</div>
+        <div class="trend up">▲ 8%</div>
+        <div class="pointer"></div>
+      </div></label>
+      <label for="r-profit"><div class="kpi" data-k="profit">
+        <div class="label">Profit</div>
+        <div class="value">₵23,820</div>
+        <div class="trend up">▲ 11%</div>
+      </div></label>
+      <label for="r-expenses"><div class="kpi" data-k="expenses">
+        <div class="label">Expenses</div>
+        <div class="value">₵7,200</div>
+        <div class="trend down">▲ 4%</div>
+      </div></label>
+      <label for="r-margin"><div class="kpi" data-k="margin">
+        <div class="label">Margin</div>
+        <div class="value">34.8%</div>
+        <div class="trend up">▲ 1.2 pts</div>
+      </div></label>
+    </div>
+
+    <div class="panels">
+      <!-- REVENUE PANEL -->
+      <div class="drill panel" id="p-revenue">
+        <div class="drill-head">
+          <h2>Revenue · breakdown</h2>
+          <span class="ctx">May 13 → May 20 · 7-day window</span>
+        </div>
+        <div class="drill-grid">
+          <div>
+            <svg viewBox="0 0 600 200" width="100%" height="200" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="grad-c" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#e07b3c" stop-opacity="0.35" />
+                  <stop offset="100%" stop-color="#e07b3c" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <g stroke="rgba(19,27,46,0.06)">
+                <line x1="0" y1="50" x2="600" y2="50" />
+                <line x1="0" y1="110" x2="600" y2="110" />
+                <line x1="0" y1="170" x2="600" y2="170" />
+              </g>
+              <path d="M0,140 L85,120 L170,90 L255,110 L340,70 L425,95 L510,55 L600,40 L600,200 L0,200 Z" fill="url(#grad-c)" />
+              <path d="M0,140 L85,120 L170,90 L255,110 L340,70 L425,95 L510,55 L600,40" fill="none" stroke="#e07b3c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+              <g fill="rgba(19,27,46,0.45)" font-size="10" font-family="Inter">
+                <text x="0" y="195">May 13</text>
+                <text x="245" y="195">May 16</text>
+                <text x="565" y="195">May 20</text>
+              </g>
+            </svg>
+            <div style="display:flex;gap:1.5rem;font-size:12px;color:var(--ink-soft);margin-top:0.5rem;">
+              <span>Avg / day <strong style="color:var(--ink)">₵9,778</strong></span>
+              <span>Best day <strong style="color:var(--ink)">₵14,200</strong> (May 17)</span>
+              <span>Worst day <strong style="color:var(--ink)">₵5,100</strong> (May 13)</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11.5px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:0.85rem;">Which products drove it</div>
+            <div class="breakdown-list">
+              <div class="breakdown-row"><span>Whole Wheat</span><span class="bar"><i style="width:100%"></i></span><span class="v">₵12,200</span></div>
+              <div class="breakdown-row"><span>Bagels</span><span class="bar"><i style="width:44%"></i></span><span class="v">₵5,400</span></div>
+              <div class="breakdown-row"><span>Croissants</span><span class="bar"><i style="width:39%"></i></span><span class="v">₵4,800</span></div>
+              <div class="breakdown-row"><span>Sourdough</span><span class="bar"><i style="width:27%"></i></span><span class="v">₵3,300</span></div>
+              <div class="breakdown-row"><span>Sweet Buns</span><span class="bar"><i style="width:18%"></i></span><span class="v">₵2,200</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORDERS PANEL -->
+      <div class="drill panel" id="p-orders">
+        <div class="drill-head">
+          <h2>Orders · 742 over 7 days</h2>
+          <span class="ctx">Avg 106 / day · Peak Saturday</span>
+        </div>
+        <div class="drill-grid">
+          <div>
+            <svg viewBox="0 0 600 180" width="100%" height="180">
+              <g fill="#e07b3c">
+                <rect x="20"  y="80" width="50" height="80" />
+                <rect x="100" y="60" width="50" height="100" />
+                <rect x="180" y="90" width="50" height="70" />
+                <rect x="260" y="50" width="50" height="110" />
+                <rect x="340" y="40" width="50" height="120" />
+                <rect x="420" y="20" width="50" height="140" />
+                <rect x="500" y="70" width="50" height="90" />
+              </g>
+              <g fill="rgba(19,27,46,0.45)" font-size="11" font-family="Inter" text-anchor="middle">
+                <text x="45"  y="175">Wed</text>
+                <text x="125" y="175">Thu</text>
+                <text x="205" y="175">Fri</text>
+                <text x="285" y="175">Sat</text>
+                <text x="365" y="175">Sun</text>
+                <text x="445" y="175">Mon</text>
+                <text x="525" y="175">Tue</text>
+              </g>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:11.5px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:0.85rem;">By cashier</div>
+            <div class="breakdown-list">
+              <div class="breakdown-row"><span>Kofi Anane</span><span class="bar"><i style="width:100%"></i></span><span class="v">202</span></div>
+              <div class="breakdown-row"><span>Ama Serwaa</span><span class="bar"><i style="width:65%"></i></span><span class="v">132</span></div>
+              <div class="breakdown-row"><span>Yaw Mensah</span><span class="bar"><i style="width:48%"></i></span><span class="v">98</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFIT PANEL -->
+      <div class="drill panel" id="p-profit">
+        <div class="drill-head">
+          <h2>Profit · ₵23,820 (margin 34.8%)</h2>
+          <span class="ctx">Calculated as revenue − COGS per item</span>
+        </div>
+        <table>
+          <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Revenue</th><th class="num">Cost</th><th class="num">Profit</th><th class="num">Margin</th></tr></thead>
+          <tbody>
+            <tr><td>Whole Wheat Loaf</td><td class="num">324</td><td class="num">₵12,200</td><td class="num">₵5,500</td><td class="num pos">₵6,700</td><td class="num">54.9%</td></tr>
+            <tr><td>Bagels</td><td class="num">189</td><td class="num">₵5,400</td><td class="num">₵3,100</td><td class="num pos">₵2,300</td><td class="num">42.6%</td></tr>
+            <tr><td>Croissants</td><td class="num">167</td><td class="num">₵4,800</td><td class="num">₵2,950</td><td class="num pos">₵1,850</td><td class="num">38.5%</td></tr>
+            <tr><td>Sourdough</td><td class="num">94</td><td class="num">₵3,300</td><td class="num">₵1,800</td><td class="num pos">₵1,500</td><td class="num">45.5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- EXPENSES PANEL -->
+      <div class="drill panel" id="p-expenses">
+        <div class="drill-head">
+          <h2>Expenses · ₵7,200</h2>
+          <span class="ctx">Operating costs logged in the Expenses module</span>
+        </div>
+        <table>
+          <thead><tr><th>Category</th><th class="num">Count</th><th class="num">Amount</th><th class="num">% of total</th></tr></thead>
+          <tbody>
+            <tr><td>Flour & ingredients</td><td class="num">12</td><td class="num">₵3,400</td><td class="num">47%</td></tr>
+            <tr><td>Utilities</td><td class="num">3</td><td class="num">₵1,800</td><td class="num">25%</td></tr>
+            <tr><td>Staff wages</td><td class="num">1</td><td class="num">₵1,200</td><td class="num">17%</td></tr>
+            <tr><td>Repairs</td><td class="num">2</td><td class="num">₵580</td><td class="num">8%</td></tr>
+            <tr><td>Other</td><td class="num">4</td><td class="num">₵220</td><td class="num">3%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- MARGIN PANEL -->
+      <div class="drill panel" id="p-margin">
+        <div class="drill-head">
+          <h2>Margin · 34.8%</h2>
+          <span class="ctx">Profit ÷ revenue, this period vs. previous</span>
+        </div>
+        <svg viewBox="0 0 600 180" width="100%" height="180" preserveAspectRatio="none">
+          <line x1="0" y1="90" x2="600" y2="90" stroke="rgba(19,27,46,0.12)" stroke-dasharray="3 4" />
+          <path d="M0,100 L85,95 L170,80 L255,82 L340,72 L425,65 L510,60 L600,55" fill="none" stroke="#2f8a5e" stroke-width="2.5" stroke-linecap="round" />
+          <path d="M0,120 L85,118 L170,110 L255,112 L340,100 L425,105 L510,95 L600,90" fill="none" stroke="rgba(19,27,46,0.35)" stroke-width="2" stroke-dasharray="4 4" />
+          <g fill="rgba(19,27,46,0.45)" font-size="10" font-family="Inter">
+            <text x="0" y="175">May 13</text>
+            <text x="270" y="175">May 16</text>
+            <text x="565" y="175">May 20</text>
+          </g>
+        </svg>
+        <div style="font-size:12px;color:var(--ink-soft);margin-top:0.4rem;">
+          <span style="color:#2f8a5e;font-weight:700">— this period</span>
+          &nbsp;·&nbsp;
+          <span style="color:rgba(19,27,46,0.55);font-weight:600">- - previous period</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accordion sections -->
+    <div>
+      <details class="acc" open>
+        <summary>Top Products <span class="count">24</span></summary>
+        <div class="acc-body">
+          <table>
+            <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Revenue</th><th class="num">Profit</th></tr></thead>
+            <tbody>
+              <tr><td>Whole Wheat Loaf</td><td class="num">324</td><td class="num">₵12,200</td><td class="num">₵6,700</td></tr>
+              <tr><td>Bagels</td><td class="num">189</td><td class="num">₵5,400</td><td class="num">₵2,300</td></tr>
+              <tr><td>Croissants</td><td class="num">167</td><td class="num">₵4,800</td><td class="num">₵1,850</td></tr>
+              <tr><td>Sourdough</td><td class="num">94</td><td class="num">₵3,300</td><td class="num">₵1,500</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details class="acc">
+        <summary>Top Customers <span class="count">87</span></summary>
+        <div class="acc-body muted" style="padding:0.75rem 1.25rem 1rem;font-size:13px;">Expand to see top customers by spend & order count.</div>
+      </details>
+
+      <details class="acc">
+        <summary>Stock Movement <span class="count">per product</span></summary>
+        <div class="acc-body muted" style="padding:0.75rem 1.25rem 1rem;font-size:13px;">Pick a product to view its adjustment history within the date range.</div>
+      </details>
+
+      <details class="acc">
+        <summary>Cashier Activity <span class="count">admin / owner</span></summary>
+        <div class="acc-body muted" style="padding:0.75rem 1.25rem 1rem;font-size:13px;">Per-cashier order count, revenue, profit and modification audit.</div>
+      </details>
+    </div>
+  </div>
+</body>
+</html>

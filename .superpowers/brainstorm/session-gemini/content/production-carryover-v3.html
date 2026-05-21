@@ -1,0 +1,58 @@
+<h2>Redesigning Production Carry-Over</h2>
+<p class="subtitle">If we keep carry-over amounts read-only, how should we decide <i>which</i> data to pull from?</p>
+
+<div class="options">
+  <div class="option" data-choice="explicit-date" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>The "Specific Source" Approach</h3>
+      <p>Before the planning grid appears, you see a summary of the "Latest Shortage" with its date and total units.</p>
+      <ul>
+        <li><b>The Choice:</b> You click either <b>"Start Fresh (Ignore Backlog)"</b> or <b>"Carry from [Date]"</b>.</li>
+        <li><b>Clarity:</b> You know exactly which day's failure you are inheriting.</li>
+        <li><b>Constraint:</b> The amounts remain read-only; you just choose the source day or none.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="auto-reset" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>The "Reset on Gap" Approach</h3>
+      <p>System automatically clears carry-overs if the last production run was more than 24 hours ago.</p>
+      <ul>
+        <li><b>Logic:</b> If you skip a day of baking, the system assumes the debt is void.</li>
+        <li><b>Simple:</b> No buttons to click. It always starts fresh unless you baked "yesterday".</li>
+        <li><b>Manual Override:</b> A small link to "Restore shortage from [Date]" if you actually want it.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="on-demand" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>The "History Sidebar" Approach</h3>
+      <p>Start fresh by default (0 carry-over). Provide a sidebar listing recent "Missed Targets".</p>
+      <ul>
+        <li><b>Pull vs Push:</b> You don't "inherit" debt; you "import" it.</li>
+        <li><b>Action:</b> Click "Import shortages from Mar 14" to populate the read-only carry-over fields for today.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top: 30px;">
+  <div class="mockup-header">Preview: Option A (Specific Source)</div>
+  <div class="mockup-body">
+    <div style="background: #fffbe6; border: 1px solid #ffe58f; padding: 20px; border-radius: 8px; text-align: center;">
+      <h3 style="margin: 0; color: #856404;">Unfinished production found</h3>
+      <p style="margin: 10px 0; font-size: 0.9em; color: #856404;">
+        There are <b>52 units</b> short from <b>March 14, 2026</b>.
+      </p>
+      <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+        <button class="mock-button" style="background: #fff; border: 1px solid #d9d9d9;">Start Fresh (Ignore)</button>
+        <button class="mock-button" style="background: #e07b3c; color: white; border: none;">Carry from March 14</button>
+      </div>
+    </div>
+  </div>
+</div>

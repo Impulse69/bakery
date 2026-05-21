@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Option B — Two-Column Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./_shared.css" />
+  <style>
+    .page { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+    .board { display: grid; grid-template-columns: 360px 1fr; gap: 1.25rem; align-items: start; }
+    .left-col, .right-col { display: flex; flex-direction: column; gap: 1.25rem; }
+    .right-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+    .col-span-2 { grid-column: 1 / -1; }
+    .glance { display: flex; flex-direction: column; gap: 0.5rem; }
+    .glance-row {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 0.65rem 0; border-bottom: 1px dashed var(--border);
+    }
+    .glance-row:last-child { border-bottom: 0; }
+    .glance-row .k { font-size: 11.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+    .glance-row .v { font-family: 'Manrope', sans-serif; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; }
+    .glance-row .delta { font-size: 11px; font-weight: 700; margin-left: 0.5rem; }
+    .see-all {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 11.5px; font-weight: 700; color: var(--orange);
+      text-transform: uppercase; letter-spacing: 0.14em;
+      text-decoration: none; padding-top: 0.65rem;
+    }
+    .mini-table table tbody td { padding: 0.55rem 0.85rem; font-size: 12.5px; }
+    .mini-table table thead th { padding: 0.55rem 0.85rem; font-size: 9.5px; }
+    .donut-row { display: flex; align-items: center; gap: 1rem; }
+    @media (max-width: 1100px) {
+      .board { grid-template-columns: 1fr; }
+      .right-col { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <a class="back" href="./index.html">← All options</a>
+
+    <header class="hero">
+      <div class="hero-main">
+        <span class="eyebrow">Reports · Option B</span>
+        <h1>Two-Column Dashboard</h1>
+        <p class="sub">Bento grid. Everything fits on one screen — click "see all" to drill into any panel.</p>
+      </div>
+      <div class="range-bar">
+        <button>Today</button>
+        <button class="active">7 days</button>
+        <button>30 days</button>
+        <button>Custom</button>
+        <span class="sep"></span>
+        <input class="date-input" type="date" value="2026-05-13" />
+        <span class="muted tiny">→</span>
+        <input class="date-input" type="date" value="2026-05-20" />
+      </div>
+    </header>
+
+    <div class="board">
+      <!-- LEFT COLUMN -->
+      <div class="left-col">
+        <div class="card">
+          <div class="card-title">At a Glance</div>
+          <div class="glance">
+            <div class="glance-row"><span class="k">Orders</span><span class="v">742</span></div>
+            <div class="glance-row"><span class="k">Revenue</span><span class="v">₵68,450 <span class="delta pos">▲ 12%</span></span></div>
+            <div class="glance-row"><span class="k">Profit</span><span class="v">₵23,820 <span class="delta pos">▲ 8%</span></span></div>
+            <div class="glance-row"><span class="k">Expenses</span><span class="v">₵7,200</span></div>
+            <div class="glance-row"><span class="k">Margin</span><span class="v">34.8%</span></div>
+            <div class="glance-row"><span class="k">Tax</span><span class="v">₵3,420</span></div>
+          </div>
+        </div>
+
+        <div class="card mini-table">
+          <div class="card-title">Top Products</div>
+          <table>
+            <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Revenue</th></tr></thead>
+            <tbody>
+              <tr><td>Whole Wheat Loaf</td><td class="num">324</td><td class="num">₵12,200</td></tr>
+              <tr><td>Bagels</td><td class="num">189</td><td class="num">₵5,400</td></tr>
+              <tr><td>Croissants</td><td class="num">167</td><td class="num">₵4,800</td></tr>
+              <tr><td>Sourdough</td><td class="num">94</td><td class="num">₵3,300</td></tr>
+            </tbody>
+          </table>
+          <a class="see-all" href="#">See all 24 →</a>
+        </div>
+
+        <div class="card mini-table">
+          <div class="card-title">Top Customers</div>
+          <table>
+            <thead><tr><th>Customer</th><th class="num">Orders</th><th class="num">Spent</th></tr></thead>
+            <tbody>
+              <tr><td>Joana Adjei</td><td class="num">5</td><td class="num">₵620</td></tr>
+              <tr><td>Daniel Mensah</td><td class="num">4</td><td class="num">₵540</td></tr>
+              <tr><td>Bread Faculty HQ</td><td class="num">3</td><td class="num">₵480</td></tr>
+              <tr><td>Akua Boateng</td><td class="num">3</td><td class="num">₵410</td></tr>
+            </tbody>
+          </table>
+          <a class="see-all" href="#">See all 87 →</a>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="right-col">
+        <div class="card col-span-2">
+          <div class="card-title">Revenue Trend <span class="accent">DAILY</span></div>
+          <svg viewBox="0 0 800 200" width="100%" height="200" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="grad-b" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e07b3c" stop-opacity="0.35" />
+                <stop offset="100%" stop-color="#e07b3c" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <g stroke="rgba(19,27,46,0.06)" stroke-width="1">
+              <line x1="0" y1="40"  x2="800" y2="40" />
+              <line x1="0" y1="100" x2="800" y2="100" />
+              <line x1="0" y1="160" x2="800" y2="160" />
+            </g>
+            <path d="M0,140 L114,120 L228,80 L342,100 L456,60 L570,90 L684,50 L800,30 L800,200 L0,200 Z" fill="url(#grad-b)" />
+            <path d="M0,140 L114,120 L228,80 L342,100 L456,60 L570,90 L684,50 L800,30"
+                  fill="none" stroke="#e07b3c" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+            <!-- points -->
+            <g fill="#e07b3c">
+              <circle cx="0"   cy="140" r="3" />
+              <circle cx="114" cy="120" r="3" />
+              <circle cx="228" cy="80"  r="3" />
+              <circle cx="342" cy="100" r="3" />
+              <circle cx="456" cy="60"  r="3" />
+              <circle cx="570" cy="90"  r="3" />
+              <circle cx="684" cy="50"  r="3" />
+              <circle cx="800" cy="30"  r="4" stroke="#fff" stroke-width="1.5" />
+            </g>
+            <g fill="rgba(19,27,46,0.45)" font-size="10" font-family="Inter">
+              <text x="0"   y="195">May 13</text>
+              <text x="100" y="195">May 14</text>
+              <text x="220" y="195">May 15</text>
+              <text x="335" y="195">May 16</text>
+              <text x="450" y="195">May 17</text>
+              <text x="565" y="195">May 18</text>
+              <text x="680" y="195">May 19</text>
+              <text x="765" y="195">May 20</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="card mini-table">
+          <div class="card-title">
+            Stock Movement
+            <select class="filter">
+              <option>Whole Wheat Loaf</option>
+              <option>Bagels</option>
+            </select>
+          </div>
+          <table>
+            <thead><tr><th>When</th><th class="num">Qty</th><th>Reason</th></tr></thead>
+            <tbody>
+              <tr><td>May 18, 14:32</td><td class="num pos">+50</td><td>Batch #224</td></tr>
+              <tr><td>May 18, 16:01</td><td class="num neg">−3</td><td>Damaged</td></tr>
+              <tr><td>May 19, 09:15</td><td class="num pos">+30</td><td>Batch #225</td></tr>
+              <tr><td>May 19, 17:40</td><td class="num neg">−42</td><td>Sales</td></tr>
+            </tbody>
+          </table>
+          <a class="see-all" href="#">Full history →</a>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Payment Mix</div>
+          <div class="donut-row">
+            <svg viewBox="0 0 100 100" width="100" height="100">
+              <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(19,27,46,0.08)" stroke-width="14" />
+              <!-- 62% cash (ink) -->
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#131b2e" stroke-width="14"
+                      stroke-dasharray="148 240" transform="rotate(-90 50 50)" stroke-linecap="butt" />
+              <!-- 24% momo (orange) start at 62%=148.5 -->
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#e07b3c" stroke-width="14"
+                      stroke-dasharray="57 240" stroke-dashoffset="-148" transform="rotate(-90 50 50)" />
+              <!-- 8% card (green) start at 86% -->
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#2f8a5e" stroke-width="14"
+                      stroke-dasharray="19 240" stroke-dashoffset="-205" transform="rotate(-90 50 50)" />
+              <!-- 6% credit (red) -->
+              <circle cx="50" cy="50" r="38" fill="none" stroke="#c44545" stroke-width="14"
+                      stroke-dasharray="14 240" stroke-dashoffset="-224" transform="rotate(-90 50 50)" />
+            </svg>
+            <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:12.5px;">
+              <div><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#131b2e;margin-right:0.4rem;"></i>Cash <strong>62%</strong></div>
+              <div><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#e07b3c;margin-right:0.4rem;"></i>MoMo <strong>24%</strong></div>
+              <div><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#2f8a5e;margin-right:0.4rem;"></i>Card <strong>8%</strong></div>
+              <div><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#c44545;margin-right:0.4rem;"></i>Credit <strong>6%</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mini-table col-span-2">
+          <div class="card-title">Cashier Activity <span class="accent">ADMIN / OWNER</span></div>
+          <table>
+            <thead><tr><th>Cashier</th><th>Role</th><th class="num">Orders</th><th class="num">Revenue</th><th class="num">Profit</th><th class="num">Mods</th></tr></thead>
+            <tbody>
+              <tr><td>Kofi Anane</td><td class="muted">admin</td><td class="num">202</td><td class="num">₵42,000</td><td class="num">₵14,200</td><td class="num">2</td></tr>
+              <tr><td>Ama Serwaa</td><td class="muted">cashier</td><td class="num">132</td><td class="num">₵24,500</td><td class="num">₵8,100</td><td class="num">0</td></tr>
+              <tr><td>Yaw Mensah</td><td class="muted">cashier</td><td class="num">98</td><td class="num">₵18,200</td><td class="num">₵6,300</td><td class="num">1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

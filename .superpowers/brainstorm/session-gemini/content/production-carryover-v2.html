@@ -1,0 +1,76 @@
+<h2>Redesigning Production Carry-Over</h2>
+<p class="subtitle">"Yesterday" is misleading when data is stale. How should we handle historical "Production Debt"?</p>
+
+<div class="options">
+  <div class="option" data-choice="manual" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>The "Full Agency" Approach (Recommended)</h3>
+      <p>Make "Carry-Over" editable during planning. Show the actual date it's coming from.</p>
+      <ul>
+        <li><b>Transparency:</b> Displays "+5 from Mar 14" instead of "yesterday".</li>
+        <li><b>Control:</b> You can manually type "0" to ignore debt, or adjust it if you only want to bake half the backlog.</li>
+        <li><b>Action:</b> A "Clear All Debt" button resets everything to zero instantly.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="session" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>The "Session Selector" Approach</h3>
+      <p>Before planning starts, show a checklist of recent days that had shortages.</p>
+      <ul>
+        <li><b>Selective:</b> Choose specifically to carry over from "Mar 14" and "Mar 15" but ignore "Feb 20".</li>
+        <li><b>History:</b> Useful if you have multiple missed days and want to tackle them one by one.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="option" data-choice="automatic" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>The "Freshness Window" Approach</h3>
+      <p>System automatically ignores debt older than X days (e.g., 3 days).</p>
+      <ul>
+        <li><b>Automation:</b> No UI clutter. If you haven't baked in a week, the system assumes you've "written off" that debt.</li>
+        <li><b>Simplicity:</b> No buttons to click, but less control if you <i>wanted</i> to keep that old debt.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top: 30px;">
+  <div class="mockup-header">Preview: Option A (Full Agency)</div>
+  <div class="mockup-body">
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+       <div style="background: #fff; border: 1px solid #ddd; padding: 15px; border-radius: 8px; flex: 1;">
+         <div style="font-size: 0.8em; color: #666;">CARRY-OVER</div>
+         <div style="font-size: 1.5em; font-weight: bold; color: #e07b3c;">+52 units</div>
+         <button class="mock-button" style="font-size: 0.7em; margin-top: 5px; padding: 4px 8px;">✕ Clear All</button>
+       </div>
+       <div style="flex: 2; padding: 10px; font-style: italic; font-size: 0.9em; color: #555;">
+         Shortages found from <b>March 14, 2026</b>.
+       </div>
+    </div>
+    
+    <div class="mock-nav" style="border: 1px solid #eee; padding: 15px; border-radius: 8px;">
+       <div style="display: flex; justify-content: space-between; align-items: center;">
+         <div>
+           <b>Butter Bread</b><br/>
+           <span style="font-size: 0.8em; color: #888;">BRD-BTR-01</span>
+         </div>
+         <div style="display: flex; gap: 15px;">
+           <div style="text-align: center;">
+             <span style="font-size: 0.7em; display: block; color: #888;">CARRY (FROM MAR 14)</span>
+             <input class="mock-input" value="2" style="width: 50px; text-align: center;"/>
+           </div>
+           <div style="text-align: center;">
+             <span style="font-size: 0.7em; display: block; color: #888;">TODAY'S TARGET</span>
+             <input class="mock-input" placeholder="0" style="width: 80px; text-align: center;"/>
+           </div>
+         </div>
+       </div>
+    </div>
+  </div>
+</div>

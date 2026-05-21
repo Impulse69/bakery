@@ -14,7 +14,6 @@ import { SuppliersPage } from './pages/SuppliersPage';
 import { ExpensesPage } from './pages/ExpensesPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { ReportsPage } from './pages/ReportsPage';
-import { CashierActivityPage } from './pages/CashierActivityPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 import { AutoUpdater } from './components/AutoUpdater';
@@ -41,7 +40,6 @@ export function App() {
             <Route path="/expenses" element={safe(<ExpensesPage />)} />
             <Route path="/customers" element={safe(<CustomersPage />)} />
             <Route path="/reports" element={safe(<ReportsPage />)} />
-            <Route path="/cashier-activity" element={safe(<CashierActivityPage />)} />
             <Route path="/settings" element={safe(<SettingsPage />)} />
           </Route>
         </Route>
