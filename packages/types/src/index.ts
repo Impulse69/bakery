@@ -2,7 +2,7 @@ export type { Timestamps, UserRole, PaymentMethod } from './common';
 export type { ApiResponse, PaginatedResponse, LoginRequest, LoginResponse } from './api';
 export type { User, AuthPayload } from './user';
 export type { Product, ProductVariant } from './product';
-export type { Customer } from './customer';
+export type { Customer, AgingBucket, AgingBuckets, AgingSummary, CustomerStatement } from './customer';
 export type { ProductStockAdjustment } from './inventory';
 export type { ProductionBatch, ProductionBatchStatus, DailyProductionTarget } from './production';
 export type { SalesOrder, SalesOrderItem, SalesOrderStatus, Payment } from './order';
