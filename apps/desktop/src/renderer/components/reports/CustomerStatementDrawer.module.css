@@ -1,0 +1,313 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.loading, .empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: rgba(19, 27, 46, 0.55);
+  font-size: 0.95rem;
+}
+
+/* customer header */
+.customerHeader {
+  padding: 0.9rem 1.1rem;
+  background: linear-gradient(135deg, #fdf8f1 0%, #f7ecdc 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+}
+
+.customerName {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #131b2e;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.customerMeta {
+  display: flex;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.customerAddress {
+  font-size: 0.78rem;
+  color: rgba(19, 27, 46, 0.55);
+  margin-top: 4px;
+}
+
+/* totals tiles */
+.totalsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7rem;
+}
+
+.tile {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 4px 12px -10px rgba(19, 27, 46, 0.2);
+}
+
+.tileGreen { background: rgba(47, 158, 106, 0.06); border-color: rgba(47, 158, 106, 0.18); }
+.tileRed   { background: rgba(196, 69, 69, 0.06); border-color: rgba(196, 69, 69, 0.18); }
+
+.tileLabel {
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.tileValue {
+  font-family: 'Manrope', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.tileGreen .tileValue { color: #1d6b48; }
+.tileRed .tileValue   { color: #8a2c2c; }
+
+.tileMeta {
+  font-size: 0.72rem;
+  color: rgba(19, 27, 46, 0.5);
+  margin-top: 4px;
+}
+
+/* sections */
+.section {
+  padding: 0.9rem 1.05rem;
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 12px;
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.7rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.6rem;
+  font-family: 'Manrope', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.6);
+}
+
+.sectionHead .sectionTitle { margin-bottom: 0; }
+
+.sectionMeta {
+  font-size: 0.78rem;
+  color: rgba(19, 27, 46, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+/* aging */
+.agingBar {
+  display: flex;
+  height: 14px;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(19, 27, 46, 0.05);
+}
+
+.agingSeg { min-width: 0; }
+
+.agingLegend {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.agingLegendItem {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.agingDot {
+  width: 9px; height: 9px; border-radius: 3px; margin-top: 4px; flex-shrink: 0;
+}
+
+.agingLegendLabel {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+}
+
+.agingLegendAmount {
+  font-family: 'Manrope', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.agingLegendCount {
+  font-size: 0.68rem;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+.agingClean {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: rgba(47, 158, 106, 0.85);
+  background: rgba(47, 158, 106, 0.08);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* orders table */
+.tableWrap {
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.tbl thead th {
+  text-align: left;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+  padding: 0.55rem 0.7rem;
+  background: linear-gradient(180deg, #f9efdd, #f4e6cf);
+  border-bottom: 1px solid rgba(19, 27, 46, 0.08);
+}
+
+.tbl tbody td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.05);
+  color: #131b2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.tbl tbody tr:last-child td { border-bottom: 0; }
+.tbl tbody tr:hover { background: rgba(224, 123, 60, 0.05); }
+
+.right { text-align: right; }
+.mono { font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 0.78rem; }
+.neg  { color: #8a2c2c; font-weight: 700; }
+.dim  { color: rgba(19, 27, 46, 0.4); }
+
+.emptyInline {
+  padding: 1rem;
+  text-align: center;
+  color: rgba(19, 27, 46, 0.5);
+  font-size: 0.85rem;
+}
+
+/* status chip */
+.statusChip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: rgba(19, 27, 46, 0.06);
+  color: rgba(19, 27, 46, 0.65);
+}
+
+.s_draft     { background: rgba(87, 83, 78, 0.14); color: #57534e; }
+.s_confirmed { background: rgba(29, 78, 216, 0.14); color: #1d4ed8; }
+.s_picked    { background: rgba(29, 78, 216, 0.10); color: #1d4ed8; }
+.s_invoiced  { background: rgba(180, 83, 9, 0.16); color: #b45309; }
+.s_paid      { background: rgba(21, 128, 61, 0.16); color: #15803d; }
+.s_cancelled { background: rgba(185, 28, 28, 0.14); color: #b91c1c; }
+
+/* products */
+.productsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.productRow {
+  display: grid;
+  grid-template-columns: 1fr 2fr 50px 90px;
+  gap: 0.7rem;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.productName {
+  color: #131b2e;
+  font-weight: 600;
+}
+
+.productTrack {
+  height: 7px;
+  background: rgba(19, 27, 46, 0.06);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.productFill {
+  height: 100%;
+  background: linear-gradient(90deg, #e07b3c, #c89a3c);
+  border-radius: 9999px;
+}
+
+.productQty {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: rgba(19, 27, 46, 0.7);
+}
+
+.productRev {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #131b2e;
+}
+
+/* footer */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(19, 27, 46, 0.08);
+}
+
+/* responsive */
+@media (max-width: 760px) {
+  .totalsRow { grid-template-columns: repeat(2, 1fr); }
+  .agingLegend { grid-template-columns: repeat(3, 1fr); }
+  .productRow { grid-template-columns: 1fr 60px 80px; }
+  .productTrack { display: none; }
+}

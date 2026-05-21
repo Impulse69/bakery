@@ -218,35 +218,64 @@ router.get(
 );
 
 // GET /api/customers/leaderboard
+// Optional query: from, to (ISO datetime), limit (default 10).
 router.get(
   '/leaderboard',
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
-    // Top 10 customers by total spend
+    const fromParam = req.query.from as string | undefined;
+    const toParam = req.query.to as string | undefined;
+    const limitParam = req.query.limit as string | undefined;
+    const take = Math.max(1, Math.min(50, Number(limitParam) || 10));
+
+    const dateFilter = fromParam && toParam
+      ? { createdAt: { gte: new Date(fromParam), lte: new Date(toParam) } }
+      : {};
+
+    // Top customers by total spend in (optional) range
     const result = await prisma.salesOrder.groupBy({
       by: ['customerId'],
       where: {
         status: { not: 'cancelled' },
         customerId: { not: null },
+        ...dateFilter,
       },
-      _sum: { total: true },
+      _sum: { total: true, amountPaid: true, balanceDue: true },
       _count: { id: true },
       orderBy: { _sum: { total: 'desc' } },
-      take: 10,
+      take,
     });
 
     const customerIds = result.map((r) => r.customerId).filter(Boolean) as string[];
     const customers = await prisma.customer.findMany({
       where: { id: { in: customerIds } },
-      select: { id: true, name: true, phone: true },
+      select: { id: true, name: true, phone: true, creditBalance: true },
     });
     const cMap = new Map(customers.map(c => [c.id, c]));
 
-    const enriched = result.map(r => ({
-      ...cMap.get(r.customerId!),
-      totalSpent: r._sum.total || 0,
-      totalOrders: r._count.id,
-    }));
+    // Outstanding (all-time unpaid) for each customer
+    const allTimeOutstanding = await prisma.salesOrder.groupBy({
+      by: ['customerId'],
+      where: { status: 'invoiced', balanceDue: { gt: 0 }, customerId: { in: customerIds } },
+      _sum: { balanceDue: true },
+    });
+    const outstandingMap = new Map(
+      allTimeOutstanding.map(o => [o.customerId, o._sum.balanceDue || 0]),
+    );
+
+    const enriched = result.map(r => {
+      const c = cMap.get(r.customerId!);
+      return {
+        id: c?.id,
+        name: c?.name,
+        phone: c?.phone,
+        totalSpent: r._sum.total || 0,
+        amountPaid: r._sum.amountPaid || 0,
+        balanceDueInRange: r._sum.balanceDue || 0,
+        outstandingAllTime: outstandingMap.get(r.customerId) || 0,
+        totalOrders: r._count.id,
+      };
+    });
 
     res.json(enriched);
   }),

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { StatCard } from '@bakery/ui';
 import { formatCurrency } from '@bakery/utils';
 import type { AgingBuckets, AgingSummary } from '@bakery/types';
@@ -9,6 +9,7 @@ import { api } from '../../lib/api';
 import { useToast } from '../Toast';
 import { DateRangePicker, initialRange } from './DateRangePicker';
 import type { DateRange } from './DateRangePicker';
+import { CustomerStatementDrawer } from './CustomerStatementDrawer';
 import styles from './CustomerAnalyticsPanel.module.css';
 
 export interface CustomerAnalytics {
@@ -17,6 +18,20 @@ export interface CustomerAnalytics {
   ordersPerMonth: Array<{ period: string; orders: number; revenue: number }>;
   topProducts: Array<{ name: string; quantity: number }>;
 }
+
+interface LeaderboardRow {
+  id: string;
+  name: string;
+  phone?: string;
+  totalSpent: number;
+  amountPaid: number;
+  balanceDueInRange: number;
+  outstandingAllTime: number;
+  totalOrders: number;
+}
+
+type SortKey = 'name' | 'totalSpent' | 'totalOrders' | 'outstandingAllTime';
+type SortDir = 'asc' | 'desc';
 
 const PIE_COLORS = ['#e07b3c', '#131b2e', '#c89a3c', '#2f9e6a', '#8b5cf6'];
 const BAR_COLORS = ['#e07b3c', '#131b2e', '#c89a3c', '#2f9e6a', '#8b5cf6', '#0ea5e9'];
@@ -43,23 +58,55 @@ export function CustomerAnalyticsPanel() {
   const [range, setRange] = useState<DateRange>(() => initialRange('month'));
   const [analytics, setAnalytics] = useState<CustomerAnalytics | null>(null);
   const [aging, setAging] = useState<AgingSummary | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKey>('totalSpent');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [openCustomerId, setOpenCustomerId] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [a, g] = await Promise.all([
+      const [a, g, lb] = await Promise.all([
         api.get<CustomerAnalytics>(`/customers/analytics?${rangeToParams(range)}`),
         api.get<AgingSummary>('/customers/aging'),
+        api.get<LeaderboardRow[]>(`/customers/leaderboard?${rangeToParams(range)}&limit=20`),
       ]);
       setAnalytics(a);
       setAging(g);
+      setLeaderboard(Array.isArray(lb) ? lb : []);
     } catch (err: any) {
       showToast(err?.message || 'Failed to load customer analytics', 'error');
     } finally {
       setLoading(false);
     }
   }, [range, showToast]);
+
+  const sortedLeaderboard = useMemo(() => {
+    const arr = [...leaderboard];
+    arr.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (typeof av === 'string' && typeof bv === 'string') {
+        return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      }
+      const an = Number(av) || 0;
+      const bn = Number(bv) || 0;
+      return sortDir === 'asc' ? an - bn : bn - an;
+    });
+    return arr;
+  }, [leaderboard, sortKey, sortDir]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'name' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortIndicator = (key: SortKey) => (sortKey === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '');
 
   useEffect(() => {
     fetchAll();
@@ -185,7 +232,80 @@ export function CustomerAnalyticsPanel() {
             </div>
           </div>
 
+          <div className={`${styles.ledgerCard} ${styles.fullWidth}`}>
+            <div className={styles.chartTitle}>
+              Customers (in range) — click any row to open a statement
+            </div>
+            {sortedLeaderboard.length === 0 ? (
+              <p className={styles.tableEmpty}>No customers in this range.</p>
+            ) : (
+              <div className={styles.customerTableWrap}>
+                <table className={styles.customerTbl}>
+                  <thead>
+                    <tr>
+                      <th
+                        className={styles.sortable}
+                        onClick={() => handleSort('name')}
+                      >
+                        Customer{sortIndicator('name')}
+                      </th>
+                      <th
+                        className={`${styles.sortable} ${styles.rightTh}`}
+                        onClick={() => handleSort('totalOrders')}
+                      >
+                        Orders{sortIndicator('totalOrders')}
+                      </th>
+                      <th
+                        className={`${styles.sortable} ${styles.rightTh}`}
+                        onClick={() => handleSort('totalSpent')}
+                      >
+                        Revenue{sortIndicator('totalSpent')}
+                      </th>
+                      <th
+                        className={`${styles.sortable} ${styles.rightTh}`}
+                        onClick={() => handleSort('outstandingAllTime')}
+                      >
+                        Outstanding{sortIndicator('outstandingAllTime')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedLeaderboard.map((c) => (
+                      <tr
+                        key={c.id}
+                        className={styles.customerRow}
+                        onClick={() => setOpenCustomerId(c.id)}
+                      >
+                        <td>
+                          <div className={styles.customerNameCell}>
+                            <span className={styles.customerRowName}>{c.name}</span>
+                            {c.phone && <span className={styles.customerRowPhone}>{c.phone}</span>}
+                          </div>
+                        </td>
+                        <td className={styles.right}>{c.totalOrders}</td>
+                        <td className={styles.right}>{formatCurrency(c.totalSpent)}</td>
+                        <td
+                          className={`${styles.right} ${c.outstandingAllTime > 0 ? styles.outstandingHi : styles.outstandingZero}`}
+                        >
+                          {formatCurrency(c.outstandingAllTime)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
         </div>
+      )}
+
+      {openCustomerId && (
+        <CustomerStatementDrawer
+          customerId={openCustomerId}
+          initialRange={range}
+          onClose={() => setOpenCustomerId(null)}
+        />
       )}
     </div>
   );
