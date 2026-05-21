@@ -1,0 +1,348 @@
+/* ── Screen overlay ─────────────────────────────────────────────── */
+
+.overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(19, 27, 46, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  overflow-y: auto;
+}
+
+.previewCard {
+  background: #fff;
+  border-radius: 12px;
+  width: min(960px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.5);
+}
+
+.previewActions {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fffefb;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.08);
+}
+
+.printBtn, .closeBtn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(19, 27, 46, 0.15);
+  background: #fff;
+  color: #131b2e;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.printBtn {
+  background: #131b2e;
+  color: #fff;
+  border-color: #131b2e;
+}
+
+.printBtn:hover { background: #1f2942; }
+.closeBtn:hover { background: rgba(19, 27, 46, 0.05); }
+
+/* ── A4 page ─────────────────────────────────────────────────────── */
+
+.page {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 36px 40px;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: 'Inter', Arial, sans-serif;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  border-bottom: 2px solid #131b2e;
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+}
+
+.brand .brandName {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 4px;
+  color: #131b2e;
+}
+
+.brand .brandSub {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #e07b3c;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.brand .brandDetails {
+  font-size: 11px;
+  color: #4a4a4a;
+}
+
+.brand .brandDetails p { margin: 1px 0; }
+
+.docMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.docTitle {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 0 0 12px;
+  color: #131b2e;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 16px;
+  font-size: 11.5px;
+}
+
+.metaLabel {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #888;
+  align-self: center;
+}
+
+.metaValue {
+  font-weight: 600;
+  color: #131b2e;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* bill-to */
+.billTo {
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  background: #fdf8f1;
+  border-left: 3px solid #e07b3c;
+  border-radius: 4px;
+}
+
+.sectionHeading {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0 0 6px;
+}
+
+.customerName {
+  font-family: 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #131b2e;
+  margin: 0 0 4px;
+}
+
+.billTo p { margin: 1px 0; font-size: 11.5px; color: #4a4a4a; }
+
+/* orders table */
+.ordersTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 11.5px;
+}
+
+.ordersTable thead th {
+  text-align: left;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #444;
+  border-bottom: 2px solid #131b2e;
+  padding: 8px 6px;
+  background: #fdf8f1;
+}
+
+.ordersTable tbody td {
+  padding: 7px 6px;
+  border-bottom: 1px solid #eee;
+  font-variant-numeric: tabular-nums;
+  color: #1a1a1a;
+}
+
+.mono { font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 10.5px; }
+
+.empty {
+  text-align: center;
+  padding: 14px;
+  color: #999;
+  font-style: italic;
+}
+
+.balanceHi { color: #8a2c2c; font-weight: 700; }
+
+/* footer section: aging + totals */
+.footerSection {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.agingBox {
+  padding: 14px 16px;
+  background: #f9f5ed;
+  border-radius: 6px;
+}
+
+.agingTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.agingTable td {
+  padding: 4px 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.agingTable tr td:first-child { color: #4a4a4a; }
+
+.agingOver { color: #8a2c2c !important; font-weight: 700; }
+
+.agingTotalRow td {
+  border-top: 1.5px solid #131b2e;
+  padding-top: 7px;
+  font-weight: 800;
+  color: #131b2e;
+}
+
+.totals {
+  align-self: flex-start;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 12px;
+  color: #4a4a4a;
+  border-bottom: 1px dashed #ddd;
+  font-variant-numeric: tabular-nums;
+}
+
+.totalRow span:last-child { font-weight: 600; color: #131b2e; }
+
+.grandTotal {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  margin-top: 6px;
+  border-top: 2px solid #131b2e;
+  border-bottom: 2px solid #131b2e;
+  font-weight: 800;
+  font-size: 13px;
+  font-family: 'Manrope', sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: #131b2e;
+}
+
+.creditRow {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 11.5px;
+  color: #2f9e6a;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 4px;
+}
+
+/* signatures */
+.signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin: 36px 0 20px;
+}
+
+.sigBlock { text-align: center; }
+
+.sigLine {
+  border-bottom: 1px solid #131b2e;
+  margin-bottom: 6px;
+  height: 32px;
+}
+
+.sigBlock p {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #666;
+  margin: 0;
+  font-weight: 700;
+}
+
+/* footer */
+.footerBrand {
+  text-align: center;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+  color: #555;
+  font-size: 11px;
+}
+
+.footerBrand p { margin: 2px 0; }
+
+.footerSmall { font-size: 10px; color: #888; }
+
+/* ── Print-only target ────────────────────────────────────────── */
+
+.printOnly {
+  display: none;
+}
+
+@media print {
+  /* Hide everything in the app */
+  :global(#root) { display: none !important; }
+  .overlay { display: none !important; }
+  .printOnly { display: block !important; }
+
+  body {
+    margin: 0;
+    background: #fff;
+  }
+
+  .page {
+    margin: 0;
+    padding: 12mm 14mm;
+    box-shadow: none;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}

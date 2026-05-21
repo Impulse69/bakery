@@ -6,13 +6,13 @@ import { api } from '../../lib/api';
 import { useToast } from '../Toast';
 import { DateRangePicker } from './DateRangePicker';
 import type { DateRange } from './DateRangePicker';
+import { CustomerStatement as PrintableStatement } from '../CustomerStatement';
 import styles from './CustomerStatementDrawer.module.css';
 
 interface Props {
   customerId: string;
   initialRange: DateRange;
   onClose: () => void;
-  onPrint?: (statement: CustomerStatement) => void;
 }
 
 const AGING_LABELS: { key: keyof AgingBuckets; label: string; color: string }[] = [
@@ -50,11 +50,12 @@ function agingTotal(b: AgingBuckets): number {
   return AGING_LABELS.reduce((sum, x) => sum + b[x.key].amount, 0);
 }
 
-export function CustomerStatementDrawer({ customerId, initialRange, onClose, onPrint }: Props) {
+export function CustomerStatementDrawer({ customerId, initialRange, onClose }: Props) {
   const { showToast } = useToast();
   const [range, setRange] = useState<DateRange>(initialRange);
   const [statement, setStatement] = useState<CustomerStatement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showPrintable, setShowPrintable] = useState(false);
 
   const fetchStatement = useCallback(async () => {
     setLoading(true);
@@ -108,9 +109,16 @@ export function CustomerStatementDrawer({ customerId, initialRange, onClose, onP
 
           <div className={styles.footer}>
             <Button variant="ghost" onClick={onClose}>Close</Button>
-            <Button onClick={() => onPrint?.(statement)}>🧾 Print Statement</Button>
+            <Button onClick={() => setShowPrintable(true)}>🧾 Print Statement</Button>
           </div>
         </div>
+      )}
+
+      {showPrintable && statement && (
+        <PrintableStatement
+          statement={statement}
+          onClose={() => setShowPrintable(false)}
+        />
       )}
     </Modal>
   );
