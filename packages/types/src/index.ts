@@ -15,6 +15,6 @@ export type {
   ExpenseSummaryResponse,
 } from './expense';
 export type { DocumentTemplate, DocumentTemplateType } from './document';
-export type { DailySalesSummary, DailyProfitLoss, DailySummary } from './report';
+export type { DailySalesSummary, DailyProfitLoss, DailySummary, OperationsSummary, ProfitAnalysisRow } from './report';
 export type { WsEvents } from './ws-events';
 export type { AuditEntity, AuditAction, AuditLog } from './audit';

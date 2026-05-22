@@ -1,0 +1,163 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: rgba(19, 27, 46, 0.55);
+  font-size: 0.95rem;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1rem;
+}
+
+.ledgerCard {
+  background: #fffefb;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 18px -14px rgba(19, 27, 46, 0.25);
+}
+
+.chartTitle {
+  font-family: 'Manrope', 'Inter', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: #131b2e;
+  letter-spacing: -0.01em;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────── */
+
+.tableWrap {
+  margin-top: 0.75rem;
+  border: 1px solid rgba(19, 27, 46, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tbl thead th {
+  text-align: left;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(19, 27, 46, 0.55);
+  padding: 0.65rem 0.9rem;
+  background: linear-gradient(180deg, #f9efdd, #f4e6cf);
+  border-bottom: 1px solid rgba(19, 27, 46, 0.08);
+  white-space: nowrap;
+}
+
+.tbl tbody td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid rgba(19, 27, 46, 0.05);
+  font-variant-numeric: tabular-nums;
+  color: #131b2e;
+}
+
+.tbl tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tbl tbody tr:hover {
+  background: rgba(224, 123, 60, 0.06);
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  color: #131b2e;
+}
+
+.right {
+  text-align: right;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 0.8rem;
+  color: rgba(19, 27, 46, 0.65);
+}
+
+.pos {
+  color: #2f9e6a;
+  font-weight: 700;
+}
+
+.neg {
+  color: #c44545;
+  font-weight: 700;
+}
+
+.emptyCell {
+  text-align: center;
+  padding: 1.4rem;
+  color: rgba(19, 27, 46, 0.5);
+  font-size: 0.88rem;
+}
+
+.emptyInline {
+  padding: 1rem;
+  text-align: center;
+  color: rgba(19, 27, 46, 0.5);
+  font-size: 0.88rem;
+}
+
+.cap {
+  margin: 0.5rem 0 0;
+  text-align: right;
+  font-size: 0.72rem;
+  color: rgba(19, 27, 46, 0.5);
+}
+
+/* ── Stock movement section header ───────────────────────────────── */
+
+.stockHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+}
+
+.stockFilter {
+  min-width: 240px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .statsRow {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .statsRow {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stockHead {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

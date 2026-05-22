@@ -59,6 +59,95 @@ router.get(
   }),
 );
 
+// GET /api/reports/summary?from=&to=
+// Range-aware operational summary: KPI totals + per-day revenue/orders trend.
+// Powers the new Reports > Operations tab.
+router.get(
+  '/summary',
+  requireRole('admin', 'owner'),
+  asyncHandler(async (req, res) => {
+    const fromParam = req.query.from as string | undefined;
+    const toParam = req.query.to as string | undefined;
+    if (!fromParam || !toParam) {
+      throw new AppError(400, 'from and to query params are required');
+    }
+    const rangeFrom = new Date(fromParam);
+    const rangeTo = new Date(toParam);
+
+    const [orders, expenses] = await Promise.all([
+      prisma.salesOrder.findMany({
+        where: {
+          createdAt: { gte: rangeFrom, lte: rangeTo },
+          status: { not: 'cancelled' },
+        },
+        select: {
+          createdAt: true,
+          total: true,
+          taxTotal: true,
+          items: { select: { unitPrice: true, unitCostPrice: true, quantity: true } },
+        },
+      }),
+      prisma.expense.findMany({
+        where: { expenseDate: { gte: rangeFrom, lte: rangeTo } },
+        select: { amount: true },
+      }),
+    ]);
+
+    const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+    const totalTax = orders.reduce((s, o) => s + o.taxTotal, 0);
+    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
+    const totalMarginalProfit = orders.reduce(
+      (sum, o) =>
+        sum +
+        o.items.reduce(
+          (iSum, i) => iSum + (i.unitPrice - (i.unitCostPrice ?? 0)) * i.quantity,
+          0,
+        ),
+      0,
+    );
+    const netProfit = totalRevenue - totalExpenses;
+    const margin = totalRevenue > 0 ? (totalMarginalProfit / totalRevenue) * 100 : 0;
+
+    // Per-day trend across the range (date keys YYYY-MM-DD)
+    const dailyMap = new Map<string, { revenue: number; orders: number }>();
+    const cursor = new Date(rangeFrom.getFullYear(), rangeFrom.getMonth(), rangeFrom.getDate());
+    const stop = new Date(rangeTo.getFullYear(), rangeTo.getMonth(), rangeTo.getDate());
+    while (cursor <= stop) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+      dailyMap.set(key, { revenue: 0, orders: 0 });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    for (const o of orders) {
+      const d = o.createdAt;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const bucket = dailyMap.get(key);
+      if (bucket) {
+        bucket.revenue += o.total;
+        bucket.orders += 1;
+      }
+    }
+    const dailyTrend = Array.from(dailyMap.entries()).map(([date, v]) => ({
+      date,
+      revenue: v.revenue,
+      orders: v.orders,
+    }));
+
+    res.json({
+      range: { from: rangeFrom.toISOString(), to: rangeTo.toISOString() },
+      totals: {
+        orders: orders.length,
+        revenue: totalRevenue,
+        tax: totalTax,
+        expenses: totalExpenses,
+        marginalProfit: totalMarginalProfit,
+        netProfit,
+        margin,
+      },
+      dailyTrend,
+    });
+  }),
+);
+
 // GET /api/reports/profit-analysis?from=&to=
 router.get(
   '/profit-analysis',
@@ -165,14 +254,16 @@ router.get(
 );
 
 // GET /api/reports/stock-adjustment?productId=&from=&to=
+// productId is OPTIONAL — when absent, returns adjustments across all products
+// (capped at 200 most recent rows). When present, behaviour is unchanged.
 router.get(
   '/stock-adjustment',
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
     const { productId, from, to } = req.query as Record<string, string | undefined>;
-    if (!productId) throw new AppError(400, 'productId is required');
 
-    const where: Record<string, unknown> = { productId: productId };
+    const where: Record<string, unknown> = {};
+    if (productId) where.productId = productId;
     if (from || to) {
       const dateFilter: Record<string, Date> = {};
       if (from) dateFilter.gte = new Date(from);
@@ -183,6 +274,8 @@ router.get(
     const movements = await prisma.productStockAdjustment.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take: productId ? undefined : 200,
+      include: productId ? undefined : { product: { select: { id: true, name: true, sku: true } } },
     });
 
     res.json(movements);
