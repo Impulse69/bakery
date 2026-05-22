@@ -35,7 +35,6 @@ type SortDir = 'asc' | 'desc';
 
 const PIE_COLORS = ['#e07b3c', '#131b2e', '#c89a3c', '#2f9e6a', '#8b5cf6'];
 const BAR_COLORS = ['#e07b3c', '#131b2e', '#c89a3c', '#2f9e6a', '#8b5cf6', '#0ea5e9'];
-const ORDERS_PRIMARY = '#e07b3c';
 
 const AGING_LABELS: { key: keyof AgingBuckets; label: string; color: string }[] = [
   { key: 'bucket_0_30',    label: '0–30 d',    color: '#2f9e6a' },
@@ -201,20 +200,6 @@ export function CustomerAnalyticsPanel() {
           </div>
 
           <div className={styles.ledgerCard}>
-            <div className={styles.chartTitle}>Orders per month (in range)</div>
-            <div style={{ height: 280, width: '100%' }}>
-              <ResponsiveContainer>
-                <BarChart data={analytics.ordersPerMonth}>
-                  <XAxis dataKey="period" fontSize={12} />
-                  <YAxis fontSize={12} />
-                  <Tooltip />
-                  <Bar dataKey="orders" fill={ORDERS_PRIMARY} radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className={`${styles.ledgerCard} ${styles.fullWidth}`}>
             <div className={styles.chartTitle}>Top products (by quantity, in range)</div>
             <div style={{ height: 280, width: '100%' }}>
               <ResponsiveContainer>
