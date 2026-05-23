@@ -412,5 +412,174 @@ router.get(
   }),
 );
 
+// GET /api/reports/dashboard-bundle
+// Single round-trip replacement for the dashboard's 5 parallel fetches.
+// The server runs everything in parallel against the DB (cheap; same region
+// as Postgres) and ships one JSON payload, collapsing 5× Cloudflare-Tunnel
+// + Supabase round trips into 1. Role-gated: cashier-or-up gets sales blocks,
+// admin/owner also get expenses; everyone gets the inventory blocks.
+router.get(
+  '/dashboard-bundle',
+  asyncHandler(async (req, res) => {
+    const user = req.user;
+    if (!user) throw new AppError(401, 'Not authenticated');
+    const role = user.role;
+    const canSeeSales = role === 'admin' || role === 'owner' || role === 'cashier';
+    const canSeeExpenses = role === 'admin' || role === 'owner';
+
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const nextDay = new Date(startOfDay);
+    nextDay.setDate(startOfDay.getDate() + 1);
+
+    // ── Week range (Sun-anchored, matches /reports/weekly semantics) ─────
+    const weekEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 12, 0, 0));
+    const weekStart = new Date(weekEnd);
+    weekStart.setUTCDate(weekEnd.getUTCDate() - weekEnd.getUTCDay());
+    weekStart.setUTCHours(0, 0, 0, 0);
+    const weekStop = new Date(weekStart);
+    weekStop.setUTCDate(weekStart.getUTCDate() + 7);
+
+    // Always-needed inventory blocks.
+    const inventoryPromises = [
+      prisma.product.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, sku: true, unit: true, stockQuantity: true },
+        orderBy: { stockQuantity: 'asc' },
+        take: 100,
+      }),
+      prisma.product.aggregate({
+        where: { isActive: true },
+        _sum: { stockQuantity: true },
+      }),
+    ];
+
+    // Role-gated sales blocks.
+    const salesPromises: Promise<unknown>[] = canSeeSales || canSeeExpenses
+      ? [
+          // Daily report — aggregate + raw join for marginal profit + expenses sum
+          prisma.salesOrder.aggregate({
+            where: { createdAt: { gte: startOfDay, lt: nextDay }, status: { not: 'cancelled' } },
+            _count: { _all: true },
+            _sum: { total: true, taxTotal: true },
+          }),
+          prisma.expense.aggregate({
+            where: { expenseDate: { gte: startOfDay, lt: nextDay } },
+            _sum: { amount: true },
+          }),
+          prisma.$queryRaw<{ marginal_profit: bigint | null }[]>`
+            SELECT COALESCE(SUM((i."unitPrice" - COALESCE(i."unitWholesalePrice", 0)) * i.quantity), 0)::bigint AS marginal_profit
+            FROM "sales_order_items" i
+            JOIN "sales_orders" o ON o.id = i."salesOrderId"
+            WHERE o."createdAt" >= ${startOfDay}
+              AND o."createdAt" <  ${nextDay}
+              AND o.status != 'cancelled'
+          `,
+        ]
+      : [];
+
+    const weeklyPromise: Promise<unknown> | null = canSeeSales
+      ? prisma.$queryRaw<{ day: Date; revenue: bigint | null }[]>`
+          SELECT date_trunc('day', o."createdAt") AS day,
+                 COALESCE(SUM(o.total), 0)::bigint AS revenue
+          FROM "sales_orders" o
+          WHERE o."createdAt" >= ${weekStart}
+            AND o."createdAt" <  ${weekStop}
+            AND o.status != 'cancelled'
+          GROUP BY 1
+        `
+      : null;
+
+    const recentOrdersPromise: Promise<unknown> | null = canSeeSales
+      ? prisma.salesOrder.findMany({
+          where: {},
+          include: { customer: true, _count: { select: { items: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        })
+      : null;
+
+    const [
+      products,
+      productAgg,
+      orderAgg,
+      expenseAgg,
+      profitRows,
+      weeklyRows,
+      recentOrders,
+    ] = await Promise.all([
+      ...inventoryPromises,
+      ...salesPromises,
+      weeklyPromise ?? Promise.resolve(null),
+      recentOrdersPromise ?? Promise.resolve(null),
+    ]) as [
+      { id: string; name: string; sku: string | null; unit: string | null; stockQuantity: number }[],
+      { _sum: { stockQuantity: number | null } },
+      ({ _count: { _all: number }; _sum: { total: number | null; taxTotal: number | null } } | undefined),
+      ({ _sum: { amount: number | null } } | undefined),
+      ({ marginal_profit: bigint | null }[] | undefined),
+      ({ day: Date; revenue: bigint | null }[] | null),
+      (unknown[] | null),
+    ];
+
+    // ── Build response blocks ──
+    const LOW_THRESHOLD = 20;
+    const lowStock = products
+      .filter((p) => p.stockQuantity <= LOW_THRESHOLD)
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        unit: p.unit ?? 'pcs',
+        quantityOnHand: p.stockQuantity,
+        lowStockThreshold: LOW_THRESHOLD,
+      }));
+
+    const inventoryValue = {
+      totalValue: 0, // /inventory/value still owns the cost-weighted figure if needed elsewhere
+      totalUnits: productAgg._sum.stockQuantity ?? 0,
+    };
+
+    let dailyReport: Record<string, unknown> | null = null;
+    if ((canSeeSales || canSeeExpenses) && orderAgg && expenseAgg) {
+      const totalRevenue = orderAgg._sum.total ?? 0;
+      const totalTax = orderAgg._sum.taxTotal ?? 0;
+      const totalExpenses = expenseAgg._sum.amount ?? 0;
+      const marginalProfit = Number(profitRows?.[0]?.marginal_profit ?? 0);
+      dailyReport = {
+        date: startOfDay.toISOString().split('T')[0],
+        totalOrders: orderAgg._count._all,
+        totalRevenue,
+        totalTax,
+        totalExpenses,
+        marginalProfit,
+        netProfit: totalRevenue - totalExpenses,
+      };
+    }
+
+    let weekly: { date: string; revenue: number }[] | null = null;
+    if (canSeeSales && weeklyRows) {
+      const map = new Map<string, number>();
+      for (const r of weeklyRows) {
+        map.set(r.day.toISOString().split('T')[0], Number(r.revenue ?? 0));
+      }
+      weekly = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setUTCDate(weekStart.getUTCDate() + i);
+        const key = d.toISOString().split('T')[0];
+        weekly.push({ date: key, revenue: map.get(key) ?? 0 });
+      }
+    }
+
+    res.json({
+      lowStock,
+      inventoryValue,
+      dailyReport,
+      weekly,
+      recentOrders: canSeeSales ? recentOrders ?? [] : null,
+    });
+  }),
+);
+
 export default router;
 

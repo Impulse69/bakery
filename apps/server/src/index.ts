@@ -103,26 +103,10 @@ app.use(globalErrorHandler);
 
 export { app, io };
 
-// Socket.io connection + room scoping. Clients that emit `join-location`
-// with a string locationId join `loc:<id>`; sales mutations broadcast to
-// that room instead of to every connected client. Events with no clear
-// owning location (inventory adjustments, production batches) continue
-// to broadcast globally — by design.
+// Socket.io connection logging. Single-bakery deployment — every connected
+// client cares about every event, so no room scoping.
 io.on('connection', (socket) => {
   logger.info({ socketId: socket.id }, 'Client connected');
-
-  socket.on('join-location', (locationId: unknown) => {
-    if (typeof locationId !== 'string' || locationId.length === 0) return;
-    const room = `loc:${locationId}`;
-    socket.join(room);
-    logger.info({ socketId: socket.id, room }, 'Client joined location room');
-  });
-
-  socket.on('leave-location', (locationId: unknown) => {
-    if (typeof locationId !== 'string') return;
-    socket.leave(`loc:${locationId}`);
-  });
-
   socket.on('disconnect', () => {
     logger.info({ socketId: socket.id }, 'Client disconnected');
   });

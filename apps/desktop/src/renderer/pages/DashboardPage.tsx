@@ -187,61 +187,26 @@ export function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      // Fetch products to check for low stock client-side as a reliable fallback,
-      // plus the global stock-value rollup (cashier's target ceiling for the day).
-      const calls: Promise<unknown>[] = [
-        api.get<{ data: LowStockItem[] }>('/inventory?limit=100'),
-        api.get<{ totalValue: number; totalUnits: number }>('/inventory/value'),
-      ];
-      if (canSeeSales) {
-        calls.push(
-          api.get<DailyReport>(`/reports/daily?date=${today}`),
-          api.get<WeeklyEntry[]>(`/reports/weekly?endDate=${today}`),
-          api.get<{ data: RecentOrder[] }>('/sales-orders?limit=5&page=1'),
-        );
-      } else if (canSeeExpenses) {
-        calls.push(api.get<DailyReport>(`/reports/daily?date=${today}`));
-      }
-      const results = await Promise.allSettled(calls);
-      const invRes = results[0];
-      const valueRes = results[1];
-      if (invRes.status === 'fulfilled') {
-        const allItems = (invRes.value as { data: any[] }).data || [];
-        const low = allItems
-          .filter(item => item.stockQuantity <= 20)
-          .map(item => ({
-            id: item.id,
-            name: item.name,
-            unit: item.unit || 'pcs',
-            quantityOnHand: item.stockQuantity,
-            lowStockThreshold: 20
-          }))
-          .sort((a, b) => a.quantityOnHand - b.quantityOnHand);
-        setLowStock(low);
-      }
-      if (valueRes.status === 'fulfilled') {
-        setStockValue(valueRes.value as { totalValue: number; totalUnits: number });
-      }
-      // Offset is +2 now (inventory list + value precede the role-gated calls).
-      if (canSeeSales) {
-        const [, , reportRes, weeklyRes, ordersRes] = results as PromiseSettledResult<unknown>[];
-        if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
-        if (weeklyRes?.status === 'fulfilled') {
-          // Server returns a bare array; guard against any caller (e.g. offline
-          // fallback) handing back a non-array so the page never crashes here.
-          const v = weeklyRes.value;
-          setWeeklyData(Array.isArray(v) ? (v as WeeklyEntry[]) : []);
-        }
-        if (ordersRes?.status === 'fulfilled') setOrders((ordersRes.value as { data: RecentOrder[] }).data ?? []);
-      } else if (canSeeExpenses) {
-        const reportRes = results[2];
-        if (reportRes?.status === 'fulfilled') setReport(reportRes.value as DailyReport);
-      }
+      // Single round-trip dashboard fetch — server bundles low-stock, inventory
+      // value, daily report, weekly trend, and recent orders into one payload.
+      // Replaces 5× parallel calls (each paying full CF Tunnel + Supabase RTT).
+      type Bundle = {
+        lowStock: LowStockItem[];
+        inventoryValue: { totalValue: number; totalUnits: number };
+        dailyReport: DailyReport | null;
+        weekly: WeeklyEntry[] | null;
+        recentOrders: RecentOrder[] | null;
+      };
+      const bundle = await api.get<Bundle>('/reports/dashboard-bundle');
+      setLowStock(bundle.lowStock ?? []);
+      setStockValue(bundle.inventoryValue ?? null);
+      if (bundle.dailyReport) setReport(bundle.dailyReport);
+      if (bundle.weekly) setWeeklyData(Array.isArray(bundle.weekly) ? bundle.weekly : []);
+      if (bundle.recentOrders) setOrders(bundle.recentOrders);
     } finally {
       setLoading(false);
     }
-  }, [canSeeSales, canSeeExpenses]);
+  }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
