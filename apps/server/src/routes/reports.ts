@@ -18,38 +18,38 @@ router.get(
     const nextDay = new Date(dateStr);
     nextDay.setDate(nextDay.getDate() + 1);
 
-    const [orders, expenses] = await Promise.all([
-      prisma.salesOrder.findMany({
+    const [orderAgg, expenseAgg, profitRows] = await Promise.all([
+      prisma.salesOrder.aggregate({
         where: {
           createdAt: { gte: day, lt: nextDay },
           status: { not: 'cancelled' },
         },
-        include: { items: true },
+        _count: { _all: true },
+        _sum: { total: true, taxTotal: true },
       }),
-      prisma.expense.findMany({
-        where: {
-          expenseDate: { gte: day, lt: nextDay },
-        },
+      prisma.expense.aggregate({
+        where: { expenseDate: { gte: day, lt: nextDay } },
+        _sum: { amount: true },
       }),
+      prisma.$queryRaw<{ marginal_profit: bigint | null }[]>`
+        SELECT COALESCE(SUM((i."unitPrice" - COALESCE(i."unitWholesalePrice", 0)) * i.quantity), 0)::bigint AS marginal_profit
+        FROM "sales_order_items" i
+        JOIN "sales_orders" o ON o.id = i."salesOrderId"
+        WHERE o."createdAt" >= ${day}
+          AND o."createdAt" < ${nextDay}
+          AND o.status != 'cancelled'
+      `,
     ]);
 
-    const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
-    const totalTax = orders.reduce((s, o) => s + o.taxTotal, 0);
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    
-    // Marginal Profit calculation: (sellingPrice - costPrice) * Quantity
-    const totalMarginalProfit = orders.reduce((sum, order) => {
-      return sum + order.items.reduce((itemSum, item) => {
-        const cost = item.unitCostPrice ?? 0;
-        return itemSum + ((item.unitPrice - cost) * item.quantity);
-      }, 0);
-    }, 0);
-
+    const totalRevenue = orderAgg._sum.total ?? 0;
+    const totalTax = orderAgg._sum.taxTotal ?? 0;
+    const totalExpenses = expenseAgg._sum.amount ?? 0;
+    const totalMarginalProfit = Number(profitRows[0]?.marginal_profit ?? 0);
     const netProfit = totalRevenue - totalExpenses;
 
     res.json({
       date: dateStr,
-      totalOrders: orders.length,
+      totalOrders: orderAgg._count._all,
       totalRevenue,
       totalTax,
       totalExpenses,
@@ -74,68 +74,68 @@ router.get(
     const rangeFrom = new Date(fromParam);
     const rangeTo = new Date(toParam);
 
-    const [orders, expenses] = await Promise.all([
-      prisma.salesOrder.findMany({
+    const [orderAgg, expenseAgg, profitRows, trendRows] = await Promise.all([
+      prisma.salesOrder.aggregate({
         where: {
           createdAt: { gte: rangeFrom, lte: rangeTo },
           status: { not: 'cancelled' },
         },
-        select: {
-          createdAt: true,
-          total: true,
-          taxTotal: true,
-          items: { select: { unitPrice: true, unitCostPrice: true, quantity: true } },
-        },
+        _count: { _all: true },
+        _sum: { total: true, taxTotal: true },
       }),
-      prisma.expense.findMany({
+      prisma.expense.aggregate({
         where: { expenseDate: { gte: rangeFrom, lte: rangeTo } },
-        select: { amount: true },
+        _sum: { amount: true },
       }),
+      prisma.$queryRaw<{ marginal_profit: bigint | null }[]>`
+        SELECT COALESCE(SUM((i."unitPrice" - COALESCE(i."unitWholesalePrice", 0)) * i.quantity), 0)::bigint AS marginal_profit
+        FROM "sales_order_items" i
+        JOIN "sales_orders" o ON o.id = i."salesOrderId"
+        WHERE o."createdAt" >= ${rangeFrom}
+          AND o."createdAt" <= ${rangeTo}
+          AND o.status != 'cancelled'
+      `,
+      prisma.$queryRaw<{ day: Date; revenue: bigint | null; orders: bigint }[]>`
+        SELECT date_trunc('day', o."createdAt") AS day,
+               COALESCE(SUM(o.total), 0)::bigint AS revenue,
+               COUNT(*)::bigint AS orders
+        FROM "sales_orders" o
+        WHERE o."createdAt" >= ${rangeFrom}
+          AND o."createdAt" <= ${rangeTo}
+          AND o.status != 'cancelled'
+        GROUP BY 1
+        ORDER BY 1
+      `,
     ]);
 
-    const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
-    const totalTax = orders.reduce((s, o) => s + o.taxTotal, 0);
-    const totalExpenses = expenses.reduce((s, e) => s + e.amount, 0);
-    const totalMarginalProfit = orders.reduce(
-      (sum, o) =>
-        sum +
-        o.items.reduce(
-          (iSum, i) => iSum + (i.unitPrice - (i.unitCostPrice ?? 0)) * i.quantity,
-          0,
-        ),
-      0,
-    );
+    const totalRevenue = orderAgg._sum.total ?? 0;
+    const totalTax = orderAgg._sum.taxTotal ?? 0;
+    const totalExpenses = expenseAgg._sum.amount ?? 0;
+    const totalMarginalProfit = Number(profitRows[0]?.marginal_profit ?? 0);
     const netProfit = totalRevenue - totalExpenses;
     const margin = totalRevenue > 0 ? (totalMarginalProfit / totalRevenue) * 100 : 0;
 
-    // Per-day trend across the range (date keys YYYY-MM-DD)
-    const dailyMap = new Map<string, { revenue: number; orders: number }>();
+    // Build a complete per-day series (fill missing days with zeros) so the
+    // frontend chart axis stays contiguous across the range.
+    const trendMap = new Map<string, { revenue: number; orders: number }>();
+    for (const r of trendRows) {
+      const key = r.day.toISOString().split('T')[0];
+      trendMap.set(key, { revenue: Number(r.revenue ?? 0), orders: Number(r.orders) });
+    }
+    const dailyTrend: { date: string; revenue: number; orders: number }[] = [];
     const cursor = new Date(rangeFrom.getFullYear(), rangeFrom.getMonth(), rangeFrom.getDate());
     const stop = new Date(rangeTo.getFullYear(), rangeTo.getMonth(), rangeTo.getDate());
     while (cursor <= stop) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
-      dailyMap.set(key, { revenue: 0, orders: 0 });
+      const bucket = trendMap.get(key) ?? { revenue: 0, orders: 0 };
+      dailyTrend.push({ date: key, revenue: bucket.revenue, orders: bucket.orders });
       cursor.setDate(cursor.getDate() + 1);
     }
-    for (const o of orders) {
-      const d = o.createdAt;
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      const bucket = dailyMap.get(key);
-      if (bucket) {
-        bucket.revenue += o.total;
-        bucket.orders += 1;
-      }
-    }
-    const dailyTrend = Array.from(dailyMap.entries()).map(([date, v]) => ({
-      date,
-      revenue: v.revenue,
-      orders: v.orders,
-    }));
 
     res.json({
       range: { from: rangeFrom.toISOString(), to: rangeTo.toISOString() },
       totals: {
-        orders: orders.length,
+        orders: orderAgg._count._all,
         revenue: totalRevenue,
         tax: totalTax,
         expenses: totalExpenses,
@@ -154,43 +154,45 @@ router.get(
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
     const { from, to } = req.query as Record<string, string | undefined>;
+    const fromDate = from ? new Date(from) : new Date(0);
+    const toDate = to ? new Date(to) : new Date('9999-12-31');
 
-    const where: Record<string, unknown> = {
-      salesOrder: { status: { not: 'cancelled' } },
+    type Row = {
+      productName: string;
+      sku: string | null;
+      quantity: bigint;
+      revenue: bigint;
+      cost: bigint;
+      profit: bigint;
     };
-    if (from || to) {
-      const dateFilter: Record<string, Date> = {};
-      if (from) dateFilter.gte = new Date(from);
-      if (to) dateFilter.lte = new Date(to);
-      (where.salesOrder as Record<string, unknown>).createdAt = dateFilter;
-    }
+    const rows = await prisma.$queryRaw<Row[]>`
+      SELECT
+        p.name                                                                                AS "productName",
+        p.sku                                                                                 AS sku,
+        COALESCE(SUM(i.quantity), 0)::bigint                                                  AS quantity,
+        COALESCE(SUM(i.total), 0)::bigint                                                     AS revenue,
+        COALESCE(SUM(COALESCE(i."unitWholesalePrice", 0) * i.quantity), 0)::bigint            AS cost,
+        COALESCE(SUM(i.total - COALESCE(i."unitWholesalePrice", 0) * i.quantity), 0)::bigint  AS profit
+      FROM "sales_order_items" i
+      JOIN "sales_orders"      o ON o.id = i."salesOrderId"
+      JOIN "products"          p ON p.id = i."productId"
+      WHERE o.status != 'cancelled'
+        AND o."createdAt" >= ${fromDate}
+        AND o."createdAt" <= ${toDate}
+      GROUP BY i."productId", p.name, p.sku
+      ORDER BY profit DESC
+    `;
 
-    const items = await prisma.salesOrderItem.findMany({
-      where,
-      include: { product: { select: { name: true, sku: true } } },
-    });
-
-    const profitByProduct = new Map<string, any>();
-    for (const item of items) {
-      const key = item.productId;
-      const existing = profitByProduct.get(key) || {
-        productName: item.product.name,
-        sku: item.product.sku,
-        quantity: 0,
-        revenue: 0,
-        cost: 0,
-        profit: 0,
-      };
-
-      const cost = (item.unitCostPrice ?? 0) * item.quantity;
-      existing.quantity += item.quantity;
-      existing.revenue += item.total;
-      existing.cost += cost;
-      existing.profit += (item.total - cost);
-      profitByProduct.set(key, existing);
-    }
-
-    res.json(Array.from(profitByProduct.values()));
+    res.json(
+      rows.map((r) => ({
+        productName: r.productName,
+        sku: r.sku,
+        quantity: Number(r.quantity),
+        revenue: Number(r.revenue),
+        cost: Number(r.cost),
+        profit: Number(r.profit),
+      })),
+    );
   }),
 );
 
@@ -220,34 +222,28 @@ router.get(
 
     logger.debug({ startDate: startDate.toISOString() }, 'Generating weekly report');
 
-    const orders = await prisma.salesOrder.findMany({
-      where: {
-        createdAt: { gte: startDate, lt: nextDay },
-        status: { not: 'cancelled' },
-      },
-      select: { createdAt: true, total: true },
-    });
+    const rows = await prisma.$queryRaw<{ day: Date; revenue: bigint | null }[]>`
+      SELECT date_trunc('day', o."createdAt") AS day,
+             COALESCE(SUM(o.total), 0)::bigint AS revenue
+      FROM "sales_orders" o
+      WHERE o."createdAt" >= ${startDate}
+        AND o."createdAt" <  ${nextDay}
+        AND o.status != 'cancelled'
+      GROUP BY 1
+    `;
 
-    const dailyMap = new Map<string, number>();
+    const revenueByDate = new Map<string, number>();
+    for (const r of rows) {
+      revenueByDate.set(r.day.toISOString().split('T')[0], Number(r.revenue ?? 0));
+    }
+
+    const results: { date: string; revenue: number }[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(startDate);
       d.setUTCDate(startDate.getUTCDate() + i);
       const key = d.toISOString().split('T')[0];
-      dailyMap.set(key, 0);
+      results.push({ date: key, revenue: revenueByDate.get(key) ?? 0 });
     }
-    
-    for (const order of orders) {
-      const dateKey = order.createdAt.toISOString().split('T')[0];
-      if (dailyMap.has(dateKey)) {
-        dailyMap.set(dateKey, dailyMap.get(dateKey)! + order.total);
-      }
-    }
-
-    const results = Array.from(dailyMap.entries()).map(([date, revenue]) => ({
-      date,
-      revenue,
-    }));
-    results.sort((a, b) => a.date.localeCompare(b.date));
 
     res.json(results);
   }),
@@ -332,37 +328,51 @@ router.get(
   requireRole('admin', 'owner'),
   asyncHandler(async (req, res) => {
     const { from, to } = req.query as Record<string, string | undefined>;
+    const fromDate = from ? new Date(from) : new Date(0);
+    const toDate = to ? new Date(to) : new Date('9999-12-31');
     const orderRange: { gte?: Date; lte?: Date } = {};
-    if (from) orderRange.gte = new Date(from);
-    if (to) orderRange.lte = new Date(to);
+    if (from) orderRange.gte = fromDate;
+    if (to) orderRange.lte = toDate;
     const hasRange = !!(orderRange.gte || orderRange.lte);
 
-    // 1. Per-cashier order totals + margin (excluding cancelled orders).
-    const orders = await prisma.salesOrder.findMany({
+    // 1. Per-cashier order totals (count + revenue) — aggregated on the
+    //    orders table directly so SUM(o.total) is correct.
+    const orderAgg = await prisma.salesOrder.groupBy({
+      by: ['processedBy'],
       where: {
         ...(hasRange ? { createdAt: orderRange } : {}),
         status: { not: 'cancelled' },
       },
-      include: { items: { select: { unitPrice: true, unitCostPrice: true, quantity: true } } },
+      _count: { _all: true },
+      _sum: { total: true },
     });
-
-    const byUser = new Map<
-      string,
-      { orderCount: number; totalRevenue: number; totalMarginalProfit: number }
-    >();
-    for (const o of orders) {
-      const acc = byUser.get(o.processedBy) ?? {
-        orderCount: 0,
-        totalRevenue: 0,
+    const byUser = new Map<string, { orderCount: number; totalRevenue: number; totalMarginalProfit: number }>();
+    for (const r of orderAgg) {
+      byUser.set(r.processedBy, {
+        orderCount: r._count._all,
+        totalRevenue: r._sum.total ?? 0,
         totalMarginalProfit: 0,
-      };
-      acc.orderCount += 1;
-      acc.totalRevenue += o.total;
-      acc.totalMarginalProfit += o.items.reduce(
-        (s, i) => s + (i.unitPrice - (i.unitCostPrice ?? 0)) * i.quantity,
-        0,
-      );
-      byUser.set(o.processedBy, acc);
+      });
+    }
+
+    // 2. Per-cashier marginal profit — sum (unitPrice - cost) * qty across
+    //    every item on every non-cancelled order in the range. Joined to
+    //    sales_orders so we can group by the cashier (processedBy).
+    type ProfitRow = { userId: string; marginalProfit: bigint };
+    const profitRows = await prisma.$queryRaw<ProfitRow[]>`
+      SELECT
+        o."processedBy" AS "userId",
+        COALESCE(SUM((i."unitPrice" - COALESCE(i."unitWholesalePrice", 0)) * i.quantity), 0)::bigint AS "marginalProfit"
+      FROM "sales_order_items" i
+      JOIN "sales_orders" o ON o.id = i."salesOrderId"
+      WHERE o.status != 'cancelled'
+        AND o."createdAt" >= ${fromDate}
+        AND o."createdAt" <= ${toDate}
+      GROUP BY o."processedBy"
+    `;
+    for (const p of profitRows) {
+      const acc = byUser.get(p.userId);
+      if (acc) acc.totalMarginalProfit = Number(p.marginalProfit);
     }
 
     // 2. Modification counts (item_added / quantity_changed / item_removed).
