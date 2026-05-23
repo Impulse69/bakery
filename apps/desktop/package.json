@@ -16,20 +16,23 @@
     "appId": "com.breadfaculty.pos",
     "productName": "Bread Faculty POS",
     "electronVersion": "41.1.0",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
     "directories": {
       "output": "out"
     },
+    "publish": {
+      "provider": "github",
+      "owner": "Impulse69",
+      "repo": "bakery",
+      "releaseType": "draft"
+    },
     "win": {
-      "target": "nsis",
-      "publish": {
-        "provider": "github",
-        "owner": "impulse69",
-        "repo": "bakery"
-      }
+      "target": "nsis"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "differentialPackage": true
     }
   },
   "dependencies": {

@@ -1,0 +1,51 @@
+name: Release Desktop (Windows)
+
+# Tag-triggered Windows build → GitHub Release (draft).
+#
+# How to ship a release:
+#   1. Bump version in apps/desktop/package.json (semver: x.y.z)
+#   2. git commit -am "release: vX.Y.Z" && git tag vX.Y.Z && git push --follow-tags
+#   3. This workflow builds the installer + latest.yml and uploads them to a
+#      DRAFT release named "vX.Y.Z". Review the release on GitHub, then
+#      "Publish" — desktop clients hit the autoUpdater check and pick it up.
+#
+# Why draft-then-publish? Lets you smoke-test the installer on a clean Windows
+# box before flipping the switch for every shop terminal in the field.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:  # manual trigger from the Actions tab for hotfix builds
+
+permissions:
+  contents: write     # required so electron-builder can create / upload to releases
+
+jobs:
+  build-win:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build shared packages + desktop renderer
+        run: npx turbo run build --filter=@bakery/desktop...
+
+      - name: Package + publish (electron-builder)
+        working-directory: apps/desktop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # `--publish always` uploads the .exe + latest.yml to a draft GH release.
+        # electron-builder creates the release if it doesn't exist yet and reuses
+        # it for subsequent re-runs of the same tag.
+        run: npx electron-builder --win --publish always

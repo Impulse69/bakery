@@ -20,9 +20,16 @@ function createWindow() {
     win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
 
-  // Set up auto-updater events
+  // Set up auto-updater events — forward every relevant event to the renderer
+  // so the UI can reflect state (checking / available / downloading / ready).
+  autoUpdater.on('checking-for-update', () => {
+    win.webContents.send('update-checking');
+  });
   autoUpdater.on('update-available', (info) => {
     win.webContents.send('update-available', info);
+  });
+  autoUpdater.on('update-not-available', (info) => {
+    win.webContents.send('update-not-available', info);
   });
   autoUpdater.on('download-progress', (progressObj) => {
     win.webContents.send('update-progress', progressObj);
@@ -39,10 +46,21 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   createWindow();
 
-  // Check for updates
-  autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-    console.error('Failed to check for updates:', err);
-  });
+  // Only run the autoUpdater in packaged builds. In dev (`electron-vite dev`)
+  // there's no installer and no app-update.yml; running the check throws.
+  if (app.isPackaged) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+      console.error('Failed to check for updates:', err);
+    });
+    // Re-check every hour so long-running terminals pick up new releases
+    // without needing a manual restart.
+    setInterval(() => {
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.error('Periodic update check failed:', err);
+      });
+    }, 60 * 60 * 1000);
+  }
 });
 
 app.on('window-all-closed', () => {

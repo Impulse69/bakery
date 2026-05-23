@@ -6,8 +6,14 @@ if (!process.contextIsolated) {
 
 try {
   contextBridge.exposeInMainWorld('electronAPI', {
+    onUpdateChecking: (callback: () => void) => {
+      ipcRenderer.on('update-checking', () => callback());
+    },
     onUpdateAvailable: (callback: (info: any) => void) => {
       ipcRenderer.on('update-available', (_event, info) => callback(info));
+    },
+    onUpdateNotAvailable: (callback: (info: any) => void) => {
+      ipcRenderer.on('update-not-available', (_event, info) => callback(info));
     },
     onUpdateProgress: (callback: (progress: any) => void) => {
       ipcRenderer.on('update-progress', (_event, progress) => callback(progress));
