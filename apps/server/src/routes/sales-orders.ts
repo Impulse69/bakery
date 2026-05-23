@@ -213,7 +213,7 @@ router.post(
       });
     });
 
-    getIO().emit('sale:created', { orderId: order.id, total: order.total });
+    getIO().emit('sale:created', { orderId: order.id, total: order.total, locationId });
     res.status(201).json(order);
   }),
 );
@@ -276,7 +276,7 @@ router.post(
       return { payment, order: updated };
     });
 
-    getIO().emit('sale:updated', { orderId: result.order.id, amountPaid: result.order.amountPaid });
+    getIO().emit('sale:updated', { orderId: result.order.id, amountPaid: result.order.amountPaid, locationId: result.order.locationId });
     res.status(201).json(result);
   }),
 );
@@ -406,7 +406,7 @@ router.post(
       });
     });
 
-    getIO().emit('sale:updated', { orderId, action: 'item_added' });
+    getIO().emit('sale:updated', { orderId, action: 'item_added', locationId: result?.locationId });
     res.status(201).json(result);
   }),
 );
@@ -492,7 +492,7 @@ router.patch(
       });
     });
 
-    getIO().emit('sale:updated', { orderId, action: 'item_quantity_changed' });
+    getIO().emit('sale:updated', { orderId, action: 'item_quantity_changed', locationId: result?.locationId });
     res.json(result);
   }),
 );
@@ -568,7 +568,7 @@ router.delete(
       });
     });
 
-    getIO().emit('sale:updated', { orderId, action: 'item_removed' });
+    getIO().emit('sale:updated', { orderId, action: 'item_removed', locationId: result?.locationId });
     res.json(result);
   }),
 );

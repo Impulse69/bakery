@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { setIO } from './lib/socket.js';
+import { prisma } from './lib/prisma.js';
 import { logger } from './lib/logger.js';
 import { startSyncService } from './services/syncService.js';
 import { authMiddleware } from './middleware/auth.js';
@@ -52,9 +53,29 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(paginationMiddleware);
 
-// Health check (no auth)
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+// Health check (no auth). Returns 200 on liveness, 503 if the DB is unreachable.
+// `?deep=1` adds a real query + DB latency probe; default is a cheap ping for
+// load balancers / uptime monitors that hit this endpoint frequently.
+app.get('/health', async (req, res) => {
+  const deep = req.query.deep === '1';
+  const startedAt = Date.now();
+  try {
+    if (deep) {
+      await prisma.$queryRaw`SELECT 1`;
+    }
+    res.json({
+      status: 'ok',
+      uptimeSeconds: Math.floor(process.uptime()),
+      sockets: io.engine.clientsCount,
+      ...(deep ? { dbLatencyMs: Date.now() - startedAt } : {}),
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'error',
+      error: err instanceof Error ? err.message : 'Database unreachable',
+      dbLatencyMs: Date.now() - startedAt,
+    });
+  }
 });
 
 // Auth routes (login is public, /me requires auth)
@@ -82,9 +103,26 @@ app.use(globalErrorHandler);
 
 export { app, io };
 
-// Socket.io connection logging
+// Socket.io connection + room scoping. Clients that emit `join-location`
+// with a string locationId join `loc:<id>`; sales mutations broadcast to
+// that room instead of to every connected client. Events with no clear
+// owning location (inventory adjustments, production batches) continue
+// to broadcast globally — by design.
 io.on('connection', (socket) => {
   logger.info({ socketId: socket.id }, 'Client connected');
+
+  socket.on('join-location', (locationId: unknown) => {
+    if (typeof locationId !== 'string' || locationId.length === 0) return;
+    const room = `loc:${locationId}`;
+    socket.join(room);
+    logger.info({ socketId: socket.id, room }, 'Client joined location room');
+  });
+
+  socket.on('leave-location', (locationId: unknown) => {
+    if (typeof locationId !== 'string') return;
+    socket.leave(`loc:${locationId}`);
+  });
+
   socket.on('disconnect', () => {
     logger.info({ socketId: socket.id }, 'Client disconnected');
   });
