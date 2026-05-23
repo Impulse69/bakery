@@ -18,7 +18,7 @@ export function SettingsPage() {
     <div className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.heroMain}>
-          <span className={styles.eyebrow}>System Setup</span>
+          <span className={styles.eyebrow}>Settings</span>
           <h1 className={styles.heading}>Settings</h1>
           <p className={styles.heroQuote}>
             <em>Accounts, passwords, and the shop&rsquo;s standing instructions.</em>

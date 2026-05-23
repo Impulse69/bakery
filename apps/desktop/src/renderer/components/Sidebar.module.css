@@ -147,6 +147,49 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+/* Locked nav item — rendered as a button instead of NavLink */
+.linkLocked {
+  position: relative;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.linkLocked .icon { opacity: 0.45; }
+
+.linkLocked:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.lockBadge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(224, 123, 60, 0.18);
+  color: #f3a56b;
+}
+
+.lockBadgeCollapsed {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-left: 0;
+}
+
+.lockBadgeCollapsed svg { width: 9px; height: 9px; }
+
 .icon {
   font-size: 1rem;
   width: 20px;

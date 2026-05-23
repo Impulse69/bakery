@@ -205,7 +205,8 @@
   color: #131b2e;
 }
 
-.rightTh {
+.rightTh,
+.customerTbl thead th.rightTh {
   text-align: right;
 }
 

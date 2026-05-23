@@ -13,7 +13,10 @@ interface MenuItem {
   label: string;
   permission: string;
   icon: React.ReactNode;
+  locked?: boolean;
 }
+
+const IconLock = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>;
 
 // ── Icons ──────────────────────────────────────
 const IconPlus = () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>;
@@ -28,7 +31,7 @@ const IconFactory = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="
 const IconMoney = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>;
 const IconUsers = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;
 const IconChart = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
-const IconSettings = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>;
+const IconSettings = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 
 const MENU_ITEMS: MenuItem[] = [
   { path: '/', label: 'Dashboard', permission: 'dashboard:view', icon: <IconLayout /> },
@@ -38,9 +41,9 @@ const MENU_ITEMS: MenuItem[] = [
   { path: '/products', label: 'Product List', permission: 'products:view', icon: <IconProducts /> },
   { path: '/inventory', label: 'Inventory Stock', permission: 'inventory:view', icon: <IconBox /> },
   { path: '/production', label: 'Purchase Order', permission: 'production:view', icon: <IconFactory /> },
-  { path: '/expenses', label: 'Accounts Payable', permission: 'expenses:view', icon: <IconMoney /> },
+  { path: '/expenses', label: 'Expenses', permission: 'expenses:view', icon: <IconMoney />, locked: true },
   { path: '/reports', label: 'Reports', permission: 'reports:view', icon: <IconChart /> },
-  { path: '/settings', label: 'System Setup', permission: 'settings:view', icon: <IconSettings /> },
+  { path: '/settings', label: 'Settings', permission: 'settings:view', icon: <IconSettings /> },
 ];
 
 interface SidebarProps {
@@ -170,21 +173,41 @@ export function Sidebar({ role, collapsed, onToggleCollapse }: SidebarProps) {
 
         {/* Nav */}
         <nav className={styles.nav}>
-          {visibleItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/'}
-              title={collapsed ? item.label : undefined}
-              aria-label={collapsed ? item.label : undefined}
-              className={({ isActive }) =>
-                `${styles.link} ${isActive ? styles.active : ''}`
-              }
-            >
-              <span className={styles.icon}>{item.icon}</span>
-              <span className={`${styles.label} ${collapsed ? styles.hiddenText : ''}`}>{item.label}</span>
-            </NavLink>
-          ))}
+          {visibleItems.map((item) => {
+            if (item.locked) {
+              return (
+                <button
+                  key={item.path}
+                  type="button"
+                  className={`${styles.link} ${styles.linkLocked}`}
+                  title={collapsed ? `${item.label} (locked)` : 'Premium feature — contact admin to unlock'}
+                  aria-label={`${item.label} — locked`}
+                  onClick={() => alert(`${item.label} is a premium feature.\n\nContact the administrator to unlock this module.`)}
+                >
+                  <span className={styles.icon}>{item.icon}</span>
+                  <span className={`${styles.label} ${collapsed ? styles.hiddenText : ''}`}>{item.label}</span>
+                  <span className={`${styles.lockBadge} ${collapsed ? styles.lockBadgeCollapsed : ''}`} aria-hidden="true">
+                    <IconLock />
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === '/'}
+                title={collapsed ? item.label : undefined}
+                aria-label={collapsed ? item.label : undefined}
+                className={({ isActive }) =>
+                  `${styles.link} ${isActive ? styles.active : ''}`
+                }
+              >
+                <span className={styles.icon}>{item.icon}</span>
+                <span className={`${styles.label} ${collapsed ? styles.hiddenText : ''}`}>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Footer user card */}
