@@ -306,7 +306,7 @@ export function OperationsPanel() {
                   <tr>
                     <th>Date</th>
                     <th>Product</th>
-                    <th className={styles.right}>Qty change</th>
+                    <th className={styles.center}>Qty change</th>
                     <th>Reason</th>
                   </tr>
                 </thead>
@@ -323,7 +323,7 @@ export function OperationsPanel() {
                       <tr key={a.id}>
                         <td>{fmtRowDate(a.createdAt)}</td>
                         <td>{productName}</td>
-                        <td className={`${styles.right} ${qty > 0 ? styles.pos : qty < 0 ? styles.neg : ''}`}>
+                        <td className={`${styles.center} ${qty > 0 ? styles.pos : qty < 0 ? styles.neg : ''}`}>
                           {qty > 0 ? '+' : ''}{qty}
                         </td>
                         <td>{a.reason || '—'}</td>

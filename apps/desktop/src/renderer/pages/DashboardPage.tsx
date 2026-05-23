@@ -109,12 +109,22 @@ const WheatGlyph = () => (
   </svg>
 );
 
+// Round a number up to a clean axis ceiling (1, 2, 2.5, 5 × 10^n).
+function niceCeil(n: number): number {
+  if (n <= 0) return 1;
+  const exp = Math.pow(10, Math.floor(Math.log10(n)));
+  const frac = n / exp;
+  const niceFrac = frac <= 1 ? 1 : frac <= 2 ? 2 : frac <= 2.5 ? 2.5 : frac <= 5 ? 5 : 10;
+  return niceFrac * exp;
+}
+
 // ── Bar chart — real 7-day data ─────────────────────────
 function WeeklyBar({ weeklyData }: { weeklyData: WeeklyEntry[] }) {
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   const todayISO = new Date().toISOString().split('T')[0];
-  const peak = Math.max(...weeklyData.map((d) => d.revenue), 1);
-  const peakIdx = weeklyData.findIndex((d) => d.revenue === peak);
+  const peak = Math.max(...weeklyData.map((d) => d.revenue), 0);
+  // Cap the tallest bar at ~80% of the chart so a lone day doesn't look ridiculous.
+  const ceiling = peak > 0 ? niceCeil(peak * 1.25) : 1;
 
   return (
     <div className={styles.chartWrap}>
@@ -124,14 +134,16 @@ function WeeklyBar({ weeklyData }: { weeklyData: WeeklyEntry[] }) {
       </div>
       <div className={styles.chartBars}>
         {weeklyData.map((entry, i) => {
-          const height = Math.max(4, (entry.revenue / peak) * 100);
+          const height = entry.revenue > 0
+            ? Math.max(4, (entry.revenue / ceiling) * 100)
+            : 0;
           const isToday = entry.date === todayISO;
           const dayLabel = days[i];
           const isSun = i === 0;
-          const isPeak = i === peakIdx && entry.revenue > 0;
+          const hasRevenue = entry.revenue > 0;
           return (
             <div key={i} className={styles.barCol}>
-              {isPeak && (
+              {hasRevenue && (
                 <span className={styles.peakTag}>
                   {formatCurrency(entry.revenue)}
                 </span>

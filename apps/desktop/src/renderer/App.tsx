@@ -11,7 +11,7 @@ import { ProductsPage } from './pages/ProductsPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { ProductionPage } from './pages/ProductionPage';
 import { SuppliersPage } from './pages/SuppliersPage';
-import { ExpensesPage } from './pages/ExpensesPage';
+import { LockedFeaturePage } from './pages/LockedFeaturePage';
 import { CustomersPage } from './pages/CustomersPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -37,7 +37,7 @@ export function App() {
             <Route path="/inventory" element={safe(<InventoryPage />)} />
             <Route path="/production" element={safe(<ProductionPage />)} />
             <Route path="/suppliers" element={safe(<SuppliersPage />)} />
-            <Route path="/expenses" element={safe(<ExpensesPage />)} />
+            <Route path="/expenses" element={safe(<LockedFeaturePage feature="Expenses" />)} />
             <Route path="/customers" element={safe(<CustomersPage />)} />
             <Route path="/reports" element={safe(<ReportsPage />)} />
             <Route path="/settings" element={safe(<SettingsPage />)} />

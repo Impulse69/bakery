@@ -143,6 +143,16 @@
 .footerLine { height: 1px; background: #f3f4f6; margin: 20px 0; }
 .copyright { font-size: 10px; color: #9ca3af; }
 
+/* Thermal receipt column widths + extras */
+.meta { font-size: 10px; }
+.totals { margin-top: 4px; }
+.colDesc { text-align: left; word-break: break-word; }
+.colQty { text-align: center; width: 10mm; }
+.colPrice { text-align: right; width: 22mm; }
+.colTotal { text-align: right; width: 22mm; }
+.balanceDue { color: #b91c1c; font-weight: 700; }
+.footerSmall { font-size: 9px; opacity: 0.7; margin-top: 6px; }
+
 /* ── Print media ─────────────────────────────── */
 @media print {
   #root, .overlay { display: none !important; }

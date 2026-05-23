@@ -88,8 +88,16 @@
   color: #131b2e;
 }
 
-.right {
+.right,
+.tbl thead th.right,
+.tbl tbody td.right {
   text-align: right;
+}
+
+.center,
+.tbl thead th.center,
+.tbl tbody td.center {
+  text-align: center;
 }
 
 .mono {
