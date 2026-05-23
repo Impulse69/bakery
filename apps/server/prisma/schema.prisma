@@ -185,6 +185,8 @@ model ProductStockAdjustment {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+  @@index([createdAt])
+  @@index([productId, createdAt])
   @@map("product_stock_adjustments")
 }
 
@@ -256,6 +258,8 @@ model SalesOrder {
   @@index([customerId])
   @@index([locationId])
   @@index([status])
+  @@index([createdAt])
+  @@index([completedAt])
   @@map("sales_orders")
 }
 
@@ -290,6 +294,7 @@ model Payment {
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
 
   @@index([salesOrderId])
+  @@index([date])
   @@map("payments")
 }
 
@@ -328,6 +333,8 @@ model Expense {
 
   user User @relation(fields: [recordedBy], references: [id])
 
+  @@index([expenseDate])
+  @@index([category, expenseDate])
   @@map("expenses")
 }
 
