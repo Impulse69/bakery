@@ -157,10 +157,15 @@
 
 /* Named page sized to the 80mm thermal roll. Assigned ONLY to the receipt
    print target via `.receiptPage`, so A4 documents (invoices, statements)
-   keep their own default page size. `auto` height lets the page grow to the
-   receipt's content length — no fixed A4 sheet, no blank tail. */
+   keep their own default page size.
+
+   NOTE: `size` must use real lengths — `size: 80mm auto` is invalid (a length
+   can't be mixed with `auto`) and Chromium silently ignores it, falling back
+   to Letter and printing tiny on the roll. The HEIGHT here is a fallback;
+   Receipt.tsx injects an exact `@page bfReceipt { size: 80mm <h>mm }` (measured
+   content height) just before printing. */
 @page bfReceipt {
-  size: 80mm auto;
+  size: 80mm 297mm;
   margin: 0;
 }
 

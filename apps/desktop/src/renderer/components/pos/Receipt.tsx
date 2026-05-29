@@ -14,10 +14,33 @@ export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
     ? new Date(order.completedAt).toLocaleString()
     : new Date(order.createdAt).toLocaleString();
 
-  // Use the browser's native (Chromium) print dialog. The @page rule in
-  // Receipt.module.css sizes the page to the 80mm thermal roll, so the
-  // POS80 printer receives a correctly-scaled receipt.
+  // Use the browser's native (Chromium) print dialog. We size the page to
+  // the 80mm thermal roll with the EXACT measured content height — CSS
+  // `@page { size: 80mm <h>mm }` must use real lengths (the `auto` keyword
+  // can't be mixed with a length, or Chromium ignores `size` entirely and
+  // falls back to Letter, which prints tiny on the thermal roll).
   const handlePrint = () => {
+    // Measure the visible receipt (the print-target portal is display:none,
+    // so it can't be measured — the on-screen copy is identical width).
+    const candidates = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-receipt-root]'),
+    );
+    const measured = candidates.find((el) => el.offsetHeight > 0) ?? candidates[0];
+    const heightMm = measured
+      ? Math.ceil((measured.offsetHeight * 25.4) / 96) + 4 // px→mm, +4mm tail
+      : 297; // sane fallback
+
+    // Inject/refresh the named-page size. Named page (`bfReceipt`) is only
+    // referenced by the receipt print-target, so this never affects the A4
+    // invoice/statement documents.
+    let styleEl = document.getElementById('bf-receipt-page') as HTMLStyleElement | null;
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'bf-receipt-page';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `@page bfReceipt { size: 80mm ${heightMm}mm; margin: 0; }`;
+
     window.print();
   };
 
@@ -53,7 +76,7 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
   const numberLabel = type === 'receipt' ? 'Receipt #' : 'Invoice #';
 
   return (
-    <div className={styles.receipt}>
+    <div className={styles.receipt} data-receipt-root>
       <div className={styles.header}>
         <p className={styles.storeName}>Bread Faculty</p>
         <p className={styles.storeMeta}>12 Baker Street, Accra</p>
