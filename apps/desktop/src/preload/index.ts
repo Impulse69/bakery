@@ -27,8 +27,10 @@ try {
     restartApp: () => {
       ipcRenderer.send('app:restart');
     },
-    printPreview: () => ipcRenderer.invoke('print:preview'),
-    printSystemPreview: () => ipcRenderer.invoke('print:systemPreview'),
+    printPreview: (opts?: { kind?: 'receipt' | 'a4'; heightMicrons?: number }) =>
+      ipcRenderer.invoke('print:preview', opts),
+    printSystemPreview: (opts?: { kind?: 'receipt' | 'a4'; heightMicrons?: number }) =>
+      ipcRenderer.invoke('print:systemPreview', opts),
   });
 } catch (error) {
   console.error('Failed to expose electronAPI:', error);

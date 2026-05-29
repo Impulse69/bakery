@@ -18,7 +18,7 @@ interface Window {
     onUpdateDownloaded: (callback: (info: any) => void) => void;
     onUpdateError: (callback: (error: string) => void) => void;
     restartApp: () => void;
-    printPreview: () => Promise<{ ok: boolean }>;
-    printSystemPreview: () => Promise<{ ok: boolean; path: string }>;
+    printPreview: (opts?: { kind?: 'receipt' | 'a4'; heightMicrons?: number }) => Promise<{ ok: boolean }>;
+    printSystemPreview: (opts?: { kind?: 'receipt' | 'a4'; heightMicrons?: number }) => Promise<{ ok: boolean; path: string }>;
   };
 }
