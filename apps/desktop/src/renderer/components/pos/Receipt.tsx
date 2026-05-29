@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { SalesOrder } from '@bakery/types';
 import { formatCurrency } from '@bakery/utils';
@@ -10,43 +9,15 @@ interface ReceiptProps {
   type?: 'receipt' | 'invoice';
 }
 
-// CSS px → microns (1in = 96px = 25400µm)
-const PX_TO_MICRONS = 25400 / 96;
-
 export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-
   const dateStr = order.completedAt
     ? new Date(order.completedAt).toLocaleString()
     : new Date(order.createdAt).toLocaleString();
 
-  const handlePrint = async () => {
-    const api = window.electronAPI;
-
-    // Measure the visible (on-screen) receipt so the thermal PDF is generated
-    // at the exact content height — no blank tail, no clipping. The receipt is
-    // styled at 80mm width, matching the 80mm roll (72mm printable).
-    let heightMicrons: number | undefined;
-    const el = overlayRef.current?.querySelector<HTMLElement>('[data-receipt-root]');
-    if (el) {
-      heightMicrons = Math.round(el.offsetHeight * PX_TO_MICRONS) + 5000; // +5mm tail buffer
-    }
-    const opts = { kind: 'receipt' as const, heightMicrons };
-
-    if (api?.printPreview) {
-      try {
-        await api.printPreview(opts);
-        return;
-      } catch (err) {
-        console.warn('In-app PDF preview failed, falling back to system viewer', err);
-        try {
-          await api.printSystemPreview?.(opts);
-          return;
-        } catch (err2) {
-          console.warn('System PDF preview failed, falling back to window.print', err2);
-        }
-      }
-    }
+  // Use the browser's native (Chromium) print dialog. The @page rule in
+  // Receipt.module.css sizes the page to the 80mm thermal roll, so the
+  // POS80 printer receives a correctly-scaled receipt.
+  const handlePrint = () => {
     window.print();
   };
 
@@ -54,7 +25,7 @@ export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
     <>
       {/* Screen overlay (hidden during print) */}
       <div className={styles.overlay}>
-        <div className={styles.previewCard} ref={overlayRef}>
+        <div className={styles.previewCard}>
           <div className={styles.previewActions}>
             <button className={styles.printBtn} onClick={handlePrint}>🖨 Print</button>
             {onClose && (
@@ -67,7 +38,7 @@ export function Receipt({ order, onClose, type = 'receipt' }: ReceiptProps) {
 
       {/* Print target — rendered outside the app root via Portal */}
       {createPortal(
-        <div className={`${styles.printOnly} print-target`}>
+        <div className={`${styles.printOnly} ${styles.receiptPage} print-target`}>
           <ReceiptContent order={order} dateStr={dateStr} type={type} />
         </div>,
         document.body
@@ -82,7 +53,7 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
   const numberLabel = type === 'receipt' ? 'Receipt #' : 'Invoice #';
 
   return (
-    <div className={styles.receipt} data-receipt-root>
+    <div className={styles.receipt}>
       <div className={styles.header}>
         <p className={styles.storeName}>Bread Faculty</p>
         <p className={styles.storeMeta}>12 Baker Street, Accra</p>

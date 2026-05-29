@@ -76,43 +76,21 @@ ipcMain.on('app:restart', () => {
   autoUpdater.quitAndInstall();
 });
 
-// ── Print preview ──────────────────────────────────────────────
-// Electron's native print dialog on Windows does not support preview
-// ("This app doesn't support print preview"). We work around this by
-// rendering the caller window to PDF and opening it in an in-app
-// Chromium PDF viewer window, which has preview + print + save/zoom.
-
-type PrintOpts = { kind?: 'receipt' | 'a4'; heightMicrons?: number };
-
-// Build printToPDF options. Thermal receipts must be generated at the
-// 80mm roll width — otherwise the receipt renders in the corner of an A4
-// page and the thermal printer scales the whole page down (tiny print).
-function buildPdfOptions(opts?: PrintOpts): Electron.PrintToPDFOptions {
-  if (opts?.kind === 'receipt') {
-    const WIDTH_MICRONS = 80_000; // 80mm thermal paper (72mm printable)
-    const FALLBACK_HEIGHT = 200_000; // 200mm if the renderer couldn't measure
-    const height = Math.min(
-      Math.max(opts.heightMicrons ?? FALLBACK_HEIGHT, 40_000), // floor 40mm
-      1_200_000, // ceiling 1.2m (safety)
-    );
-    return {
-      printBackground: true,
-      pageSize: { width: WIDTH_MICRONS, height },
-      margins: { marginType: 'none' },
-    };
-  }
-  return {
-    printBackground: true,
-    pageSize: 'A4',
-    margins: { marginType: 'default' },
-  };
-}
-
-ipcMain.handle('print:preview', async (event, opts?: PrintOpts) => {
+// ── Print preview (A4 documents only) ──────────────────────────
+// Used by invoices, customer statements and the customer page. Renders the
+// caller window to an A4 PDF and opens it in an in-app Chromium PDF viewer
+// (preview + print + save/zoom). Thermal receipts do NOT use this — they
+// print via the renderer's window.print() (Chrome print dialog) so the
+// 80mm @page size is honoured by the thermal printer directly.
+ipcMain.handle('print:preview', async (event) => {
   const callerWin = BrowserWindow.fromWebContents(event.sender);
   if (!callerWin) throw new Error('No window found for print:preview');
 
-  const pdfData = await callerWin.webContents.printToPDF(buildPdfOptions(opts));
+  const pdfData = await callerWin.webContents.printToPDF({
+    printBackground: true,
+    pageSize: 'A4',
+    margins: { marginType: 'default' },
+  });
 
   const filename = `bread-faculty-${Date.now()}.pdf`;
   const pdfPath = path.join(app.getPath('temp'), filename);
@@ -149,11 +127,15 @@ ipcMain.handle('print:preview', async (event, opts?: PrintOpts) => {
 
 // Fallback: open the generated PDF with the system default viewer.
 // (Some environments disable Chromium's PDF plugin.)
-ipcMain.handle('print:systemPreview', async (event, opts?: PrintOpts) => {
+ipcMain.handle('print:systemPreview', async (event) => {
   const callerWin = BrowserWindow.fromWebContents(event.sender);
   if (!callerWin) throw new Error('No window found for print:systemPreview');
 
-  const pdfData = await callerWin.webContents.printToPDF(buildPdfOptions(opts));
+  const pdfData = await callerWin.webContents.printToPDF({
+    printBackground: true,
+    pageSize: 'A4',
+    margins: { marginType: 'default' },
+  });
 
   const filename = `bread-faculty-${Date.now()}.pdf`;
   const pdfPath = path.join(app.getPath('temp'), filename);
