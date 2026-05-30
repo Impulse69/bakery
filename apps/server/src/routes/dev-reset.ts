@@ -79,9 +79,14 @@ router.post(
     }
     const { level } = bodySchema.parse(req.body);
     const tables = tablesFor(level);
-    const list = tables.map((t) => `"${t}"`).join(', ');
     logger.warn({ level, tables, user: (req as any).user?.email }, 'DEV RESET triggered');
-    await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+    // SQLite has no TRUNCATE … CASCADE. Disable FK enforcement, delete each
+    // table, then re-enable. Sequences are app-computed, so no identity reset.
+    await prisma.$executeRawUnsafe('PRAGMA foreign_keys = OFF');
+    for (const t of tables) {
+      await prisma.$executeRawUnsafe(`DELETE FROM "${t}"`);
+    }
+    await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON');
     await seedBaseline(level);
     res.json({ ok: true, level, wiped: tables });
   })

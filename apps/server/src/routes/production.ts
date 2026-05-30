@@ -110,7 +110,7 @@ router.get(
     // 2. If not, generate suggestions for all active bread products
     const breadProducts = await prisma.product.findMany({
       where: {
-        category: { contains: 'bread', mode: 'insensitive' },
+        category: { contains: 'bread' },
         isActive: true,
       },
     });
@@ -214,22 +214,20 @@ router.patch(
         });
 
         if (item.actual > 0) {
-          // Create production batch
-          const createdBatch = await tx.productionBatch.create({
+          // Create production batch (compute sequence; SQLite has no non-PK autoincrement)
+          const seqAgg = await tx.productionBatch.aggregate({ _max: { batchSequence: true } });
+          const batchSequence = (seqAgg._max.batchSequence ?? 0) + 1;
+          await tx.productionBatch.create({
             data: {
               productId: item.productId,
-              batchNumber: 'TEMP',
+              batchSequence,
+              batchNumber: `PB-${String(batchSequence).padStart(4, '0')}`,
               quantityProduced: item.actual,
               quantityUnit: 'units',
               status: 'completed',
               producedBy: req.user!.id,
               completedAt: new Date()
             }
-          });
-
-          await tx.productionBatch.update({
-            where: { id: createdBatch.id },
-            data: { batchNumber: `PB-${String(createdBatch.batchSequence).padStart(4, '0')}` }
           });
 
           // Increment stock
@@ -395,7 +393,7 @@ router.get(
       id: string;
       batchNumber: string;
       quantityProduced: number;
-      status: 'in_progress' | 'completed' | 'failed';
+      status: string;
       startedAt: string;
       completedAt: string | null;
       notes: string | null;
@@ -681,27 +679,21 @@ router.post(
       });
       if (!product) throw new AppError(404, 'Product not found');
 
-      // Create batch with placeholder batchNumber
-      const created = await tx.productionBatch.create({
+      // Compute the next batch sequence (SQLite has no non-PK autoincrement).
+      const seqAgg = await tx.productionBatch.aggregate({ _max: { batchSequence: true } });
+      const batchSequence = (seqAgg._max.batchSequence ?? 0) + 1;
+
+      return tx.productionBatch.create({
         data: {
           productId,
-          batchNumber: 'TEMP',
+          batchSequence,
+          batchNumber: `PB-${String(batchSequence).padStart(4, '0')}`,
           quantityProduced,
           quantityUnit,
           producedBy: req.user!.id,
           notes,
         },
       });
-
-      // Update with formatted batchNumber
-      const updated = await tx.productionBatch.update({
-        where: { id: created.id },
-        data: {
-          batchNumber: `PB-${String(created.batchSequence).padStart(4, '0')}`,
-        },
-      });
-
-      return updated;
     });
 
     getIO().emit('production:updated', { batchId: batch.id });

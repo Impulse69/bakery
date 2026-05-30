@@ -3,77 +3,23 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "sqlite"
 }
 
-// ─── ENUMS ──────────────────────────────────────────────
-
-enum UserRole {
-  admin
-  cashier
-  baker
-  owner
-}
-
-enum PaymentMethod {
-  cash
-  momo
-  card
-  credit
-}
-
-enum ProductionBatchStatus {
-  in_progress
-  completed
-  failed
-}
-
-enum SalesOrderStatus {
-  draft
-  confirmed
-  picked
-  invoiced
-  paid
-  cancelled
-}
-
-enum ExpenseCategory {
-  utilities
-  wages
-  packaging
-  ingredients
-  maintenance
-  other
-}
-
-enum DocumentTemplateType {
-  invoice
-  receipt
-  packing_slip
-  purchase_order
-  label
-}
-
-enum AuditEntity {
-  sales_order
-  sales_order_item
-  payment
-  product
-  user
-}
-
-enum AuditAction {
-  create
-  update
-  delete
-  status_change
-  item_added
-  item_quantity_changed
-  item_removed
-  payment_added
-  payment_voided
-  password_reset
-}
+// ─── ENUMS (modelled as String on SQLite) ───────────────
+// SQLite has no native enums. These were Postgres enums; the values are still
+// enforced at the API boundary by Zod schemas, and the shared @bakery/types
+// expose them as string unions. Documented here for reference:
+//   UserRole              : admin | cashier | baker | owner
+//   PaymentMethod         : cash | momo | card | credit
+//   ProductionBatchStatus : in_progress | completed | failed
+//   SalesOrderStatus      : draft | confirmed | picked | invoiced | paid | cancelled
+//   ExpenseCategory       : utilities | wages | packaging | ingredients | maintenance | other
+//   DocumentTemplateType  : invoice | receipt | packing_slip | purchase_order | label
+//   AuditEntity           : sales_order | sales_order_item | payment | product | user
+//   AuditAction           : create | update | delete | status_change | item_added |
+//                           item_quantity_changed | item_removed | payment_added |
+//                           payment_voided | password_reset
 
 // ─── MODELS ─────────────────────────────────────────────
 
@@ -82,7 +28,7 @@ model User {
   name                String
   email               String   @unique
   passwordHash        String
-  role                UserRole
+  role                String
   isActive            Boolean  @default(true)
   // Set true after an admin resets a staff password. The next login forces a
   // change-password prompt before any other route loads. Cleared on success.
@@ -191,15 +137,15 @@ model ProductStockAdjustment {
 }
 
 model ProductionBatch {
-  id               String                @id @default(cuid())
+  id               String    @id @default(cuid())
   productId        String
-  batchSequence    Int                   @default(autoincrement()) @unique
-  batchNumber      String                @unique
+  batchSequence    Int       @unique
+  batchNumber      String    @unique
   quantityProduced Float
   quantityUnit     String
-  status           ProductionBatchStatus @default(in_progress)
+  status           String    @default("in_progress")
   producedBy       String
-  startedAt        DateTime              @default(now())
+  startedAt        DateTime  @default(now())
   completedAt      DateTime?
   notes            String?
 
@@ -210,16 +156,16 @@ model ProductionBatch {
 }
 
 model DailyProductionTarget {
-  id                  String                @id @default(cuid())
-  targetDate          DateTime              @db.Date // Ensures grouping by day natively
+  id                  String   @id @default(cuid())
+  targetDate          DateTime // Day-granularity; stored as DateTime on SQLite
   productId           String
-  targetQty           Int                   @default(0)
-  carriedOverShortage Int                   @default(0)
-  actualQty           Int                   @default(0)
-  shortage            Int                   @default(0)
-  status              ProductionBatchStatus @default(in_progress)
-  createdAt           DateTime              @default(now())
-  updatedAt           DateTime              @updatedAt
+  targetQty           Int      @default(0)
+  carriedOverShortage Int      @default(0)
+  actualQty           Int      @default(0)
+  shortage            Int      @default(0)
+  status              String   @default("in_progress")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id])
 
@@ -228,26 +174,26 @@ model DailyProductionTarget {
 }
 
 model SalesOrder {
-  id             String           @id @default(cuid())
-  orderSequence  Int              @default(autoincrement()) @unique
-  orderNumber    String           @unique
+  id             String    @id @default(cuid())
+  orderSequence  Int       @unique
+  orderNumber    String    @unique
   customerId     String?
   locationId     String
   processedBy    String
-  status         SalesOrderStatus @default(draft)
-  subtotal       Int              @default(0)
-  taxTotal       Int              @default(0)
-  total          Int              @default(0)
-  amountPaid     Int              @default(0)
-  balanceDue     Int              @default(0)
+  status         String    @default("draft")
+  subtotal       Int       @default(0)
+  taxTotal       Int       @default(0)
+  total          Int       @default(0)
+  amountPaid     Int       @default(0)
+  balanceDue     Int       @default(0)
   notes          String?
   completedAt    DateTime?
   // Stamped whenever items are added/edited/removed after creation — drives
   // the "Edited" badge in Sales Records and the audit-trail queries.
   lastModifiedAt DateTime?
   lastModifiedBy String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   customer Customer?       @relation(fields: [customerId], references: [id])
   location Location        @relation(fields: [locationId], references: [id])
@@ -284,11 +230,11 @@ model SalesOrderItem {
 }
 
 model Payment {
-  id           String        @id @default(cuid())
+  id           String   @id @default(cuid())
   salesOrderId String
   amount       Int
-  method       PaymentMethod
-  date         DateTime      @default(now())
+  method       String
+  date         DateTime @default(now())
   note         String?
 
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
@@ -318,18 +264,18 @@ model Supplier {
 
 
 model Expense {
-  id              String          @id @default(cuid())
-  expenseSequence Int             @default(autoincrement()) @unique
-  expenseNumber   String          @unique
-  category        ExpenseCategory
+  id              String   @id @default(cuid())
+  expenseSequence Int      @unique
+  expenseNumber   String   @unique
+  category        String
   description     String
   amount          Int
-  paymentMethod   PaymentMethod
+  paymentMethod   String
   expenseDate     DateTime
   recordedBy      String
   receiptUrl      String?
   notes           String?
-  createdAt       DateTime        @default(now())
+  createdAt       DateTime @default(now())
 
   user User @relation(fields: [recordedBy], references: [id])
 
@@ -339,13 +285,13 @@ model Expense {
 }
 
 model DocumentTemplate {
-  id        String               @id @default(cuid())
-  type      DocumentTemplateType
+  id        String   @id @default(cuid())
+  type      String
   name      String
   content   String
-  isDefault Boolean              @default(false)
-  createdAt DateTime             @default(now())
-  updatedAt DateTime             @updatedAt
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([type, name])
   @@map("document_templates")
@@ -353,7 +299,7 @@ model DocumentTemplate {
 
 model DailySalesSummary {
   id                String   @id @default(cuid())
-  summaryDate       DateTime @unique @db.Date
+  summaryDate       DateTime @unique
   totalOrders       Int      @default(0)
   totalRevenue      Int      @default(0)
   totalTaxCollected Int      @default(0)
@@ -370,7 +316,7 @@ model DailySalesSummary {
 
 model DailyProfitLoss {
   id              String   @id @default(cuid())
-  reportDate      DateTime @unique @db.Date
+  reportDate      DateTime @unique
   totalRevenue    Int      @default(0)
   totalExpenses   Int      @default(0)
   costOfGoodsSold Int?
@@ -384,15 +330,15 @@ model DailyProfitLoss {
 // Append-only audit log. Every mutation that touches money, stock, users, or
 // security writes a row here so the admin/owner has a tamper-evident trail.
 model AuditLog {
-  id         String      @id @default(cuid())
-  entity     AuditEntity
+  id         String   @id @default(cuid())
+  entity     String
   entityId   String
-  action     AuditAction
+  action     String
   userId     String
   reason     String?
   beforeJson Json?
   afterJson  Json?
-  createdAt  DateTime    @default(now())
+  createdAt  DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 

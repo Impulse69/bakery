@@ -1,29 +1,23 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL environment variable is not defined');
 }
-const connectionString = process.env.DATABASE_URL;
-const remoteConnectionString = process.env.DIRECT_URL;
+// SQLite file URL, e.g. file:C:\Users\<user>\AppData\Roaming\Bread Faculty\bakery.db
+const url = process.env.DATABASE_URL;
 
-const globalForPrisma = globalThis as unknown as { 
-  prisma: PrismaClient | undefined,
-  remotePrisma: PrismaClient | undefined 
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
 };
 
-const pool = new pg.Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+const adapter = new PrismaBetterSqlite3({ url });
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
-export const remotePrisma = globalForPrisma.remotePrisma ?? (
-  remoteConnectionString 
-    ? new PrismaClient({ adapter: new PrismaPg(new pg.Pool({ connectionString: remoteConnectionString })) })
-    : undefined
-);
+// Cloud sync is disabled in the offline build — there is no remote database.
+// Kept as `undefined` so syncService keeps compiling and no-ops gracefully.
+export const remotePrisma: PrismaClient | undefined = undefined;
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
-  globalForPrisma.remotePrisma = remotePrisma;
 }

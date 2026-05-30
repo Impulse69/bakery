@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import type { UserRole } from '@prisma/client';
+import type { UserRole } from '@bakery/types';
 
 export function requireRole(...roles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -16,7 +16,7 @@ export function requireRole(...roles: UserRole[]) {
       return;
     }
 
-    if (!roles.includes(user.role)) {
+    if (!roles.includes(user.role as UserRole)) {
       res.status(403).json({ error: 'Insufficient permissions' });
       return;
     }

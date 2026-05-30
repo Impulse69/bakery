@@ -7,7 +7,7 @@ import { asyncHandler, AppError } from '../middleware/errorHandler.js';
 import { requireRole } from '../middleware/requireRole.js';
 import { syncProductAvailability } from '../services/products.js';
 import { recordAudit } from '../services/audit.js';
-import type { SalesOrderStatus } from '@prisma/client';
+import type { SalesOrderStatus } from '@bakery/types';
 
 const router = Router();
 
@@ -163,10 +163,16 @@ router.post(
       const taxTotal = computedItems.reduce((s, i) => s + i.tax, 0);
       const total = subtotal + taxTotal;
 
-      // Create with placeholder orderNumber
+      // Assign the next order sequence in-transaction. SQLite has no non-PK
+      // autoincrement, so we compute max+1 (safe at single-machine concurrency)
+      // and format the human-readable orderNumber up front — no placeholder.
+      const seqAgg = await tx.salesOrder.aggregate({ _max: { orderSequence: true } });
+      const orderSequence = (seqAgg._max.orderSequence ?? 0) + 1;
+
       const created = await tx.salesOrder.create({
         data: {
-          orderNumber: 'TEMP',
+          orderSequence,
+          orderNumber: `SO-${String(orderSequence).padStart(4, '0')}`,
           customerId: customerId || null,
           locationId,
           processedBy: req.user!.id,
@@ -179,7 +185,7 @@ router.post(
             create: computedItems,
           },
         },
-        include: { items: { include: { product: true } } },
+        include: { items: { include: { product: true } }, customer: true },
       });
 
       // Verify stock availability and decrement stock for each product
@@ -203,14 +209,7 @@ router.post(
         await syncProductAvailability(tx, item.productId);
       }
 
-      // Update with formatted orderNumber
-      return tx.salesOrder.update({
-        where: { id: created.id },
-        data: {
-          orderNumber: `SO-${String(created.orderSequence).padStart(4, '0')}`,
-        },
-        include: { items: { include: { product: true } }, customer: true },
-      });
+      return created;
     });
 
     getIO().emit('sale:created', { orderId: order.id, total: order.total });
@@ -227,7 +226,7 @@ router.patch(
     const order = await prisma.salesOrder.findUnique({ where: { id: getParam(req, 'id') } });
     if (!order) throw new AppError(404, 'Sales order not found');
 
-    const allowed = VALID_TRANSITIONS[order.status];
+    const allowed = VALID_TRANSITIONS[order.status as SalesOrderStatus] ?? [];
     if (!allowed.includes(newStatus)) {
       throw new AppError(400, `Cannot transition from ${order.status} to ${newStatus}`);
     }

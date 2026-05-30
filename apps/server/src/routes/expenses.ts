@@ -123,19 +123,17 @@ router.post(
     const data = createExpenseSchema.parse(req.body);
 
     const expense = await prisma.$transaction(async (tx) => {
-      const created = await tx.expense.create({
+      // Compute the next expense sequence (SQLite has no non-PK autoincrement).
+      const seqAgg = await tx.expense.aggregate({ _max: { expenseSequence: true } });
+      const expenseSequence = (seqAgg._max.expenseSequence ?? 0) + 1;
+
+      return tx.expense.create({
         data: {
           ...data,
           expenseDate: new Date(data.expenseDate),
-          expenseNumber: 'TEMP',
+          expenseSequence,
+          expenseNumber: `EX-${String(expenseSequence).padStart(4, '0')}`,
           recordedBy: req.user!.id,
-        },
-      });
-
-      return tx.expense.update({
-        where: { id: created.id },
-        data: {
-          expenseNumber: `EX-${String(created.expenseSequence).padStart(4, '0')}`,
         },
       });
     });

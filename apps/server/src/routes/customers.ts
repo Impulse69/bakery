@@ -85,7 +85,7 @@ router.get(
       ...(search
         ? {
             OR: [
-              { name: { contains: search, mode: 'insensitive' as const } },
+              { name: { contains: search } },
               { phone: { contains: search } },
             ],
           }
