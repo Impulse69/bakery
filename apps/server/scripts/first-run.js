@@ -10,14 +10,29 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
+const Module = require('node:module');
 const { execFileSync } = require('node:child_process');
 
 const serverDir = path.resolve(__dirname, '..');
 
-// Resolve the Prisma CLI whether node_modules is local (production bundle) or
-// hoisted to the monorepo root (dev).
+// Make this script self-sufficient regardless of launcher: if the packaged
+// bundle's renamed deps folder exists (server_modules — see assemble-server),
+// add it to the module resolution path so require('@prisma/client') etc. work.
+const serverModules = path.join(serverDir, 'server_modules');
+if (fs.existsSync(serverModules)) {
+  process.env.NODE_PATH = serverModules
+    + (process.env.NODE_PATH ? path.delimiter + process.env.NODE_PATH : '');
+  Module._initPaths();
+}
+
+// Resolve the Prisma CLI across layouts:
+//  - server_modules/ : packaged offline bundle (node_modules renamed to dodge
+//    electron-builder's empty-node_modules copy behavior)
+//  - node_modules/    : standalone server bundle
+//  - ../../node_modules : hoisted monorepo root (dev)
 function resolvePrismaCli() {
   const candidates = [
+    path.join(serverDir, 'server_modules', 'prisma', 'build', 'index.js'),
     path.join(serverDir, 'node_modules', 'prisma', 'build', 'index.js'),
     path.join(serverDir, '..', '..', 'node_modules', 'prisma', 'build', 'index.js'),
   ];

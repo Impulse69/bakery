@@ -59,12 +59,23 @@ async function startEmbeddedServer(): Promise<void> {
     return existsSync(bundled) ? bundled : process.execPath;
   })();
 
+  // The bundle's deps live in server_modules (node_modules is renamed at build
+  // time — electron-builder empties any folder literally named node_modules in
+  // extraResources). NODE_PATH makes require() resolve from it. Falls back to a
+  // node_modules dir if present (non-packaged runs).
+  const serverModules = (() => {
+    const renamed = path.join(serverDir, 'server_modules');
+    if (existsSync(renamed)) return renamed;
+    return path.join(serverDir, 'node_modules');
+  })();
+
   const env = {
     ...process.env,
     NODE_ENV: 'production',
     PORT: String(SERVER_PORT),
     DATABASE_URL: `file:${dbPath}`,
     JWT_SECRET: readOrCreateJwtSecret(userData),
+    NODE_PATH: serverModules,
   };
 
   // 1. First-run bootstrap: sync schema + seed admin/location (idempotent).

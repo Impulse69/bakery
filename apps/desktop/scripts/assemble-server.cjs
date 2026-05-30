@@ -83,4 +83,18 @@ execFileSync('npx', ['prisma', 'generate'], {
 const nodeExe = process.execPath;
 fs.copyFileSync(nodeExe, path.join(staging, 'runtime', 'node.exe'));
 
+// 8. Rename node_modules -> server_modules.
+// electron-builder special-cases any directory literally named "node_modules"
+// in extraResources and copies it EMPTY. Renaming dodges that; the Electron
+// host + first-run set NODE_PATH to this folder so require() still resolves.
+// (Dependency tree is fully hoisted/flat — verified no nested node_modules —
+// so NODE_PATH as a global resolution fallback covers every module.)
+const nmDir = path.join(staging, 'node_modules');
+const smDir = path.join(staging, 'server_modules');
+if (fs.existsSync(nmDir)) {
+  rmrf(smDir);
+  fs.renameSync(nmDir, smDir);
+  log('Renamed node_modules -> server_modules (electron-builder copy workaround).');
+}
+
 log(`Done. Bundle at ${staging}`);
