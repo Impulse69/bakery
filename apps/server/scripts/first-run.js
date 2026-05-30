@@ -10,30 +10,36 @@
 
 const path = require('node:path');
 const fs = require('node:fs');
-const Module = require('node:module');
 const { execFileSync } = require('node:child_process');
 
 const serverDir = path.resolve(__dirname, '..');
 
-// Make this script self-sufficient regardless of launcher: if the packaged
-// bundle's renamed deps folder exists (server_modules — see assemble-server),
-// add it to the module resolution path so require('@prisma/client') etc. work.
-const serverModules = path.join(serverDir, 'server_modules');
-if (fs.existsSync(serverModules)) {
-  process.env.NODE_PATH = serverModules
-    + (process.env.NODE_PATH ? path.delimiter + process.env.NODE_PATH : '');
-  Module._initPaths();
+// In the packaged bundle the deps live in `server_modules` (node_modules is
+// renamed at build time because electron-builder empties any extraResources
+// folder literally named node_modules). Restore a real `node_modules` via a
+// directory junction so BOTH CommonJS require() and ESM imports resolve the
+// normal up-tree way — NODE_PATH only works for CJS, and the Prisma CLI pulls
+// in ESM-only transitive deps (zeptomatch → graphmatch) that need real
+// node_modules. The junction is idempotent and needs no admin rights.
+function ensureNodeModulesJunction() {
+  const serverModules = path.join(serverDir, 'server_modules');
+  const nodeModules = path.join(serverDir, 'node_modules');
+  if (!fs.existsSync(serverModules)) return; // dev / standalone layout
+  if (fs.existsSync(nodeModules)) return;     // already present
+  try {
+    fs.symlinkSync(serverModules, nodeModules, 'junction');
+  } catch (err) {
+    console.error('[first-run] Could not create node_modules junction:', err.message);
+  }
 }
+ensureNodeModulesJunction();
 
-// Resolve the Prisma CLI across layouts:
-//  - server_modules/ : packaged offline bundle (node_modules renamed to dodge
-//    electron-builder's empty-node_modules copy behavior)
-//  - node_modules/    : standalone server bundle
-//  - ../../node_modules : hoisted monorepo root (dev)
+// Resolve the Prisma CLI across layouts (junction makes node_modules the
+// canonical path in the packaged bundle; the others cover dev/standalone).
 function resolvePrismaCli() {
   const candidates = [
-    path.join(serverDir, 'server_modules', 'prisma', 'build', 'index.js'),
     path.join(serverDir, 'node_modules', 'prisma', 'build', 'index.js'),
+    path.join(serverDir, 'server_modules', 'prisma', 'build', 'index.js'),
     path.join(serverDir, '..', '..', 'node_modules', 'prisma', 'build', 'index.js'),
   ];
   for (const c of candidates) {

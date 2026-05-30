@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, shell } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, symlinkSync } from 'fs';
 import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import http from 'http';
 import { randomBytes } from 'crypto';
@@ -61,13 +61,18 @@ async function startEmbeddedServer(): Promise<void> {
 
   // The bundle's deps live in server_modules (node_modules is renamed at build
   // time — electron-builder empties any folder literally named node_modules in
-  // extraResources). NODE_PATH makes require() resolve from it. Falls back to a
-  // node_modules dir if present (non-packaged runs).
-  const serverModules = (() => {
-    const renamed = path.join(serverDir, 'server_modules');
-    if (existsSync(renamed)) return renamed;
-    return path.join(serverDir, 'node_modules');
-  })();
+  // extraResources). Restore a real node_modules via a directory junction so
+  // both CJS require() and ESM imports resolve normally (NODE_PATH is CJS-only,
+  // and Prisma's CLI has ESM-only transitive deps). Idempotent, no admin.
+  const serverModules = path.join(serverDir, 'server_modules');
+  const nodeModules = path.join(serverDir, 'node_modules');
+  if (existsSync(serverModules) && !existsSync(nodeModules)) {
+    try {
+      symlinkSync(serverModules, nodeModules, 'junction');
+    } catch (err) {
+      console.error('Could not create node_modules junction:', err);
+    }
+  }
 
   const env = {
     ...process.env,
@@ -75,7 +80,6 @@ async function startEmbeddedServer(): Promise<void> {
     PORT: String(SERVER_PORT),
     DATABASE_URL: `file:${dbPath}`,
     JWT_SECRET: readOrCreateJwtSecret(userData),
-    NODE_PATH: serverModules,
   };
 
   // 1. First-run bootstrap: sync schema + seed admin/location (idempotent).
