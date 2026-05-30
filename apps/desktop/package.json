@@ -39,6 +39,8 @@
     "@bakery/types": "*",
     "@bakery/ui": "*",
     "@bakery/utils": "*",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/manrope": "^5.2.8",
     "dexie": "^4.4.2",
     "dexie-react-hooks": "^4.4.0",
     "electron-updater": "^6.3.9",
