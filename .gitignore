@@ -25,3 +25,6 @@ EULA.txt
 # Local Environment
 .env*
 !.env.example
+
+# Assembled offline server bundle (build artifact)
+apps/desktop/server-bundle/

@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "build:win": "electron-vite build && electron-builder --win",
+    "build:win": "node scripts/assemble-server.cjs && electron-vite build && electron-builder --win",
     "lint": "tsc --noEmit",
     "clean": "node -e \"const fs=require('fs'); for (const dir of ['dist','out']) fs.rmSync(dir,{recursive:true,force:true});\""
   },
@@ -20,6 +20,12 @@
     "directories": {
       "output": "out"
     },
+    "extraResources": [
+      {
+        "from": "server-bundle",
+        "to": "server"
+      }
+    ],
     "publish": {
       "provider": "github",
       "owner": "Impulse69",
