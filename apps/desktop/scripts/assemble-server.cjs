@@ -41,6 +41,9 @@ fs.mkdirSync(path.join(staging, 'runtime'), { recursive: true });
 
 // 3. Copy runtime files
 copyDir(path.join(serverSrc, 'dist'), path.join(staging, 'dist'));
+// Drop any stale node-windows daemon artifacts (the offline build doesn't use
+// the Windows service — Electron spawns the server directly).
+rmrf(path.join(staging, 'dist', 'daemon'));
 // prisma/ but without the (now-empty) migrations dir; schema + nothing else
 fs.mkdirSync(path.join(staging, 'prisma'), { recursive: true });
 fs.copyFileSync(path.join(serverSrc, 'prisma', 'schema.prisma'), path.join(staging, 'prisma', 'schema.prisma'));

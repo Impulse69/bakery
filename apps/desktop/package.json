@@ -23,7 +23,10 @@
     "extraResources": [
       {
         "from": "server-bundle",
-        "to": "server"
+        "to": "server",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "publish": {
