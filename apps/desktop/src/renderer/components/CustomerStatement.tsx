@@ -88,8 +88,8 @@ function StatementContent({ statement }: { statement: Statement }) {
           <h1 className={styles.brandName}>Bread Faculty</h1>
           <p className={styles.brandSub}>Premium Bakery & Confectionery</p>
           <div className={styles.brandDetails}>
-            <p>12 Baker Street, Accra, Ghana</p>
-            <p>+233 20 000 0000 | billing@breadfaculty.com</p>
+            <p>Prono Street, Tema, Ghana</p>
+            <p>+233 277120057</p>
           </div>
         </div>
         <div className={styles.docMeta}>
@@ -220,7 +220,7 @@ function StatementContent({ statement }: { statement: Statement }) {
 
       <div className={styles.footerBrand}>
         <p>Please remit outstanding balances within 30 days of statement issue.</p>
-        <p className={styles.footerSmall}>For queries: billing@breadfaculty.com · +233 20 000 0000</p>
+        <p className={styles.footerSmall}>For queries: +233 277120057</p>
       </div>
 
     </div>

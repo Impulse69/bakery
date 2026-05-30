@@ -79,8 +79,8 @@ function ReceiptContent({ order, dateStr, type }: { order: SalesOrder; dateStr: 
     <div className={styles.receipt} data-receipt-root>
       <div className={styles.header}>
         <p className={styles.storeName}>Bread Faculty</p>
-        <p className={styles.storeMeta}>12 Baker Street, Accra</p>
-        <p className={styles.storeMeta}>+233 20 000 0000</p>
+        <p className={styles.storeMeta}>Prono Street, Tema</p>
+        <p className={styles.storeMeta}>+233 277120057</p>
       </div>
 
       <div className={styles.divider} />
