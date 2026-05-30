@@ -1,7 +1,103 @@
 import { app, BrowserWindow, Menu, ipcMain, shell } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { spawn, spawnSync, type ChildProcess } from 'child_process';
+import http from 'http';
+import { randomBytes } from 'crypto';
 import { autoUpdater } from 'electron-updater';
+
+const SERVER_PORT = 3001;
+let serverProcess: ChildProcess | null = null;
+
+// ── Embedded backend ───────────────────────────────────────────────
+// In packaged builds the Node/SQLite server is bundled under
+// resources/server and run as a child process. The renderer talks to it on
+// localhost:3001 exactly as before — there is no separate install, no service,
+// no PostgreSQL. In dev (`electron-vite dev`) the server is started externally
+// by `npm run dev`, so we skip spawning.
+
+function readOrCreateJwtSecret(userData: string): string {
+  const secretPath = path.join(userData, 'jwt-secret');
+  if (existsSync(secretPath)) {
+    const existing = readFileSync(secretPath, 'utf8').trim();
+    if (existing) return existing;
+  }
+  const secret = randomBytes(48).toString('hex');
+  writeFileSync(secretPath, secret, 'utf8');
+  return secret;
+}
+
+function waitForHealth(timeoutMs: number): Promise<void> {
+  const url = `http://localhost:${SERVER_PORT}/health`;
+  const start = Date.now();
+  return new Promise((resolve, reject) => {
+    const attempt = () => {
+      const req = http.get(url, (res) => {
+        res.resume();
+        if (res.statusCode === 200) resolve();
+        else retry();
+      });
+      req.on('error', retry);
+      req.setTimeout(2000, () => { req.destroy(); retry(); });
+    };
+    const retry = () => {
+      if (Date.now() - start > timeoutMs) reject(new Error('Embedded server did not become healthy in time'));
+      else setTimeout(attempt, 400);
+    };
+    attempt();
+  });
+}
+
+async function startEmbeddedServer(): Promise<void> {
+  const serverDir = path.join(process.resourcesPath, 'server');
+  const userData = app.getPath('userData');
+  const dbPath = path.join(userData, 'bakery.db');
+
+  const nodeExe = (() => {
+    const bundled = path.join(serverDir, 'runtime', 'node.exe');
+    return existsSync(bundled) ? bundled : process.execPath;
+  })();
+
+  const env = {
+    ...process.env,
+    NODE_ENV: 'production',
+    PORT: String(SERVER_PORT),
+    DATABASE_URL: `file:${dbPath}`,
+    JWT_SECRET: readOrCreateJwtSecret(userData),
+  };
+
+  // 1. First-run bootstrap: sync schema + seed admin/location (idempotent).
+  const bootstrap = spawnSync(nodeExe, [path.join(serverDir, 'scripts', 'first-run.js')], {
+    cwd: serverDir,
+    env,
+    stdio: 'inherit',
+  });
+  if (bootstrap.status !== 0) {
+    throw new Error(`First-run bootstrap failed (exit ${bootstrap.status})`);
+  }
+
+  // 2. Start the API server as a child process.
+  serverProcess = spawn(nodeExe, [path.join(serverDir, 'dist', 'index.js')], {
+    cwd: serverDir,
+    env,
+    stdio: 'inherit',
+  });
+  serverProcess.on('exit', (code) => {
+    console.error(`Embedded server exited with code ${code}`);
+    serverProcess = null;
+  });
+
+  // 3. Wait until it answers before opening the window.
+  await waitForHealth(20000);
+}
+
+function stopEmbeddedServer() {
+  if (serverProcess) {
+    serverProcess.kill();
+    serverProcess = null;
+  }
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -42,29 +138,34 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
+
+  // Packaged builds run the bundled SQLite server in-process (as a child).
+  // Boot it and wait for health before showing the window so the first API
+  // call from the renderer succeeds. Dev runs the server externally.
+  if (app.isPackaged) {
+    try {
+      await startEmbeddedServer();
+    } catch (err) {
+      console.error('Failed to start embedded server:', err);
+    }
+  }
+
   createWindow();
 
-  // Only run the autoUpdater in packaged builds. In dev (`electron-vite dev`)
-  // there's no installer and no app-update.yml; running the check throws.
-  if (app.isPackaged) {
-    autoUpdater.autoDownload = true;
-    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-      console.error('Failed to check for updates:', err);
-    });
-    // Re-check every hour so long-running terminals pick up new releases
-    // without needing a manual restart.
-    setInterval(() => {
-      autoUpdater.checkForUpdates().catch((err) => {
-        console.error('Periodic update check failed:', err);
-      });
-    }, 60 * 60 * 1000);
-  }
+  // Auto-updater is intentionally disabled — this is a fully offline build with
+  // no network dependency. (Event wiring in createWindow stays harmless; it
+  // simply never fires.)
 });
 
 app.on('window-all-closed', () => {
+  stopEmbeddedServer();
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  stopEmbeddedServer();
 });
 
 app.on('activate', () => {
