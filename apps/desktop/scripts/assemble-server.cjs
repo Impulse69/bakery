@@ -84,16 +84,29 @@ const nodeExe = process.execPath;
 fs.copyFileSync(nodeExe, path.join(staging, 'runtime', 'node.exe'));
 
 // 8. Rename node_modules -> server_modules.
-// electron-builder special-cases any directory literally named "node_modules"
-// in extraResources and copies it EMPTY. Renaming dodges that; the Electron
-// host + first-run set NODE_PATH to this folder so require() still resolves.
-// (Dependency tree is fully hoisted/flat — verified no nested node_modules —
-// so NODE_PATH as a global resolution fallback covers every module.)
+// electron-builder empties any extraResources folder literally named
+// "node_modules", so we rename it; the Electron host (and first-run.js) restore
+// a real node_modules via a directory junction at runtime, which both CJS and
+// ESM resolution honour.
 const nmDir = path.join(staging, 'node_modules');
 const smDir = path.join(staging, 'server_modules');
 if (fs.existsSync(nmDir)) {
   rmrf(smDir);
-  fs.renameSync(nmDir, smDir);
+  // The rename can transiently hit EPERM on Windows right after `npm install`/
+  // `prisma generate` (AV scan or a lingering child handle on a file inside
+  // node_modules). Retry with backoff instead of failing the whole build.
+  let renamed = false;
+  for (let attempt = 1; attempt <= 8 && !renamed; attempt++) {
+    try {
+      fs.renameSync(nmDir, smDir);
+      renamed = true;
+    } catch (err) {
+      if (attempt === 8) throw err;
+      const waitMs = 500 * attempt;
+      log(`Rename attempt ${attempt} failed (${err.code}); retrying in ${waitMs}ms…`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, waitMs); // sync sleep
+    }
+  }
   log('Renamed node_modules -> server_modules (electron-builder copy workaround).');
 }
 
