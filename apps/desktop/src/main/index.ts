@@ -114,6 +114,72 @@ function stopEmbeddedServer() {
   }
 }
 
+// ── View zoom ──────────────────────────────────────────────────────
+// The UI ships a touch more compact than 1.0, and the user can scale the whole
+// view (fonts, spacing, everything) with the standard Ctrl +/-/0 shortcuts.
+// The chosen factor persists across launches.
+const DEFAULT_ZOOM = 0.9;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2.0;
+const ZOOM_STEP = 0.1;
+
+function zoomFilePath(): string {
+  return path.join(app.getPath('userData'), 'zoom');
+}
+
+function readZoom(): number {
+  try {
+    const raw = parseFloat(readFileSync(zoomFilePath(), 'utf8').trim());
+    if (Number.isFinite(raw)) return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, raw));
+  } catch {
+    /* no saved zoom yet */
+  }
+  return DEFAULT_ZOOM;
+}
+
+function writeZoom(factor: number): void {
+  try {
+    writeFileSync(zoomFilePath(), String(factor), 'utf8');
+  } catch {
+    /* best-effort persistence */
+  }
+}
+
+function setupZoom(win: BrowserWindow): void {
+  const apply = (factor: number) => {
+    const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(factor * 100) / 100));
+    win.webContents.setZoomFactor(clamped);
+    writeZoom(clamped);
+  };
+
+  // Apply the saved (or default) zoom once the page has loaded.
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.setZoomFactor(readZoom());
+  });
+
+  // Standard zoom shortcuts (the app menu is removed, so we wire them here).
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown' || !(input.control || input.meta)) return;
+    const current = win.webContents.getZoomFactor();
+    switch (input.key) {
+      case '=':
+      case '+': // includes numpad +
+        apply(current + ZOOM_STEP);
+        event.preventDefault();
+        break;
+      case '-':
+      case '_': // includes numpad -
+        apply(current - ZOOM_STEP);
+        event.preventDefault();
+        break;
+      case '0':
+        apply(DEFAULT_ZOOM);
+        event.preventDefault();
+        break;
+    }
+  });
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
@@ -130,6 +196,8 @@ function createWindow() {
   } else {
     win.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
+
+  setupZoom(win);
 
   // Set up auto-updater events — forward every relevant event to the renderer
   // so the UI can reflect state (checking / available / downloading / ready).
