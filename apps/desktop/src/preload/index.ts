@@ -27,6 +27,7 @@ try {
     restartApp: () => {
       ipcRenderer.send('app:restart');
     },
+    checkForUpdates: () => ipcRenderer.invoke('update:check'),
     printPreview: () => ipcRenderer.invoke('print:preview'),
     printSystemPreview: () => ipcRenderer.invoke('print:systemPreview'),
   });

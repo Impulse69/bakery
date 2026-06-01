@@ -2,6 +2,7 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
+import { version as appVersion } from './package.json';
 
 export default defineConfig({
   main: {
@@ -18,6 +19,9 @@ export default defineConfig({
   },
   renderer: {
     plugins: [react(), tailwindcss()],
+    define: {
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+    },
     root: resolve(__dirname, 'src/renderer'),
     build: {
       outDir: resolve(__dirname, 'dist/renderer'),

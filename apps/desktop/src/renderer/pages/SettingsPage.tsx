@@ -4,6 +4,7 @@ import { can } from '@bakery/utils';
 import { UsersTab } from '../components/settings/UsersTab';
 import { ProfileTab } from '../components/settings/ProfileTab';
 import { DevToolsCard } from '../components/settings/DevToolsCard';
+import { UpdatesCard } from '../components/settings/UpdatesCard';
 import styles from './SettingsPage.module.css';
 
 type Tab = 'users' | 'profile' | 'shop';
@@ -60,6 +61,7 @@ export function SettingsPage() {
       {tab === 'profile' && <ProfileTab />}
       {tab === 'shop' && canManageUsers && (
         <div>
+          <UpdatesCard />
           <div className={styles.placeholder}>
             <p>Shop settings (name, address, tax rate, receipt header) coming soon.</p>
           </div>

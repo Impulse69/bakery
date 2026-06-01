@@ -9,6 +9,12 @@ interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
 
+type UpdateCheckResult =
+  | { status: 'dev' }
+  | { status: 'up-to-date'; currentVersion: string; latestVersion: string }
+  | { status: 'available'; currentVersion: string; latestVersion: string }
+  | { status: 'error'; message: string };
+
 interface Window {
   electronAPI: {
     onUpdateChecking?: (callback: () => void) => void;
@@ -18,6 +24,7 @@ interface Window {
     onUpdateDownloaded: (callback: (info: any) => void) => void;
     onUpdateError: (callback: (error: string) => void) => void;
     restartApp: () => void;
+    checkForUpdates: () => Promise<UpdateCheckResult>;
     printPreview: () => Promise<{ ok: boolean }>;
     printSystemPreview: () => Promise<{ ok: boolean; path: string }>;
   };

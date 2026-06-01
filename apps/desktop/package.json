@@ -1,6 +1,6 @@
 {
   "name": "@bakery/desktop",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Bread Faculty POS Desktop App",
   "author": "Bread Faculty",
   "private": true,
@@ -33,7 +33,7 @@
       "provider": "github",
       "owner": "Impulse69",
       "repo": "bakery",
-      "releaseType": "draft"
+      "releaseType": "release"
     },
     "win": {
       "target": "nsis"

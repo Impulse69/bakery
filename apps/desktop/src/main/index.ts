@@ -169,9 +169,41 @@ app.whenReady().then(async () => {
 
   createWindow();
 
-  // Auto-updater is intentionally disabled — this is a fully offline build with
-  // no network dependency. (Event wiring in createWindow stays harmless; it
-  // simply never fires.)
+  // Auto-update: the app runs fully offline, but when a connection IS available
+  // it checks GitHub Releases on launch and downloads any newer version in the
+  // background (events drive the in-app progress ring). Failures (offline, etc.)
+  // are caught by the 'error' handler and surface as a no-op. Packaged only —
+  // electron-updater throws in dev/unpackaged.
+  if (app.isPackaged) {
+    autoUpdater.autoDownload = true;
+    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
+      console.warn('Startup update check failed (offline?):', err?.message ?? err);
+    });
+  }
+});
+
+// Manual "Check for updates" (Settings button). Returns a small status summary
+// for immediate UI feedback; the detailed lifecycle (download progress, ready)
+// still flows through the update-* events to the in-app progress widget.
+ipcMain.handle('update:check', async () => {
+  if (!app.isPackaged) {
+    return { status: 'dev' as const };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const available = !!result?.updateInfo
+      && result.updateInfo.version !== app.getVersion();
+    return {
+      status: available ? ('available' as const) : ('up-to-date' as const),
+      currentVersion: app.getVersion(),
+      latestVersion: result?.updateInfo?.version ?? app.getVersion(),
+    };
+  } catch (err) {
+    return {
+      status: 'error' as const,
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
 });
 
 app.on('window-all-closed', () => {
