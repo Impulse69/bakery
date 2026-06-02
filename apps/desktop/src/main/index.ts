@@ -115,10 +115,10 @@ function stopEmbeddedServer() {
 }
 
 // ── View zoom ──────────────────────────────────────────────────────
-// The UI ships a touch more compact than 1.0, and the user can scale the whole
-// view (fonts, spacing, everything) with the standard Ctrl +/-/0 shortcuts.
-// The chosen factor persists across launches.
-const DEFAULT_ZOOM = 0.9;
+// The UI ships compact (0.7) so more fits on screen, and the user can scale the
+// whole view (fonts, spacing, everything) with the standard Ctrl +/-/0 shortcuts.
+// Ctrl+0 resets to this default. The chosen factor persists across launches.
+const DEFAULT_ZOOM = 0.7;
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 2.0;
 const ZOOM_STEP = 0.1;
