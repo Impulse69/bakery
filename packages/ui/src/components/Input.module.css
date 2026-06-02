@@ -10,7 +10,15 @@
   color: var(--bui-text-primary);
 }
 
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
 .input {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.5rem 0.75rem;
   font-size: var(--bui-text-sm);
   border: 1px solid var(--bui-border-color);
@@ -19,6 +27,42 @@
   transition: border-color 0.15s;
   background: #fff;
   color: var(--bui-text-primary);
+}
+
+.inputPassword {
+  padding-right: 2.5rem;
+}
+
+.reveal {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: var(--bui-text-secondary, #8a8896);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.reveal:hover {
+  color: var(--bui-text-primary);
+}
+
+.reveal:focus-visible {
+  outline: none;
+  color: var(--bui-primary);
+}
+
+.reveal:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .input::placeholder {

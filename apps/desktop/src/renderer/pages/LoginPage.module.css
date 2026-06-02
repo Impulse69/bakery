@@ -196,6 +196,44 @@
   box-sizing: border-box;
 }
 
+.passwordWrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.customInputPassword {
+  padding-right: 3rem;
+}
+
+.revealBtn {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: #8a8896;
+  cursor: pointer;
+  border-radius: 0.75rem;
+  transition: color 0.2s;
+}
+
+.revealBtn:hover {
+  color: #131b2e;
+}
+
+.revealBtn:focus-visible {
+  outline: none;
+  color: var(--bui-primary);
+}
+
 .customInput::placeholder {
   color: #c6c5d4;
 }
