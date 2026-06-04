@@ -1,7 +1,19 @@
 import { app, BrowserWindow, Menu, ipcMain, shell } from 'electron';
 import path from 'path';
 import fs from 'fs/promises';
-import { existsSync, readFileSync, writeFileSync, symlinkSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  symlinkSync,
+  mkdirSync,
+  createWriteStream,
+  statSync,
+  appendFileSync,
+  renameSync,
+  rmSync,
+  type WriteStream,
+} from 'fs';
 import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import http from 'http';
 import { randomBytes } from 'crypto';
@@ -9,6 +21,62 @@ import { autoUpdater } from 'electron-updater';
 
 const SERVER_PORT = 3001;
 let serverProcess: ChildProcess | null = null;
+let logStream: WriteStream | null = null;
+
+// ── Server log capture ─────────────────────────────────────────────
+// In a packaged GUI app the embedded server's stdout/stderr would otherwise be
+// discarded. Persist it to userData/logs/server.log so the real error (and the
+// self-heal results) are retrievable from one file the client can send us.
+const MAX_LOG_BYTES = 5 * 1024 * 1024; // 5 MB
+
+function logsDir(): string {
+  const dir = path.join(app.getPath('userData'), 'logs');
+  try {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  } catch {
+    /* best-effort */
+  }
+  return dir;
+}
+
+function serverLogPath(): string {
+  return path.join(logsDir(), 'server.log');
+}
+
+// Roll the log once at boot if it has grown past the cap (keeps one backup).
+function rotateLogIfLarge(): void {
+  const file = serverLogPath();
+  try {
+    if (existsSync(file) && statSync(file).size > MAX_LOG_BYTES) {
+      const bak = `${file}.1`;
+      if (existsSync(bak)) rmSync(bak, { force: true });
+      renameSync(file, bak);
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
+function appendLog(text: string): void {
+  try {
+    appendFileSync(serverLogPath(), text);
+  } catch {
+    /* best-effort */
+  }
+}
+
+function bootBanner(dbPath: string): string {
+  return [
+    '',
+    '════════════════════════════════════════════════════════',
+    `[boot] ${new Date().toISOString()} Bread Faculty POS v${app.getVersion()}`,
+    `[boot] platform=${process.platform} arch=${process.arch} node=${process.version}`,
+    `[boot] dbPath=${dbPath}`,
+    `[boot] userData=${app.getPath('userData')}`,
+    '════════════════════════════════════════════════════════',
+    '',
+  ].join('\n');
+}
 
 // ── Embedded backend ───────────────────────────────────────────────
 // In packaged builds the Node/SQLite server is bundled under
@@ -54,6 +122,9 @@ async function startEmbeddedServer(): Promise<void> {
   const userData = app.getPath('userData');
   const dbPath = path.join(userData, 'bakery.db');
 
+  rotateLogIfLarge();
+  appendLog(bootBanner(dbPath));
+
   const nodeExe = (() => {
     const bundled = path.join(serverDir, 'runtime', 'node.exe');
     return existsSync(bundled) ? bundled : process.execPath;
@@ -82,23 +153,32 @@ async function startEmbeddedServer(): Promise<void> {
     JWT_SECRET: readOrCreateJwtSecret(userData),
   };
 
-  // 1. First-run bootstrap: sync schema + seed admin/location (idempotent).
+  // 1. First-run bootstrap: self-heal DB + sync schema + seed (idempotent).
+  //    Output is piped so the [self-heal]/[first-run] lines land in server.log.
   const bootstrap = spawnSync(nodeExe, [path.join(serverDir, 'scripts', 'first-run.js')], {
     cwd: serverDir,
     env,
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
+  if (bootstrap.stdout?.length) appendLog('[first-run:out] ' + bootstrap.stdout.toString());
+  if (bootstrap.stderr?.length) appendLog('[first-run:err] ' + bootstrap.stderr.toString());
   if (bootstrap.status !== 0) {
+    appendLog(`[first-run] exited status=${bootstrap.status} signal=${bootstrap.signal ?? ''}\n`);
     throw new Error(`First-run bootstrap failed (exit ${bootstrap.status})`);
   }
 
-  // 2. Start the API server as a child process.
+  // 2. Start the API server as a child process; capture its output to the log.
+  logStream = createWriteStream(serverLogPath(), { flags: 'a' });
   serverProcess = spawn(nodeExe, [path.join(serverDir, 'dist', 'index.js')], {
     cwd: serverDir,
     env,
-    stdio: 'inherit',
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
-  serverProcess.on('exit', (code) => {
+  serverProcess.stdout?.on('data', (b: Buffer) => logStream?.write('[server] ' + b.toString()));
+  serverProcess.stderr?.on('data', (b: Buffer) => logStream?.write('[server:err] ' + b.toString()));
+  serverProcess.on('error', (err) => appendLog(`[server] spawn error: ${err.message}\n`));
+  serverProcess.on('exit', (code, signal) => {
+    appendLog(`[server] exited code=${code} signal=${signal ?? ''}\n`);
     console.error(`Embedded server exited with code ${code}`);
     serverProcess = null;
   });
@@ -111,6 +191,14 @@ function stopEmbeddedServer() {
   if (serverProcess) {
     serverProcess.kill();
     serverProcess = null;
+  }
+  if (logStream) {
+    try {
+      logStream.end();
+    } catch {
+      /* best-effort */
+    }
+    logStream = null;
   }
 }
 
