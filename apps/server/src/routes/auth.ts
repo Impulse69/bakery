@@ -24,6 +24,11 @@ const forgotPasswordSchema = z.object({
   email: z.string().email(),
 });
 
+const recoverAdminSchema = z.object({
+  email: z.string().email(),
+  newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
 // POST /api/auth/login
 router.post(
   '/login',
@@ -93,6 +98,48 @@ router.post(
     res.status(202).json({
       message: 'Contact your admin to reset your password from Settings → Users.',
     });
+  }),
+);
+
+// POST /api/auth/recover-admin — LOCAL-ONLY admin password recovery.
+// The embedded server runs on the owner's own machine; when they're locked out
+// (no working password, no other admin to reset it) this lets them set a new
+// admin password WITHOUT the old one. Restricted to loopback connections so a
+// peer on the LAN can never reset credentials over the network. Resets the
+// account if it exists, otherwise creates it — always as an active admin.
+router.post(
+  '/recover-admin',
+  asyncHandler(async (req, res) => {
+    const ip = req.socket.remoteAddress ?? req.ip ?? '';
+    const isLoopback =
+      ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1' || ip.startsWith('127.');
+    if (!isLoopback) {
+      throw new AppError(403, 'Account recovery is only available on the computer running the app.');
+    }
+
+    const { email, newPassword } = recoverAdminSchema.parse(req.body);
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: { passwordHash, role: 'admin', isActive: true, mustChangePassword: false },
+      });
+    } else {
+      await prisma.user.create({
+        data: {
+          name: 'Admin User',
+          email,
+          passwordHash,
+          role: 'admin',
+          isActive: true,
+          mustChangePassword: false,
+        },
+      });
+    }
+
+    res.json({ message: 'Admin access restored. Sign in with your new password.', email });
   }),
 );
 

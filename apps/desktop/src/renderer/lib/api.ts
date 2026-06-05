@@ -136,7 +136,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
         return [] as any;
       } else {
          // Mutation Queue
-         if (path !== '/auth/login') { 
+         if (path !== '/auth/login' && path !== '/auth/recover-admin') {
            const bodyObj = options.body ? JSON.parse(options.body as string) : {};
            
            let fakeId = bodyObj.id;

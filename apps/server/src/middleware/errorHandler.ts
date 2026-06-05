@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction, RequestHandler } from 'express';
+import { ZodError } from 'zod';
 import { logger } from '../lib/logger.js';
 
 export class AppError extends Error {
@@ -53,6 +54,12 @@ export function globalErrorHandler(
 ) {
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: err.message });
+    return;
+  }
+
+  // Request validation failures are client errors (400), not server errors.
+  if (err instanceof ZodError) {
+    res.status(400).json({ error: err.issues[0]?.message ?? 'Invalid request' });
     return;
   }
 

@@ -211,6 +211,33 @@ async function main() {
       console.log('[first-run] Seeded default location (Main Store).');
     }
 
+    // Safety net: never allow a no-admin lockout. If no ACTIVE admin exists
+    // (deleted, deactivated, or demoted), re-assert the default admin so the
+    // owner can always sign in (or use in-app recovery from there).
+    const activeAdmins = await prisma.user.count({ where: { role: 'admin', isActive: true } });
+    if (activeAdmins === 0) {
+      const passwordHash = await bcrypt.hash('admin123', 10);
+      const existing = await prisma.user.findUnique({ where: { email: 'admin@bakery.com' } });
+      if (existing) {
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: { role: 'admin', isActive: true, passwordHash, mustChangePassword: true },
+        });
+        console.log('[first-run] No active admin — re-asserted default admin (admin@bakery.com).');
+      } else {
+        await prisma.user.create({
+          data: {
+            name: 'Admin User',
+            email: 'admin@bakery.com',
+            passwordHash,
+            role: 'admin',
+            mustChangePassword: true,
+          },
+        });
+        console.log('[first-run] No active admin — created default admin (admin@bakery.com).');
+      }
+    }
+
     console.log('[first-run] OK');
   } finally {
     await prisma.$disconnect();

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal } from '@bakery/ui';
+import { Modal, Input } from '@bakery/ui';
 import { useAuth } from '../store/AuthContext';
+import { api } from '../lib/api';
 import styles from './LoginPage.module.css';
 import logo from '../assets/logo.png';
 import background from '../assets/login-bg.png';
@@ -18,6 +19,53 @@ export function LoginPage() {
   const [remember, setRemember] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Local admin recovery (offline, loopback-only on the server side).
+  const [recoverEmail, setRecoverEmail] = useState('admin@bakery.com');
+  const [recoverPassword, setRecoverPassword] = useState('');
+  const [recoverConfirm, setRecoverConfirm] = useState('');
+  const [recoverLoading, setRecoverLoading] = useState(false);
+  const [recoverError, setRecoverError] = useState('');
+  const [recoverDone, setRecoverDone] = useState(false);
+
+  const closeRecover = () => {
+    setShowForgotModal(false);
+    setRecoverError('');
+    setRecoverDone(false);
+    setRecoverPassword('');
+    setRecoverConfirm('');
+  };
+
+  const handleRecover = async (e: FormEvent) => {
+    e.preventDefault();
+    setRecoverError('');
+    if (recoverPassword.length < 6) {
+      setRecoverError('Password must be at least 6 characters.');
+      return;
+    }
+    if (recoverPassword !== recoverConfirm) {
+      setRecoverError('Passwords do not match.');
+      return;
+    }
+    setRecoverLoading(true);
+    try {
+      await api.post('/auth/recover-admin', {
+        email: recoverEmail.trim(),
+        newPassword: recoverPassword,
+      });
+      setRecoverDone(true);
+      setEmail(recoverEmail.trim());
+      setPassword('');
+    } catch (err) {
+      setRecoverError(
+        err instanceof Error
+          ? err.message
+          : 'Recovery failed. Make sure you are on the computer running the app.',
+      );
+    } finally {
+      setRecoverLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -142,33 +190,66 @@ export function LoginPage() {
         </div>
       </section>
 
-      {/* Forgot-password modal — admin-reset path until email is wired up. */}
+      {/* Admin recovery — local, loopback-only reset for a locked-out owner. */}
       <Modal
         isOpen={showForgotModal}
-        onClose={() => setShowForgotModal(false)}
-        title="Forgot password?"
+        onClose={closeRecover}
+        title="Recover admin access"
         size="sm"
       >
-        <div className={styles.forgotBody}>
-          <p>
-            Self-serve password reset isn&rsquo;t available yet. Please contact your
-            shop&rsquo;s admin or owner and ask them to reset your password from
-            <strong> Settings → Users</strong>.
-          </p>
-          <p className={styles.forgotMuted}>
-            After they reset it, sign in with the temporary password and you&rsquo;ll be
-            prompted to set a new one.
-          </p>
-          <div className={styles.forgotActions}>
-            <button
-              type="button"
-              className={styles.forgotBtn}
-              onClick={() => setShowForgotModal(false)}
-            >
-              Got it
-            </button>
+        {recoverDone ? (
+          <div className={styles.forgotBody}>
+            <p>
+              Your admin password has been reset. Sign in with the email and new password
+              you just set.
+            </p>
+            <div className={styles.forgotActions}>
+              <button type="button" className={styles.forgotBtn} onClick={closeRecover}>
+                Sign in
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <form onSubmit={handleRecover} className={styles.forgotBody}>
+            <p className={styles.forgotMuted}>
+              Locked out? Because the app runs on this computer, you can set a new admin
+              password here — no old password needed.
+            </p>
+            <Input
+              label="Admin email"
+              type="email"
+              value={recoverEmail}
+              onChange={(e) => setRecoverEmail(e.target.value)}
+            />
+            <Input
+              label="New password"
+              type="password"
+              value={recoverPassword}
+              onChange={(e) => setRecoverPassword(e.target.value)}
+              placeholder="At least 6 characters"
+            />
+            <Input
+              label="Confirm new password"
+              type="password"
+              value={recoverConfirm}
+              onChange={(e) => setRecoverConfirm(e.target.value)}
+            />
+            {recoverError && <p className={styles.error} style={{ marginBottom: 0 }}>{recoverError}</p>}
+            <div className={styles.forgotActions}>
+              <button
+                type="button"
+                className={styles.forgotBtn}
+                style={{ background: 'transparent', color: '#131b2e' }}
+                onClick={closeRecover}
+              >
+                Cancel
+              </button>
+              <button type="submit" className={styles.forgotBtn} disabled={recoverLoading}>
+                {recoverLoading ? 'Resetting…' : 'Reset password'}
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
     </main>
   );
